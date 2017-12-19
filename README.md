@@ -2,6 +2,12 @@
 
 This PowerShell module contains cmdlets to query installed instances of Unity3D and easily launch the Unity Editor for the correct instances for Unity projects.
 
+## Builds
+[![Build status](https://ci.appveyor.com/api/projects/status/m7ykg9s8gw23fn6h?svg=true)](https://ci.appveyor.com/project/jwittner/unitysetup-powershell)
+
+The `master` branch is automatically built and deployed to the [PowerShell Gallery](https://www.powershellgallery.com/packages/UnitySetup).
+
+
 ## Installation
 
 ```powershell

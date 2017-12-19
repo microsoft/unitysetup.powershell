@@ -1,0 +1,18 @@
+version: '{build}'
+pull_requests:
+  do_not_increment_build_number: true
+branches:
+  only:
+  - master
+environment:
+  NugetAPIKey:
+    secure: zvkaZiaBXVko+3ZzuSb7W6DTUJmHX98XgEhKs28SnGD+4TM3gzhPxVnNWSmBhXEx
+install:
+- ps: >-
+    Install-PackageProvider -Name NuGet -Force | Out-Null
+
+    Install-Module PowerShellGet -Scope CurrentUser -Force
+build_script:
+- ps: .\build.ps1 -Revision $env:APPVEYOR_BUILD_NUMBER
+deploy_script:
+- ps: start powershell -wait { Publish-Module -Path .\UnitySetup -NugetAPIKey $env:NugetAPIKey }
