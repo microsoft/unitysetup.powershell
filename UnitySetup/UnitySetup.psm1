@@ -256,13 +256,18 @@ function Start-UnityEditor
 
     if( $Instance -eq $null )
     {
-        $Instance =  Get-UnitySetupInstance | Select-UnitySetupInstance -Project $Project
+        $version = Get-UnityProjectInstance -BasePath $Project | Select-Object -First 1 -ExpandProperty UnityInstanceVersion
+        $Instance =  Get-UnitySetupInstance | Select-UnitySetupInstance -Version $version
+    }
+    else 
+    {
+        $version = $Instance.InstallationVersion
     }
    
     $unityPath = $Instance.InstallationPath
 
     if ( !$unityPath -or $unityPath -eq "" ) {
-        throw "Could not find Unity editor for $($Instance.InstallationVersion)"
+        throw "Could not find Unity Editor for version $version"
     }
 
     $editor = Get-ChildItem "$unityPath" -Filter Unity.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
