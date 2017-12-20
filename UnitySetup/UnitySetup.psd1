@@ -14,7 +14,7 @@
 RootModule = 'UnitySetup'
 
 # Version number of this module.
-ModuleVersion = '1.3'
+ModuleVersion = '1.4'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -73,10 +73,10 @@ RequiredModules = @(
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-UnitySetupInstance', 'Select-UnitySetupInstance', 'Start-UnityEditor'
+FunctionsToExport = 'Get-UnitySetupInstance', 'Select-UnitySetupInstance', 'Start-UnityEditor', 'Get-UnityProjectInstance'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = 'Get-UnitySetupInstance', 'Select-UnitySetupInstance', 'Start-UnityEditor'
+CmdletsToExport = 'Get-UnitySetupInstance', 'Select-UnitySetupInstance', 'Start-UnityEditor', 'Get-UnityProjectInstance'
 
 # Variables to export from this module
 # VariablesToExport = @()

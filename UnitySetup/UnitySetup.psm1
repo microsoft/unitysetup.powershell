@@ -7,6 +7,62 @@ class UnityInstance
     [string]$InstallationPath
 }
 
+class UnityProjectInstance
+{
+    [string]$ProjectPath
+    [string]$UnityInstanceVersion
+}
+
+<#
+.Synopsis
+   Get the Unity Projects under a specfied folder
+.DESCRIPTION
+   Recursively discovers Unity projects and their UnityInstance version
+.PARAMETER BasePath
+   Under what base pattern should we look for Unity projects? Defaults to '$PWD'. 
+.EXAMPLE
+   Get-UnityProjectInstance
+.EXAMPLE
+   Get-UnityProjectInstance -BasePath .\MyUnityProjects -Recurse
+#>
+function Get-UnityProjectInstance
+{
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory=$false)]
+        [string] $BasePath = $PWD,
+
+        [parameter(Mandatory=$false)]
+        [switch] $Recurse
+    )
+    Import-Module powershell-yaml -Force -ErrorAction Stop
+
+    $args = @{
+        'Path' = $BasePath;
+        'Filter' = 'ProjectSettings';
+        'ErrorAction' = 'Ignore';
+        'Directory' = $true;
+    }
+
+    if( $Recurse )
+    {
+        $args['Recurse'] = $true;
+    }
+
+    Get-ChildItem @args |
+    ForEach-Object {
+        $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
+        if( Test-Path $path )
+        {
+            $projectVersion = Get-Content $path -ErrorAction Stop | ConvertFrom-Yaml -ErrorAction Stop
+            New-Object UnityProjectInstance -Property @{ 
+                ProjectPath = Join-Path $_.FullName "..\" | Convert-Path
+                UnityInstanceVersion = $projectVersion.m_EditorVersion
+            }
+        }
+    }
+}
+
 <#
 .Synopsis
    Get the Unity versions installed
@@ -82,11 +138,8 @@ function Select-UnitySetupInstance
     {
         if( $Project )
         {
-            Import-Module powershell-yaml -Force -ErrorAction Stop
-            $projectVersionPath = [io.path]::combine("$Project","ProjectSettings\ProjectVersion.txt" );
-            $projectVersion = Get-Content $projectVersionPath -ErrorAction Stop | ConvertFrom-Yaml -ErrorAction Stop
-
-            $Version = $projectVersion.m_EditorVersion
+            $Version = Get-UnityProjectInstance -BasePath $Project | 
+                Select-Object -First 1 -ExpandProperty UnityInstanceVersion
         }
     }
     process
@@ -203,13 +256,18 @@ function Start-UnityEditor
 
     if( $Instance -eq $null )
     {
-        $Instance =  Get-UnitySetupInstance | Select-UnitySetupInstance -Project $Project
+        $version = Get-UnityProjectInstance -BasePath $Project | Select-Object -First 1 -ExpandProperty UnityInstanceVersion
+        $Instance =  Get-UnitySetupInstance | Select-UnitySetupInstance -Version $version
+    }
+    else 
+    {
+        $version = $Instance.InstallationVersion
     }
    
     $unityPath = $Instance.InstallationPath
 
     if ( !$unityPath -or $unityPath -eq "" ) {
-        throw "Could not find Unity editor for $($Instance.InstallationVersion)"
+        throw "Could not find Unity Editor for version $version"
     }
 
     $editor = Get-ChildItem "$unityPath" -Filter Unity.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
