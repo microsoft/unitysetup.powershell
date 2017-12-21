@@ -12,7 +12,11 @@ install:
     Install-PackageProvider -Name NuGet -Force | Out-Null
 
     Install-Module PowerShellGet -Scope CurrentUser -Force
+
+    Remove-Module PowerShellGet -Force
+
+    Import-Module PowerShellGet -Force
 build_script:
-- ps: .\build.ps1 -Revision $env:APPVEYOR_BUILD_NUMBER
+- ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER"
 deploy_script:
 - ps: start powershell -wait { Publish-Module -Path .\UnitySetup -NugetAPIKey $env:NugetAPIKey }
