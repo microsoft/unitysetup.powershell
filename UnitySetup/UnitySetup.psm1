@@ -257,6 +257,10 @@ function Start-UnityEditor
     if( $Instance -eq $null )
     {
         $version = Get-UnityProjectInstance -BasePath $Project | Select-Object -First 1 -ExpandProperty UnityInstanceVersion
+        if( !$version )
+        {
+            throw "Could not find Unity Project at $Project"
+        }
         $Instance =  Get-UnitySetupInstance | Select-UnitySetupInstance -Version $version
     }
     else 
