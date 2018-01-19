@@ -225,6 +225,8 @@ function Select-UnitySetupInstance
    Should the Unity Editor quit after it's done?
 .PARAMETER Wait
    Should the command wait for the Unity Editor to exit?
+.PARAMETER PassThru
+   Should the command return the process object? Default is nothing.
 .EXAMPLE
    Start-UnityEditor
 .EXAMPLE
@@ -251,7 +253,9 @@ function Start-UnityEditor
         [parameter(Mandatory = $false)]
         [switch] $Quit,
         [parameter(Mandatory = $false)]
-        [switch] $Wait
+        [switch] $Wait,
+        [parameter(Mandatory = $false)]
+        [switch] $PassThru
     )
 
     if( $Instance -eq $null )
@@ -330,4 +334,6 @@ function Start-UnityEditor
             throw "Unity quit with non-zero exit code"
         }
     }
+
+    if( $PassThru ) { $process }
 }
