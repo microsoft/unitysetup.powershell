@@ -280,43 +280,13 @@ function Start-UnityEditor
 
     $editor = Get-ChildItem "$unityPath" -Filter Unity.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
 
-    $args = @()
-    $args += "-projectPath"
-    $args += $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Project)
-
-    if( $ExecuteMethod )
-    {
-        $args += "-executeMethod"
-        $args += $ExecuteMethod
-    }
-
-    if( $OutputPath )
-    {
-        $args += "-buildOutput"
-        $args += $OutputPath
-    }
-
-    if( $LogFile )
-    {
-        $args += "-logFile"
-        $args += $LogFile
-    }
-
-    if( $BuildTarget )
-    {
-        $args += "-buildTarget"
-        $args += $BuildTarget
-    }
-
-    if( $BatchMode )
-    {
-        $args += "-batchmode"
-    }
-
-    if( $Quit )
-    {
-        $args += "-quit"
-    }
+    $args = "-projectPath", $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Project)
+    if( $ExecuteMethod ) { $args += "-executeMethod", $ExecuteMethod }
+    if( $OutputPath ) { $args += "-buildOutput", $OutputPath } 
+    if( $LogFile ) { $args += "-logFile", $LogFile } 
+    if( $BuildTarget ) { $args += "-buildTarget", $BuildTarget }
+    if( $BatchMode ) { $args += "-batchmode" }
+    if( $Quit ) { $args += "-quit" }
 
     Write-Host "$editor $args" -ForegroundColor Green
     $process = Start-Process -FilePath $editor -ArgumentList $args -PassThru -ErrorAction Stop
