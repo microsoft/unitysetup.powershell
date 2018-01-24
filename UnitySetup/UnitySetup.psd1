@@ -32,7 +32,7 @@ CompanyName = 'Microsoft'
 Copyright = 'Copyright (c) Microsoft Corporation. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Support finding and selecting installs of Unity'
+Description = 'Tools for managing and automating your Unity installs and projects.'
 
 # Minimum version of the Windows PowerShell engine required by this module
 # PowerShellVersion = ''
