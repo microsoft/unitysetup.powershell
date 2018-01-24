@@ -1,6 +1,6 @@
 # Unity Setup Powershell Module
 
-This PowerShell module contains cmdlets to query installed instances of Unity3D and easily launch the Unity Editor for the correct instances for Unity projects.
+This PowerShell module contains tools for managing and automating your Unity installs and projects.
 
 ## Builds
 [![Build status](https://ci.appveyor.com/api/projects/status/m7ykg9s8gw23fn6h?svg=true)](https://ci.appveyor.com/project/jwittner/unitysetup-powershell)
@@ -16,18 +16,44 @@ PS C:\> Install-Module UnitySetup -Scope CurrentUser
 
 ## Using
 
+Find all of your Unity installs:
 ```powershell
 PS C:\> Get-UnitySetupInstance
+
+InstallationVersion InstallationPath
+------------------- ----------------
+2017.2.1f1          C:\Program Files\Unity-2017.2.1f1\Editor\
+2017.1.0p5          C:\Program Files\Unity.2017.1.0p5\Editor\
+2017.1.1f1          C:\Program Files\Unity.2017.1.1f1\Editor\
+2017.1.1p3          C:\Program Files\Unity.2017.1.1p3\Editor\
+2017.2.0f3          C:\Program Files\Unity.2017.2.0f3\Editor\
+2017.3.0f3          C:\Program Files\Unity.2017.3.0f3\Editor\
+5.5.4p3             C:\Program Files (x86)\Unity.5.5.4p3\Editor\
 ```
 
+Select the Unity installs that you want:
 ```powershell
 PS C:\> Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
 PS C:\> Get-UnitySetupInstance | Select-UnitySetupInstance -Version '2017.1.1f1'
 PS C:\> Get-UnitySetupInstance | Select-UnitySetupInstance -Project '.\MyUnityProject'
 ```
 
+Launch the right Unity editor for a project:
 ```powershell
 PS C:\MyUnityProject> Start-UnityEditor
+PS C:\> Start-UnityEditor -Project .\MyUnityProject
+```
+
+Find all the Unity projects recursively
+```powershell
+PS C:\Projects> Get-UnityProjectInstance -Recurse
+
+ProjectPath                                    UnityInstanceVersion
+-----------                                    --------------------
+C:\Projects\Project1\OneUnity\                 2017.2.0f3
+C:\Projects\Project1\TwoUnity\                 2017.3.0f3
+C:\Projects\Project2\                          2017.1.1p1
+C:\Projects\Project3\App.Unity\                2017.1.2f1
 ```
 
 # Feedback
