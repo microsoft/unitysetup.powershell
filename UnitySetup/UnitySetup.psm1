@@ -225,6 +225,8 @@ function Select-UnitySetupInstance
    Should the Unity Editor quit after it's done?
 .PARAMETER Wait
    Should the command wait for the Unity Editor to exit?
+.PARAMETER PassThru
+   Should the command return the process object? Default is nothing.
 .EXAMPLE
    Start-UnityEditor
 .EXAMPLE
@@ -251,7 +253,9 @@ function Start-UnityEditor
         [parameter(Mandatory = $false)]
         [switch] $Quit,
         [parameter(Mandatory = $false)]
-        [switch] $Wait
+        [switch] $Wait,
+        [parameter(Mandatory = $false)]
+        [switch] $PassThru
     )
 
     if( $Instance -eq $null )
@@ -276,43 +280,13 @@ function Start-UnityEditor
 
     $editor = Get-ChildItem "$unityPath" -Filter Unity.exe -Recurse | Select-Object -First 1 -ExpandProperty FullName
 
-    $args = @()
-    $args += "-projectPath"
-    $args += $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Project)
-
-    if( $ExecuteMethod )
-    {
-        $args += "-executeMethod"
-        $args += $ExecuteMethod
-    }
-
-    if( $OutputPath )
-    {
-        $args += "-buildOutput"
-        $args += $OutputPath
-    }
-
-    if( $LogFile )
-    {
-        $args += "-logFile"
-        $args += $LogFile
-    }
-
-    if( $BuildTarget )
-    {
-        $args += "-buildTarget"
-        $args += $BuildTarget
-    }
-
-    if( $BatchMode )
-    {
-        $args += "-batchmode"
-    }
-
-    if( $Quit )
-    {
-        $args += "-quit"
-    }
+    $args = "-projectPath", $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Project)
+    if( $ExecuteMethod ) { $args += "-executeMethod", $ExecuteMethod }
+    if( $OutputPath ) { $args += "-buildOutput", $OutputPath } 
+    if( $LogFile ) { $args += "-logFile", $LogFile } 
+    if( $BuildTarget ) { $args += "-buildTarget", $BuildTarget }
+    if( $BatchMode ) { $args += "-batchmode" }
+    if( $Quit ) { $args += "-quit" }
 
     Write-Host "$editor $args" -ForegroundColor Green
     $process = Start-Process -FilePath $editor -ArgumentList $args -PassThru -ErrorAction Stop
@@ -330,4 +304,6 @@ function Start-UnityEditor
             throw "Unity quit with non-zero exit code"
         }
     }
+
+    if( $PassThru ) { $process }
 }
