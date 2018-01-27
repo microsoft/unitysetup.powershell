@@ -114,7 +114,7 @@ PrivateData = @{
         # ReleaseNotes = ''
 
         # External dependent modules of this module
-        ExternalModuleDependencies = @('powershell-yaml')
+        # ExternalModuleDependencies = @()
 
     } # End of PSData hashtable
     
