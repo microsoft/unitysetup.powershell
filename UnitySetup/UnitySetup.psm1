@@ -360,8 +360,6 @@ function Get-UnitySetupInstance
    Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
 .EXAMPLE
    Get-UnitySetupInstance | Select-UnitySetupInstance -Version 2017.1.0f3
-.EXAMPLE
-   Get-UnitySetupInstance | Select-UnitySetupInstance -Project C:\MyUnityProject
 #>
 function Select-UnitySetupInstance
 {
@@ -373,50 +371,28 @@ function Select-UnitySetupInstance
         [parameter(Mandatory=$false)]
         [UnityVersion] $Version,
 
-        [parameter(Mandatory=$false)]
-        [string] $Project,
-
         [parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [UnitySetupInstance[]] $instances
+        [UnitySetupInstance[]] $Instances
     )
-
-    begin 
-    {
-        if( $Project )
-        {
-            $Version = Get-UnityProjectInstance -BasePath $Project | 
-                Select-Object -First 1 -ExpandProperty Version
-        }
-    }
+    
     process
     {
         if( $Version )
         { 
-            $instances = $instances | Where-Object { [UnityVersion]::Compare($_.Version, $Version) -eq 0 }
+            $Instances = $Instances | Where-Object { [UnityVersion]::Compare($_.Version, $Version) -eq 0 }
         }
 
-        foreach( $i in $instances ) 
-        { 
-            if( $Latest )
-            {
-                if( $latestInstance )
-                {
-                    $iVersion = [UnityVersion]::new($i.Version)
-                    $lVersion = [UnityVersion]::new($latestInstance.Version)
-                    
-                    if([UnityVersion]::Compare($iVersion, $lVersion) -lt 0)
-                    {
-                        continue
-                    }
-                }
-                
-                $latestInstance = $i
+        if( $Latest )
+        {
+            foreach( $i in $Instances ) 
+            { 
+                if( $null -eq $latestInstance -or [UnityVersion]::Compare($i.Version, $latestInstance.Version) -gt 0)
+                {   
+                    $latestInstance = $i
+                } 
             }
-            else
-            {
-                $i
-            } 
         }
+        else { $Instances }
     }
     end
     {
