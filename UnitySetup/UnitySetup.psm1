@@ -497,8 +497,8 @@ function Start-UnityEditor
     [CmdletBinding(DefaultParameterSetName="Context")]
     param(
         [parameter(Mandatory=$false, ValueFromPipeline = $true, ParameterSetName='Projects')]
-        [parameter(Mandatory=$true, ParameterSetName='ProjectsLatest')]
-        [parameter(Mandatory=$true, ParameterSetName='ProjectsVersion')]
+        [parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName='ProjectsLatest')]
+        [parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName='ProjectsVersion')]
         [ValidateNotNullOrEmpty()]
         [UnityProjectInstance[]] $Project,
         [parameter(Mandatory=$false, ValueFromPipeline = $true, ParameterSetName='Setups')]
