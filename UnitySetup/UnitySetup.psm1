@@ -1,5 +1,7 @@
 ﻿# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
+Import-Module powershell-yaml -Force -ErrorAction Stop
+
 class UnitySetupInstaller
 {
     [UnitySetupComponentType] $ComponentType
