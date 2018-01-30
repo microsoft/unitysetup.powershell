@@ -395,7 +395,7 @@ function Select-UnitySetupInstance
                 } 
             }
         }
-        else { $Instances }
+        elseif( $Instances.Count -gt 0 ) { $Instances }
     }
     end
     {
@@ -548,7 +548,7 @@ function Start-UnityEditor
                 else
                 {
                     $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
-                    if($null -ne $setupInstance)
+                    if($setupInstance.Count -gt 0)
                     {
                         $setupInstances += ,$setupInstance
                     }
@@ -576,7 +576,7 @@ function Start-UnityEditor
                 elseif( $Latest )
                 {
                     $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
-                    if($null -ne $setupInstance)
+                    if($setupInstance.Count -gt 0)
                     {
                         $setupInstances = ,$setupInstance
                     }
@@ -594,7 +594,7 @@ function Start-UnityEditor
                 elseif($null -ne $Version)
                 {
                     $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $Version
-                    if($null -ne $setupInstance)
+                    if($setupInstance.Count -gt 0)
                     {
                         $setupInstances = ,$setupInstance
                     }
@@ -612,26 +612,25 @@ function Start-UnityEditor
 
         $instanceArgs = @()
         foreach( $p in $projectInstances ) { 
-            $projectVersion = $p.Version
             
             if( $Latest ) {
                 $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
-                if($null -eq $setupInstance) {
+                if($setupInstance.Count -eq 0) {
                     Write-Error "Could not find any Unity Editor installed"
                     continue
                 }
             }
             elseif($null -ne $Version) {
                 $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $Version
-                if ($null -eq $setupInstance) {
+                if ($setupInstance.Count -eq 0) {
                     Write-Error "Could not find Unity Editor for version $Version"
                     continue
                 }
             }
             else {   
-                $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $projectVersion
-                if($null -eq $setupInstance) {
-                    Write-Error "Could not find Unity Editor for version $projectVersion"
+                $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $p.Version
+                if($setupInstance.Count -eq 0) {
+                    Write-Error "Could not find Unity Editor for version $($p.Version)"
                     continue
                 }
             }
