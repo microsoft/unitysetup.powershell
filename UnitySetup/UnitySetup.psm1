@@ -94,6 +94,9 @@ class UnityVersion
         if($a.Build -lt $b.Build) { return -1 }
         if($a.Build -gt $b.Build) { return 1 }
 
+        if($a.Suffix -lt $b.Suffix) { return -1 }
+        if($a.Suffix -gt $b.Suffix) { return 1 }
+
         return 0
     }
 }
