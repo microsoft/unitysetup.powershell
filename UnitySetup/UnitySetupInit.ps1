@@ -17,5 +17,3 @@
     Windows_IL2CPP = (1 -shl 14)
     All = (-1)
 }
-
-Import-Module powershell-yaml -Force -ErrorAction Stop
