@@ -12,6 +12,8 @@ install:
 - ps: >-
     Install-PackageProvider -Name NuGet -Force | Out-Null
 
+    Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber
+
     Install-Module 'powershell-yaml' -Scope CurrentUser -Force -AllowClobber
 build_script:
 - ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER" -Suffix "$env:APPVEYOR_REPO_BRANCH"
