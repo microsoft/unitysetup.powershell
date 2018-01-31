@@ -12,6 +12,8 @@ install:
 - ps: >-
     Install-PackageProvider -Name NuGet -Force | Out-Null
 
+    Remove-Module 'PowerShellGet' -Force -ErrorAction SilentlyContinue
+
     Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber
 
     Install-Module 'powershell-yaml' -Scope CurrentUser -Force -AllowClobber
