@@ -1,7 +1,21 @@
-param([int]$Revision = 0)
-$currentVersion = Test-ModuleManifest -ErrorAction Stop .\UnitySetup\UnitySetup.psd1 | Select-Object -ExpandProperty Version
-Write-Host "Current Module Version: $currentVersion"
-$newVersion = New-Object System.Version($currentVersion.Major, $currentVersion.Minor, $Revision)
+param([int]$Revision = 0, [string]$Suffix = '')
+Import-Module 'PowerShellGet' -Force
 
-Write-Host "New Module Version:$newVersion"
-Update-ModuleManifest -ErrorAction Stop -ModuleVersion $newVersion -Path .\UnitySetup\UnitySetup.psd1
+$ErrorActionPreference = 'Stop'
+
+$manifest = Test-ModuleManifest .\UnitySetup\UnitySetup.psd1
+$versionString =  $manifest.Version.ToString()
+if($manifest.PrivateData['PSData']['Prerelease']) { 
+    $versionString += "-$($manifest.PrivateData['PSData']['Prerelease'])"
+}
+Write-Host "Current Module Version: $versionString"
+
+$newVersion = New-Object System.Version($manifest.Version.Major, $manifest.Version.Minor, $Revision)
+Update-ModuleManifest -ModuleVersion $newVersion -Prerelease $Suffix -Path .\UnitySetup\UnitySetup.psd1
+
+$manifest = Test-ModuleManifest .\UnitySetup\UnitySetup.psd1
+$versionString =  $manifest.Version.ToString()
+if($manifest.PrivateData['PSData']['Prerelease']) { 
+    $versionString += "-$($manifest.PrivateData['PSData']['Prerelease'])"
+}
+Write-Host "New Module Version: $versionString"
