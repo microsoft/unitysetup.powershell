@@ -4,6 +4,7 @@ pull_requests:
 branches:
   only:
   - master
+  - develop
 environment:
   NugetAPIKey:
     secure: zvkaZiaBXVko+3ZzuSb7W6DTUJmHX98XgEhKs28SnGD+4TM3gzhPxVnNWSmBhXEx
@@ -13,6 +14,14 @@ install:
 
     Install-Module 'powershell-yaml' -Scope CurrentUser -Force -AllowClobber
 build_script:
-- ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER"
+- ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER" -Suffix "$env:APPVEYOR_REPO_BRANCH"
 deploy_script:
 - ps: Publish-Module -Path .\UnitySetup -NugetAPIKey $env:NugetAPIKey
+for:
+-
+  branches:
+    only:
+    - master
+  build_script:
+  - ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER"
+
