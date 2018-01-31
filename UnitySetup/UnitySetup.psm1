@@ -228,6 +228,7 @@ function Find-UnitySetupInstaller
 function Install-UnitySetupInstance
 {
     [CmdletBinding()]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope='Function')]
     param(
        [parameter(ValueFromPipeline=$true)]
        [UnitySetupInstaller[]] $Installers,
