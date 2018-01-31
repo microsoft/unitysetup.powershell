@@ -10,13 +10,13 @@ environment:
     secure: zvkaZiaBXVko+3ZzuSb7W6DTUJmHX98XgEhKs28SnGD+4TM3gzhPxVnNWSmBhXEx
 install:
 - ps: >-
-    Install-PackageProvider -Name NuGet -Force | Out-Null
+    Install-PackageProvider -Name NuGet -Force
 
-    Remove-Module 'PowerShellGet' -Force -ErrorAction SilentlyContinue
+    Remove-Module 'PowerShellGet' -Force -ErrorAction SilentlyContinue -Verbose
 
-    Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber
+    Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber -Verbose
 
-    Install-Module 'powershell-yaml' -Scope CurrentUser -Force -AllowClobber
+    Install-Module 'powershell-yaml' -Scope CurrentUser -Force -AllowClobber -Verbose
 build_script:
 - ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER" -Suffix "$env:APPVEYOR_REPO_BRANCH"
 deploy_script:

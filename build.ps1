@@ -1,4 +1,6 @@
 param([int]$Revision = 0, [string]$Suffix = '')
+Import-Module 'PowerShellGet' -Force
+
 $ErrorActionPreference = 'Stop'
 
 $manifest = Test-ModuleManifest .\UnitySetup\UnitySetup.psd1
