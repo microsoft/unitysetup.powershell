@@ -497,7 +497,7 @@ function Get-UnityProjectInstance
 #>
 function Start-UnityEditor
 {
-    [CmdletBinding(DefaultParameterSetName="Context")]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName="Context")]
     param(
         [parameter(Mandatory=$false, ValueFromPipeline = $true, ParameterSetName='Projects')]
         [parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName='ProjectsLatest')]
@@ -666,7 +666,11 @@ function Start-UnityEditor
                 $setProcessArgs['ArgumentList'] = $unityArgs
             }
 
-            Write-Verbose "Starting $editor $unityArgs"
+            if(-not $PSCmdlet.ShouldProcess("$editor $unityArgs", "Start-Process"))
+            {
+                continue
+            }
+
             $process = Start-Process @setProcessArgs
             if( $Wait )
             {
