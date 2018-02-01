@@ -20,7 +20,12 @@ install:
 build_script:
 - ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER" -Suffix "$env:APPVEYOR_REPO_BRANCH"
 deploy_script:
-- ps: Publish-Module -Path .\UnitySetup -NugetAPIKey $env:NugetAPIKey
+- ps: >-
+    Get-Command 'Publish-Module'
+    
+    Get-Command 'Find-Script'
+    
+    Publish-Module -Path .\UnitySetup -NugetAPIKey $env:NugetAPIKey
 for:
 -
   branches:
