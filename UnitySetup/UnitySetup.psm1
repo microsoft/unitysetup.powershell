@@ -258,7 +258,11 @@ function Install-UnitySetupInstance
        [string]$Destination,
 
        [parameter(Mandatory=$false)]
-       [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup")
+       [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup"),
+
+       [parameter(Mandatory=$false)]
+       [ValidateSet('Open','RunAs')]
+       [string]$Verb
     )
 
     process
@@ -321,10 +325,19 @@ function Install-UnitySetupInstance
             $installer = $localInstallers[$i]
             $destination = $localDestinations[$i]
 
-            $args = @("/S", "/D=$($localDestinations[$i])")
+            $startProcessArgs = @{
+                'FilePath' = $installer;
+                'ArgumentList' = @("/S", "/D=$($localDestinations[$i])");
+                'PassThru' = $true;
+            }
+
+            if($Verb)
+            {
+                $startProcessArgs['Verb'] = $Verb
+            }
             
             $spinnerIndex = 0
-            $process = Start-Process -FilePath $installer -ArgumentList $args -PassThru
+            $process = Start-Process @startProcessArgs
             while(!$process.HasExited)
             {
                 Write-Host "`rInstalling $installer to $destination - $($spins[$spinnerIndex++ % $spins.Length])" -NoNewline
