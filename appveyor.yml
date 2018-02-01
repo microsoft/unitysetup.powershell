@@ -10,7 +10,7 @@ environment:
     secure: zvkaZiaBXVko+3ZzuSb7W6DTUJmHX98XgEhKs28SnGD+4TM3gzhPxVnNWSmBhXEx
 install:
 - ps: >-
-    $ErrorActionPreference = Stop
+    $ErrorActionPreference = 'Stop'
 
     Install-PackageProvider -Name NuGet -Force
 
