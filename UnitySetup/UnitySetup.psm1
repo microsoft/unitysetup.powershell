@@ -2,6 +2,27 @@
 # Licensed under the MIT License.
 Import-Module powershell-yaml -Force -ErrorAction Stop
 
+[Flags()] 
+enum UnitySetupComponentType
+{
+    Setup = (1 -shl 0)
+    Documentation = (1 -shl 1)
+    StandardAssets = (1 -shl 2)
+    ExampleProject = (1 -shl 3)
+    Metro = (1 -shl 4)
+    UWP_IL2CPP = (1 -shl 5)
+    Android = (1 -shl 6)
+    iOS = (1 -shl 7)
+    AppleTV = (1 -shl 8)
+    Facebook = (1 -shl 9)
+    Linux = (1 -shl 10)
+    Mac = (1 -shl 11)
+    Vuforia = (1 -shl 12)
+    WebGL = (1 -shl 13)
+    Windows_IL2CPP = (1 -shl 14)
+    All = (-1)
+}
+
 class UnitySetupInstaller
 {
     [UnitySetupComponentType] $ComponentType
@@ -228,6 +249,7 @@ function Find-UnitySetupInstaller
 function Install-UnitySetupInstance
 {
     [CmdletBinding()]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope='Function')]
     param(
        [parameter(ValueFromPipeline=$true)]
        [UnitySetupInstaller[]] $Installers,
@@ -236,7 +258,11 @@ function Install-UnitySetupInstance
        [string]$Destination,
 
        [parameter(Mandatory=$false)]
-       [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup")
+       [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup"),
+
+       [parameter(Mandatory=$false)]
+       [ValidateSet('Open','RunAs')]
+       [string]$Verb
     )
 
     process
@@ -299,10 +325,19 @@ function Install-UnitySetupInstance
             $installer = $localInstallers[$i]
             $destination = $localDestinations[$i]
 
-            $args = @("/S", "/D=$($localDestinations[$i])")
+            $startProcessArgs = @{
+                'FilePath' = $installer;
+                'ArgumentList' = @("/S", "/D=$($localDestinations[$i])");
+                'PassThru' = $true;
+            }
+
+            if($Verb)
+            {
+                $startProcessArgs['Verb'] = $Verb
+            }
             
             $spinnerIndex = 0
-            $process = Start-Process -FilePath $installer -ArgumentList $args -PassThru
+            $process = Start-Process @startProcessArgs
             while(!$process.HasExited)
             {
                 Write-Host "`rInstalling $installer to $destination - $($spins[$spinnerIndex++ % $spins.Length])" -NoNewline
@@ -496,7 +531,7 @@ function Get-UnityProjectInstance
 #>
 function Start-UnityEditor
 {
-    [CmdletBinding(DefaultParameterSetName="Context")]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName="Context")]
     param(
         [parameter(Mandatory=$false, ValueFromPipeline = $true, ParameterSetName='Projects')]
         [parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName='ProjectsLatest')]
@@ -665,7 +700,11 @@ function Start-UnityEditor
                 $setProcessArgs['ArgumentList'] = $unityArgs
             }
 
-            Write-Verbose "Starting $editor $unityArgs"
+            if(-not $PSCmdlet.ShouldProcess("$editor $unityArgs", "Start-Process"))
+            {
+                continue
+            }
+
             $process = Start-Process @setProcessArgs
             if( $Wait )
             {
