@@ -714,9 +714,9 @@ function Start-UnityEditor
                 $process.WaitForExit();
                 if( $process.ExitCode -ne 0 )
                 {
-                    if( $LogFile )
+                    if( $LogFile -and (Test-Path $LogFile -Type Leaf) )
                     {
-                        Get-Content $LogFile | Write-Information
+                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
 
                     Write-Error "Unity quit with non-zero exit code"
