@@ -695,7 +695,9 @@ function Start-UnityEditor
                 continue
             }
             
-            $unityArgs = $sharedArgs + $instanceArgs[$i]
+            # clone the shared args list
+            $unityArgs = $sharedArgs | ForEach-Object { $_ }
+            if( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
             $setProcessArgs = @{
                 'FilePath' = $editor;
                 'PassThru' = $true;
