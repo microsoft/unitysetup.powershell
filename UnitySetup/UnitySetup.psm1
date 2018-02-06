@@ -554,6 +554,8 @@ function Start-UnityEditor
         [parameter(Mandatory=$false)]
         [string]$ExecuteMethod,
         [parameter(Mandatory=$false)]
+        [string[]]$ExportPackage,
+        [parameter(Mandatory=$false)]
         [string]$OutputPath,
         [parameter(Mandatory=$false)]
         [string]$LogFile,
@@ -646,6 +648,7 @@ function Start-UnityEditor
         if( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if( $BatchMode ) { $sharedArgs += "-batchmode" }
         if( $Quit ) { $sharedArgs += "-quit" }
+        if( $ExportPackage ) { $sharedArgs += "-exportPackage","$ExportPackage" }
 
         $instanceArgs = @()
         foreach( $p in $projectInstances ) { 
@@ -711,9 +714,9 @@ function Start-UnityEditor
                 $process.WaitForExit();
                 if( $process.ExitCode -ne 0 )
                 {
-                    if( $LogFile )
+                    if( $LogFile -and (Test-Path $LogFile -Type Leaf) )
                     {
-                        Get-Content $LogFile | Write-Information
+                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
 
                     Write-Error "Unity quit with non-zero exit code"
