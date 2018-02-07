@@ -556,6 +556,8 @@ function Start-UnityEditor
         [parameter(Mandatory=$false)]
         [string[]]$ExportPackage,
         [parameter(Mandatory=$false)]
+        [string]$CreateProject,
+        [parameter(Mandatory=$false)]
         [string]$OutputPath,
         [parameter(Mandatory=$false)]
         [string]$LogFile,
@@ -642,6 +644,7 @@ function Start-UnityEditor
         }
 
         $sharedArgs = @()
+        if( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
         if( $ExecuteMethod ) { $sharedArgs += "-executeMethod",  $ExecuteMethod }
         if( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
         if( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
@@ -692,7 +695,9 @@ function Start-UnityEditor
                 continue
             }
             
-            $unityArgs = $sharedArgs + $instanceArgs[$i]
+            # clone the shared args list
+            $unityArgs = $sharedArgs | ForEach-Object { $_ }
+            if( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
             $setProcessArgs = @{
                 'FilePath' = $editor;
                 'PassThru' = $true;
