@@ -69,7 +69,7 @@ class UnityProjectInstance
     }
 }
 
-class UnityVersion
+class UnityVersion : System.IComparable
 {
     [int] $Major;
     [int] $Minor;
@@ -98,6 +98,14 @@ class UnityVersion
         if($parts.Length -gt 1) {
             $this.Suffix = $parts[1];
         }
+    }
+
+    [int] CompareTo([object]$obj)
+    {
+        if($null -eq $obj) { return 1 }
+        if($obj -isnot [UnityVersion]) { throw "Object is not a UnityVersion"}
+        
+        return [UnityVersion]::Compare($this, $obj)
     }
 
     static [int] Compare([UnityVersion]$a, [UnityVersion]$b)
