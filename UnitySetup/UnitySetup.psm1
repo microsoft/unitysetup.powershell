@@ -367,6 +367,51 @@ function Install-UnitySetupInstance
 
 <#
 .Synopsis
+   Uninstall Unity Setup Instances
+.DESCRIPTION
+   Uninstall the specified Unity Setup Instances 
+.PARAMETER Instance
+   What instances of UnitySetup should be uninstalled
+.EXAMPLE
+   Get-UnitySetupInstance | Uninstall-UnitySetupInstance
+#>
+function Uninstall-UnitySetupInstance {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [UnitySetupInstance[]] $Instances
+    )
+
+    process {
+        foreach ( $setupInstance in $Instances ) {
+            $uninstaller = Get-ChildItem "$($setupInstance.Path)" -Filter 'Uninstall.exe' -Recurse |
+                Select-Object -First 1 -ExpandProperty FullName
+
+            if($null -eq $uninstaller) { 
+                Write-Error "Could not find Uninstaller.exe under $($setupInstance.Path)"
+                continue
+            }
+
+            $startProcessArgs = @{
+                'FilePath' = $uninstaller;
+                'PassThru' = $true;
+                'Wait' = $true;
+                'ErrorAction' = 'Stop';
+                'ArgumentList' = @("/S");
+            }
+
+            if( -not $PSCmdlet.ShouldProcess("$uninstaller", "Start-Process")) { continue }
+
+            $process = Start-Process @startProcessArgs
+            if ( $process.ExitCode -ne 0 ) {
+                Write-Error "Uninstaller quit with non-zero exit code"
+            }
+        }
+    }
+}
+
+<#
+.Synopsis
    Get the Unity versions installed
 .DESCRIPTION
    Get the Unity versions installed and their locations
