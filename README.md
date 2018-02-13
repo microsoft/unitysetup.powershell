@@ -3,10 +3,16 @@
 This PowerShell module contains tools for managing and automating your Unity installs and projects.
 
 ## Builds
-[![Build status](https://ci.appveyor.com/api/projects/status/m7ykg9s8gw23fn6h?svg=true)](https://ci.appveyor.com/project/jwittner/unitysetup-powershell)
+
+### Master
+[![Build status](https://ci.appveyor.com/api/projects/status/m7ykg9s8gw23fn6h/branch/master?svg=true)](https://ci.appveyor.com/project/jwittner/unitysetup-powershell/branch/master)
 
 The `master` branch is automatically built and deployed to the [PowerShell Gallery](https://www.powershellgallery.com/packages/UnitySetup).
 
+### Develop
+[![Build status](https://ci.appveyor.com/api/projects/status/m7ykg9s8gw23fn6h/branch/develop?svg=true)](https://ci.appveyor.com/project/jwittner/unitysetup-powershell/branch/develop)
+
+The `develop` branch is automatically built and deployed as a prerelease module to the [PowerShell Gallery](https://www.powershellgallery.com/packages/UnitySetup).
 
 ## Installation
 
