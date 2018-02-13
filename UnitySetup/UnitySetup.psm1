@@ -190,10 +190,15 @@ function Find-UnitySetupInstaller
         'f' { $searchPages += "https://unity3d.com/get-unity/download/archive" }
         'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
         'p' {
-            $webResult = Invoke-WebRequest "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
-            $searchPages += $webResult.Links | Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" } | ForEach-Object {
-                "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
-            }
+                $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
+                $searchPages += $patchPage
+
+                $webResult = Invoke-WebRequest $patchPage
+                $searchPages += $webResult.Links | Where-Object { 
+                    $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" -and $Matches[1] -gt 1
+                } | ForEach-Object {
+                    "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
+                }
         }
     }
 
@@ -204,7 +209,7 @@ function Find-UnitySetupInstaller
             $_ -match "$($installerTemplates[[UnitySetupComponentType]::Setup])$" 
         }
 
-        if($null -eq $prototypeLink) { break }
+        if($null -ne $prototypeLink) { break }
     }
   
     if($null -eq $prototypeLink)
