@@ -157,22 +157,30 @@ function Find-UnitySetupInstaller
         [UnitySetupComponentType] $Components = [UnitySetupComponentType]::All
     )
 
+    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+    $knownBaseUrls = @(
+        "https://download.unity3d.com/download_unity",
+        "https://netstorage.unity3d.com/unity",
+        "https://beta.unity3d.com/download"
+    )
+
     $installerTemplates = @{
-        [UnitySetupComponentType]::Setup = "Windows64EditorInstaller/UnitySetup64-$Version.exe";
-        [UnitySetupComponentType]::Documentation = "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
-        [UnitySetupComponentType]::StandardAssets = "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponentType]::ExampleProject = "WindowsExampleProjectInstaller/UnityExampleProjectSetup-$Version.exe";
-        [UnitySetupComponentType]::Metro = "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::UWP_IL2CPP = "TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Android = "TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::iOS = "TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::AppleTV = "TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Facebook = "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Linux = "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Vuforia = "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::WebGL = "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Windows_IL2CPP = "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Setup = ,"Windows64EditorInstaller/UnitySetup64-$Version.exe";
+        [UnitySetupComponentType]::Documentation = ,"WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
+        [UnitySetupComponentType]::StandardAssets = ,"WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
+        [UnitySetupComponentType]::ExampleProject = ,"WindowsExampleProjectInstaller/UnityExampleProjectSetup-$Version.exe";
+        [UnitySetupComponentType]::Metro = ,"TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::UWP_IL2CPP = ,"TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Android = ,"TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::iOS = ,"TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::AppleTV = ,"TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Facebook = ,"TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Linux = ,"TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
+                                        "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Vuforia = ,"TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::WebGL = ,"TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
+        [UnitySetupComponentType]::Windows_IL2CPP = ,"TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
     }
 
     # By default Tls12 protocol is not enabled, but is what backs Unity's website, so enable it
@@ -217,30 +225,46 @@ function Find-UnitySetupInstaller
         throw "Could not find archives for Unity version $Version"
     }
 
-    $prototypeLink = $prototypeLink.Replace("$($installerTemplates[[UnitySetupComponentType]::Setup])", '')
+    $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
+
+    if($knownBaseUrls -notcontains $linkComponents[0]) {
+        $knownBaseUrls = $linkComponents[0], $knownBaseUrls
+    }
+    else {
+        $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression={[math]::Abs(($_.CompareTo($linkComponents[0])))}; Ascending=$true}
+    }
 
     $installerTemplates.Keys | 
         Where-Object { $Components -band $_ } | 
         ForEach-Object {
-            $template = $installerTemplates.Item($_);
-            $endpoint = [System.IO.Path]::Combine($prototypeLink, $template);
-            try
-            {
-                $testResult = Invoke-WebRequest $endpoint -Method HEAD
-                New-Object UnitySetupInstaller -Property @{
-                    'ComponentType' = $_;
-                    'Version' = $Version;
-                    'DownloadUrl' = $endpoint;
-                    'Length' = [int64]$testResult.Headers['Content-Length'];
-                    'LastModified' = ([System.DateTime]$testResult.Headers['Last-Modified']);
+            $templates = $installerTemplates.Item($_);
+            $result = $null
+            foreach ($template in $templates ) {
+                foreach ( $baseUrl in $knownBaseUrls) {
+                    $endpoint = [uri][System.IO.Path]::Combine($baseUrl, $linkComponents[1], $template);
+                    try {
+                        $testResult = Invoke-WebRequest $endpoint -Method HEAD
+                        $result = New-Object UnitySetupInstaller -Property @{
+                            'ComponentType' = $_;
+                            'Version' = $Version;
+                            'DownloadUrl' = $endpoint;
+                            'Length' = [int64]$testResult.Headers['Content-Length'];
+                            'LastModified' = ([System.DateTime]$testResult.Headers['Last-Modified']);
+                        }
+
+                        break
+                    }
+                    catch {
+                        Write-Verbose "$endpoint failed: $_"
+                    }
+                }
+
+                if( $result ) {
+                    $result
+                    break
                 }
             }
-            catch 
-            {
-                Write-Verbose "$endpoint failed: $_"
-            }
-        } | 
-        Sort-Object -Property ComponentType
+        } | Sort-Object -Property ComponentType
 }
 
 <#
