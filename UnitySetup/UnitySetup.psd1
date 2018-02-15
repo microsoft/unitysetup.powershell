@@ -14,7 +14,7 @@
 RootModule = 'UnitySetup'
 
 # Version number of this module.
-ModuleVersion = '2.1'
+ModuleVersion = '2.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -79,6 +79,7 @@ FunctionsToExport = @(
     'Get-UnitySetupInstance',
     'Install-UnitySetupInstance',
     'Select-UnitySetupInstance',
+    'Uninstall-UnitySetupInstance',
     'Start-UnityEditor'
 )
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

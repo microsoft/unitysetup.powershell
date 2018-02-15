@@ -69,7 +69,7 @@ class UnityProjectInstance
     }
 }
 
-class UnityVersion
+class UnityVersion : System.IComparable
 {
     [int] $Major;
     [int] $Minor;
@@ -98,6 +98,14 @@ class UnityVersion
         if($parts.Length -gt 1) {
             $this.Suffix = $parts[1];
         }
+    }
+
+    [int] CompareTo([object]$obj)
+    {
+        if($null -eq $obj) { return 1 }
+        if($obj -isnot [UnityVersion]) { throw "Object is not a UnityVersion"}
+        
+        return [UnityVersion]::Compare($this, $obj)
     }
 
     static [int] Compare([UnityVersion]$a, [UnityVersion]$b)
@@ -182,10 +190,15 @@ function Find-UnitySetupInstaller
         'f' { $searchPages += "https://unity3d.com/get-unity/download/archive" }
         'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
         'p' {
-            $webResult = Invoke-WebRequest "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
-            $searchPages += $webResult.Links | Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" } | ForEach-Object {
-                "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
-            }
+                $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
+                $searchPages += $patchPage
+
+                $webResult = Invoke-WebRequest $patchPage
+                $searchPages += $webResult.Links | Where-Object { 
+                    $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" -and $Matches[1] -gt 1
+                } | ForEach-Object {
+                    "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
+                }
         }
     }
 
@@ -196,7 +209,7 @@ function Find-UnitySetupInstaller
             $_ -match "$($installerTemplates[[UnitySetupComponentType]::Setup])$" 
         }
 
-        if($null -eq $prototypeLink) { break }
+        if($null -ne $prototypeLink) { break }
     }
   
     if($null -eq $prototypeLink)
@@ -352,6 +365,51 @@ function Install-UnitySetupInstance
             else
             { 
                 Write-Host "`bSucceeded."
+            }
+        }
+    }
+}
+
+<#
+.Synopsis
+   Uninstall Unity Setup Instances
+.DESCRIPTION
+   Uninstall the specified Unity Setup Instances 
+.PARAMETER Instance
+   What instances of UnitySetup should be uninstalled
+.EXAMPLE
+   Get-UnitySetupInstance | Uninstall-UnitySetupInstance
+#>
+function Uninstall-UnitySetupInstance {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [UnitySetupInstance[]] $Instances
+    )
+
+    process {
+        foreach ( $setupInstance in $Instances ) {
+            $uninstaller = Get-ChildItem "$($setupInstance.Path)" -Filter 'Uninstall.exe' -Recurse |
+                Select-Object -First 1 -ExpandProperty FullName
+
+            if($null -eq $uninstaller) { 
+                Write-Error "Could not find Uninstaller.exe under $($setupInstance.Path)"
+                continue
+            }
+
+            $startProcessArgs = @{
+                'FilePath' = $uninstaller;
+                'PassThru' = $true;
+                'Wait' = $true;
+                'ErrorAction' = 'Stop';
+                'ArgumentList' = @("/S");
+            }
+
+            if( -not $PSCmdlet.ShouldProcess("$uninstaller", "Start-Process")) { continue }
+
+            $process = Start-Process @startProcessArgs
+            if ( $process.ExitCode -ne 0 ) {
+                Write-Error "Uninstaller quit with non-zero exit code"
             }
         }
     }
@@ -554,6 +612,10 @@ function Start-UnityEditor
         [parameter(Mandatory=$false)]
         [string]$ExecuteMethod,
         [parameter(Mandatory=$false)]
+        [string[]]$ExportPackage,
+        [parameter(Mandatory=$false)]
+        [string]$CreateProject,
+        [parameter(Mandatory=$false)]
         [string]$OutputPath,
         [parameter(Mandatory=$false)]
         [string]$LogFile,
@@ -640,12 +702,14 @@ function Start-UnityEditor
         }
 
         $sharedArgs = @()
+        if( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
         if( $ExecuteMethod ) { $sharedArgs += "-executeMethod",  $ExecuteMethod }
         if( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
         if( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
         if( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if( $BatchMode ) { $sharedArgs += "-batchmode" }
         if( $Quit ) { $sharedArgs += "-quit" }
+        if( $ExportPackage ) { $sharedArgs += "-exportPackage","$ExportPackage" }
 
         $instanceArgs = @()
         foreach( $p in $projectInstances ) { 
@@ -689,7 +753,9 @@ function Start-UnityEditor
                 continue
             }
             
-            $unityArgs = $sharedArgs + $instanceArgs[$i]
+            # clone the shared args list
+            $unityArgs = $sharedArgs | ForEach-Object { $_ }
+            if( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
             $setProcessArgs = @{
                 'FilePath' = $editor;
                 'PassThru' = $true;
@@ -711,9 +777,9 @@ function Start-UnityEditor
                 $process.WaitForExit();
                 if( $process.ExitCode -ne 0 )
                 {
-                    if( $LogFile )
+                    if( $LogFile -and (Test-Path $LogFile -Type Leaf) )
                     {
-                        Get-Content $LogFile | Write-Information
+                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
 
                     Write-Error "Unity quit with non-zero exit code"
