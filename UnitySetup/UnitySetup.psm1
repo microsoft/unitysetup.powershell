@@ -614,6 +614,8 @@ function Start-UnityEditor
         [parameter(Mandatory=$false)]
         [string[]]$ExportPackage,
         [parameter(Mandatory=$false)]
+        [string]$ImportPackage,
+        [parameter(Mandatory=$false)]
         [string]$CreateProject,
         [parameter(Mandatory=$false)]
         [string]$OutputPath,
@@ -710,6 +712,7 @@ function Start-UnityEditor
         if( $BatchMode ) { $sharedArgs += "-batchmode" }
         if( $Quit ) { $sharedArgs += "-quit" }
         if( $ExportPackage ) { $sharedArgs += "-exportPackage","$ExportPackage" }
+        if( $ImportPackage ) { $sharedArgs += "-importPackage","$ImportPackage" }
 
         $instanceArgs = @()
         foreach( $p in $projectInstances ) { 
