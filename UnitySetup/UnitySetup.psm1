@@ -201,7 +201,7 @@ function Find-UnitySetupInstaller
                 $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
                 $searchPages += $patchPage
 
-                $webResult = Invoke-WebRequest $patchPage
+                $webResult = Invoke-WebRequest $patchPage -UseBasicParsing 
                 $searchPages += $webResult.Links | Where-Object { 
                     $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" -and $Matches[1] -gt 1
                 } | ForEach-Object {
@@ -212,8 +212,8 @@ function Find-UnitySetupInstaller
 
     foreach($page in $searchPages)
     {
-        $webResult = Invoke-WebRequest $page
-        $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href | Where-Object { 
+        $webResult = Invoke-WebRequest $page -UseBasicParsing
+        $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object { 
             $_ -match "$($installerTemplates[[UnitySetupComponentType]::Setup])$" 
         }
 
@@ -243,7 +243,7 @@ function Find-UnitySetupInstaller
                 foreach ( $baseUrl in $knownBaseUrls) {
                     $endpoint = [uri][System.IO.Path]::Combine($baseUrl, $linkComponents[1], $template);
                     try {
-                        $testResult = Invoke-WebRequest $endpoint -Method HEAD
+                        $testResult = Invoke-WebRequest $endpoint -Method HEAD -UseBasicParsing
                         $result = New-Object UnitySetupInstaller -Property @{
                             'ComponentType' = $_;
                             'Version' = $Version;
