@@ -140,11 +140,11 @@ class UnityVersion : System.IComparable
 .PARAMETER Version
    What version of Unity are you looking for?
 .PARAMETER Components
-   What components would you like to search for? Defaults to [UnitySetupComponentType]::All
+   What components would you like to search for? Defaults to All
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3
 .EXAMPLE
-   Find-UnitySetupInstaller -Version 2017.3.0f3 -Components ([UnitySetupComponentType]::Setup, [UnitySetupComponentType]::Documentation) 
+   Find-UnitySetupInstaller -Version 2017.3.0f3 -Components Setup,Documentation 
 #>
 function Find-UnitySetupInstaller
 {
