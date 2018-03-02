@@ -27,15 +27,19 @@ Find all of your Unity installs:
 Get-UnitySetupInstance
 
 # Example output:
-# InstallationVersion InstallationPath
-# ------------------- ----------------
-# 2017.2.1f1          C:\Program Files\Unity-2017.2.1f1\Editor\
-# 2017.1.0p5          C:\Program Files\Unity.2017.1.0p5\Editor\
-# 2017.1.1f1          C:\Program Files\Unity.2017.1.1f1\Editor\
-# 2017.1.1p3          C:\Program Files\Unity.2017.1.1p3\Editor\
-# 2017.2.0f3          C:\Program Files\Unity.2017.2.0f3\Editor\
-# 2017.3.0f3          C:\Program Files\Unity.2017.3.0f3\Editor\
-# 5.5.4p3             C:\Program Files (x86)\Unity.5.5.4p3\Editor\
+# Version                                        Components Path
+# -------                                        ---------- ----
+# 2017.1.2f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\Editor\
+# 2017.1.3f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\Editor\
+# 2017.2.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\Editor\
+# 2017.3.1f1       Setup, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\Editor\
+# 2018.1.0b4              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\Editor\
+# 2018.1.0b8                                            All C:\Program Files\Unity-2018.1.0b8\Editor\
+# 2017.1.0p5                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\Editor\
+# 2017.1.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\Editor\
+# 2017.1.1p3       Setup, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\Editor\
+# 2017.2.0f3              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\Editor\
+# 2017.3.0f3         Setup, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\Editor\
 ```
 
 Select the Unity installs that you want:
@@ -50,12 +54,12 @@ Find all the Unity projects recursively:
 Get-UnityProjectInstance -Recurse
 
 # Example output:
-# ProjectPath                                    UnityInstanceVersion
-# -----------                                    --------------------
-# C:\Projects\Project1\OneUnity\                 2017.2.0f3
-# C:\Projects\Project1\TwoUnity\                 2017.3.0f3
-# C:\Projects\Project2\                          2017.1.1p1
-# C:\Projects\Project3\App.Unity\                2017.1.2f1
+# Version    Path
+# -------    ----
+# 2017.2.0f3 C:\Projects\Project1\OneUnity\                 
+# 2017.3.0f3 C:\Projects\Project1\TwoUnity\                 
+# 2017.1.1p1 C:\Projects\Project2\                          
+# 2017.1.2f1 C:\Projects\Project3\App.Unity\                
 ```
 Launch the right Unity editor for a project:
 ```powershell
