@@ -8,7 +8,7 @@ enum UnitySetupComponentType
     Setup = (1 -shl 0)
     Documentation = (1 -shl 1)
     StandardAssets = (1 -shl 2)
-    ExampleProject = (1 -shl 3)
+    Windows_IL2CPP = (1 -shl 3)
     Metro = (1 -shl 4)
     UWP_IL2CPP = (1 -shl 5)
     Android = (1 -shl 6)
@@ -19,7 +19,6 @@ enum UnitySetupComponentType
     Mac = (1 -shl 11)
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
-    Windows_IL2CPP = (1 -shl 14)
     All = (-1)
 }
 
@@ -168,7 +167,6 @@ function Find-UnitySetupInstaller
         [UnitySetupComponentType]::Setup = ,"Windows64EditorInstaller/UnitySetup64-$Version.exe";
         [UnitySetupComponentType]::Documentation = ,"WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
         [UnitySetupComponentType]::StandardAssets = ,"WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponentType]::ExampleProject = ,"WindowsExampleProjectInstaller/UnityExampleProjectSetup-$Version.exe";
         [UnitySetupComponentType]::Metro = ,"TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
         [UnitySetupComponentType]::UWP_IL2CPP = ,"TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
         [UnitySetupComponentType]::Android = ,"TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
