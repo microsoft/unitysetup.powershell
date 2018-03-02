@@ -724,6 +724,10 @@ function Start-UnityEditor
                     {
                         $setupInstances = ,$setupInstance
                     }
+                    else
+                    {
+                        Write-Error "Could not find Unity Editor for version $Version"
+                    }
                 }
             }
         }
