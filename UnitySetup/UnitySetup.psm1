@@ -443,7 +443,7 @@ function Uninstall-UnitySetupInstance {
 .DESCRIPTION
    Get the Unity versions installed and their locations
 .PARAMETER BasePath
-   Under what base pattern should we look for Unity installs? Defaults to 'C:\Program Files*\Unity*'.
+   Under what base patterns should we look for Unity installs?
 .EXAMPLE
    Get-UnitySetupInstance
 #>
@@ -452,15 +452,17 @@ function Get-UnitySetupInstance
      [CmdletBinding()]
      param(
         [parameter(Mandatory=$false)]
-        [string] $BasePath = 'C:\Program Files*\Unity*'
+        [string[]] $BasePath = @('C:\Program Files*\Unity*','C:\Program Files\Unity\Hub\Editor\*')
      )
 
-     $Path = [io.path]::Combine("$BasePath", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
+    foreach( $folder in $BasePath ) {
+        $path = [io.path]::Combine("$folder", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
 
-     Get-ChildItem  $Path -Recurse -ErrorAction Ignore | 
-     ForEach-Object {
+        Get-ChildItem  $path -Recurse -ErrorAction Ignore | 
+        ForEach-Object {
             [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\" | Convert-Path))
-     }
+        }
+    }
 }
 
 <#
