@@ -19,7 +19,7 @@ enum UnitySetupComponentType
     Mac = (1 -shl 11)
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
-    All = (-1)
+    All = (1 -shl 14) - 1
 }
 
 class UnitySetupInstaller
@@ -34,8 +34,9 @@ class UnitySetupInstaller
 class UnitySetupInstance
 {
     [UnityVersion]$Version
+    [UnitySetupComponentType]$Components
     [string]$Path
-
+    
     UnitySetupInstance([string]$path) {
         
         $ivyPath = [io.path]::Combine("$path", 'Data\UnityExtensions\Unity\Networking\ivy.xml');
@@ -44,10 +45,37 @@ class UnitySetupInstance
 
         if( !($xmlDoc.'ivy-module'.info.unityVersion)) {
             throw "Unity setup ivy is missing version: $ivyPath"
-         }        
+        }        
 
         $this.Path = $path
         $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
+        $this.Components = [UnitySetupComponentType]::Setup
+
+        $componentTests = @{
+            [UnitySetupComponentType]::Documentation = ,"$Path\Data\Documentation";
+            [UnitySetupComponentType]::StandardAssets = ,"$Path\Standard Assets";
+            [UnitySetupComponentType]::Windows_IL2CPP = ,"$Path\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp";
+            [UnitySetupComponentType]::Metro  = "$Path\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D",
+                                                "$Path\Data\PlaybackEngines\MetroSupport\Templates\UWP_D3D";
+            [UnitySetupComponentType]::UWP_IL2CPP = ,"$Path\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D";
+            [UnitySetupComponentType]::Android = ,"$Path\Data\PlaybackEngines\AndroidPlayer";
+            [UnitySetupComponentType]::iOS = , "$Path\Data\PlaybackEngines\iOSSupport";
+            [UnitySetupComponentType]::AppleTV = , "$Path\Data\PlaybackEngines\AppleTVSupport";
+            [UnitySetupComponentType]::Facebook = , "$Path\Data\PlaybackEngines\Facebook";
+            [UnitySetupComponentType]::Linux = , "$Path\Data\PlaybackEngines\LinuxStandaloneSupport";
+            [UnitySetupComponentType]::Mac = , "$Path\Data\PlaybackEngines\MacStandaloneSupport";
+            [UnitySetupComponentType]::Vuforia = , "$Path\Data\PlaybackEngines\VuforiaSupport";
+            [UnitySetupComponentType]::WebGL = , "$Path\Data\PlaybackEngines\WebGLSupport";
+        }
+
+        $componentTests.Keys | ForEach-Object {
+            foreach( $test in $componentTests[$_] ) {
+                if( Test-Path -PathType Container -Path $test ) {
+                    $this.Components += $_
+                    break;
+                }
+            }
+        }
     }
 }
 
