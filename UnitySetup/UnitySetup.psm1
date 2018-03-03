@@ -820,3 +820,11 @@ function Start-UnityEditor
         }
     }
 }
+
+New-Alias -Name gusi -Value Get-UnitySetupInstance
+New-Alias -Name gupi -Value Get-UnityProjectInstance
+New-Alias -Name susi -Value Select-UnitySetupInstance
+New-Alias -Name sue -Value Start-UnityEditor
+
+
+Export-ModuleMember -Function '*-Unity*' -Alias '*'
