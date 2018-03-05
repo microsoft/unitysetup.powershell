@@ -231,7 +231,7 @@ function Find-UnitySetupInstaller
     else {
         $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression={[math]::Abs(($_.CompareTo($linkComponents[0])))}; Ascending=$true}
     }
-
+    
     $installerTemplates.Keys | 
         Where-Object { $Components -band $_ } | 
         ForEach-Object {
@@ -257,12 +257,17 @@ function Find-UnitySetupInstaller
                     }
                 }
 
-                if( $result ) {
-                    $result
-                    break
-                }
+                if( $result ) { break }
             }
+
+            if( -not $result )
+            {
+                Write-Warning "Unable to find installer for the $_ component."
+            }
+            else { $result }
+
         } | Sort-Object -Property ComponentType
+
 }
 
 <#
