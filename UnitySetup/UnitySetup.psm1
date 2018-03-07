@@ -39,7 +39,7 @@ class UnitySetupInstance
     
     UnitySetupInstance([string]$path) {
         
-        $ivyPath = [io.path]::Combine("$path", 'Data\UnityExtensions\Unity\Networking\ivy.xml');
+        $ivyPath = [io.path]::Combine("$path", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
         if(!(Test-Path $ivyPath)) { throw "Path is not a Unity setup: $path"}
         [xml]$xmlDoc = Get-Content $ivyPath
 
@@ -52,20 +52,20 @@ class UnitySetupInstance
         $this.Components = [UnitySetupComponentType]::Setup
 
         $componentTests = @{
-            [UnitySetupComponentType]::Documentation = ,"$Path\Data\Documentation";
-            [UnitySetupComponentType]::StandardAssets = ,"$Path\Standard Assets";
-            [UnitySetupComponentType]::Windows_IL2CPP = ,"$Path\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp";
-            [UnitySetupComponentType]::Metro  = "$Path\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D",
-                                                "$Path\Data\PlaybackEngines\MetroSupport\Templates\UWP_D3D";
-            [UnitySetupComponentType]::UWP_IL2CPP = ,"$Path\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D";
-            [UnitySetupComponentType]::Android = ,"$Path\Data\PlaybackEngines\AndroidPlayer";
-            [UnitySetupComponentType]::iOS = , "$Path\Data\PlaybackEngines\iOSSupport";
-            [UnitySetupComponentType]::AppleTV = , "$Path\Data\PlaybackEngines\AppleTVSupport";
-            [UnitySetupComponentType]::Facebook = , "$Path\Data\PlaybackEngines\Facebook";
-            [UnitySetupComponentType]::Linux = , "$Path\Data\PlaybackEngines\LinuxStandaloneSupport";
-            [UnitySetupComponentType]::Mac = , "$Path\Data\PlaybackEngines\MacStandaloneSupport";
-            [UnitySetupComponentType]::Vuforia = , "$Path\Data\PlaybackEngines\VuforiaSupport";
-            [UnitySetupComponentType]::WebGL = , "$Path\Data\PlaybackEngines\WebGLSupport";
+            [UnitySetupComponentType]::Documentation = ,"$Path\Editor\Data\Documentation";
+            [UnitySetupComponentType]::StandardAssets = ,"$Path\Editor\Standard Assets";
+            [UnitySetupComponentType]::Windows_IL2CPP = ,"$Path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp";
+            [UnitySetupComponentType]::Metro  = "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D",
+                                                "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_D3D";
+            [UnitySetupComponentType]::UWP_IL2CPP = ,"$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D";
+            [UnitySetupComponentType]::Android = ,"$Path\Editor\Data\PlaybackEngines\AndroidPlayer";
+            [UnitySetupComponentType]::iOS = , "$Path\Editor\Data\PlaybackEngines\iOSSupport";
+            [UnitySetupComponentType]::AppleTV = , "$Path\Editor\Data\PlaybackEngines\AppleTVSupport";
+            [UnitySetupComponentType]::Facebook = , "$Path\Editor\Data\PlaybackEngines\Facebook";
+            [UnitySetupComponentType]::Linux = , "$Path\Editor\Data\PlaybackEngines\LinuxStandaloneSupport";
+            [UnitySetupComponentType]::Mac = , "$Path\Editor\Data\PlaybackEngines\MacStandaloneSupport";
+            [UnitySetupComponentType]::Vuforia = , "$Path\Editor\Data\PlaybackEngines\VuforiaSupport";
+            [UnitySetupComponentType]::WebGL = , "$Path\Editor\Data\PlaybackEngines\WebGLSupport";
         }
 
         $componentTests.Keys | ForEach-Object {
@@ -493,7 +493,7 @@ function Get-UnitySetupInstance
 
         Get-ChildItem  $path -Recurse -ErrorAction Ignore | 
         ForEach-Object {
-            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\" | Convert-Path))
+            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\..\" | Convert-Path))
         }
     }
 }
