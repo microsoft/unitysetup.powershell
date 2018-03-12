@@ -3,7 +3,7 @@
 Import-Module powershell-yaml -Force -ErrorAction Stop
 
 [Flags()] 
-enum UnitySetupComponentType
+enum UnitySetupComponent
 {
     Setup = (1 -shl 0)
     Documentation = (1 -shl 1)
@@ -24,7 +24,7 @@ enum UnitySetupComponentType
 
 class UnitySetupInstaller
 {
-    [UnitySetupComponentType] $ComponentType
+    [UnitySetupComponent] $ComponentType
     [UnityVersion] $Version
     [int64]$Length
     [DateTime]$LastModified
@@ -34,7 +34,7 @@ class UnitySetupInstaller
 class UnitySetupInstance
 {
     [UnityVersion]$Version
-    [UnitySetupComponentType]$Components
+    [UnitySetupComponent]$Components
     [string]$Path
     
     UnitySetupInstance([string]$path) {
@@ -49,23 +49,23 @@ class UnitySetupInstance
 
         $this.Path = $path
         $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
-        $this.Components = [UnitySetupComponentType]::Setup
+        $this.Components = [UnitySetupComponent]::Setup
 
         $componentTests = @{
-            [UnitySetupComponentType]::Documentation = ,"$Path\Editor\Data\Documentation";
-            [UnitySetupComponentType]::StandardAssets = ,"$Path\Editor\Standard Assets";
-            [UnitySetupComponentType]::Windows_IL2CPP = ,"$Path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp";
-            [UnitySetupComponentType]::Metro  = "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D",
+            [UnitySetupComponent]::Documentation = ,"$Path\Editor\Data\Documentation";
+            [UnitySetupComponent]::StandardAssets = ,"$Path\Editor\Standard Assets";
+            [UnitySetupComponent]::Windows_IL2CPP = ,"$Path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp";
+            [UnitySetupComponent]::Metro  = "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D",
                                                 "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_D3D";
-            [UnitySetupComponentType]::UWP_IL2CPP = ,"$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D";
-            [UnitySetupComponentType]::Android = ,"$Path\Editor\Data\PlaybackEngines\AndroidPlayer";
-            [UnitySetupComponentType]::iOS = , "$Path\Editor\Data\PlaybackEngines\iOSSupport";
-            [UnitySetupComponentType]::AppleTV = , "$Path\Editor\Data\PlaybackEngines\AppleTVSupport";
-            [UnitySetupComponentType]::Facebook = , "$Path\Editor\Data\PlaybackEngines\Facebook";
-            [UnitySetupComponentType]::Linux = , "$Path\Editor\Data\PlaybackEngines\LinuxStandaloneSupport";
-            [UnitySetupComponentType]::Mac = , "$Path\Editor\Data\PlaybackEngines\MacStandaloneSupport";
-            [UnitySetupComponentType]::Vuforia = , "$Path\Editor\Data\PlaybackEngines\VuforiaSupport";
-            [UnitySetupComponentType]::WebGL = , "$Path\Editor\Data\PlaybackEngines\WebGLSupport";
+            [UnitySetupComponent]::UWP_IL2CPP = ,"$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D";
+            [UnitySetupComponent]::Android = ,"$Path\Editor\Data\PlaybackEngines\AndroidPlayer";
+            [UnitySetupComponent]::iOS = , "$Path\Editor\Data\PlaybackEngines\iOSSupport";
+            [UnitySetupComponent]::AppleTV = , "$Path\Editor\Data\PlaybackEngines\AppleTVSupport";
+            [UnitySetupComponent]::Facebook = , "$Path\Editor\Data\PlaybackEngines\Facebook";
+            [UnitySetupComponent]::Linux = , "$Path\Editor\Data\PlaybackEngines\LinuxStandaloneSupport";
+            [UnitySetupComponent]::Mac = , "$Path\Editor\Data\PlaybackEngines\MacStandaloneSupport";
+            [UnitySetupComponent]::Vuforia = , "$Path\Editor\Data\PlaybackEngines\VuforiaSupport";
+            [UnitySetupComponent]::WebGL = , "$Path\Editor\Data\PlaybackEngines\WebGLSupport";
         }
 
         $componentTests.Keys | ForEach-Object {
@@ -161,6 +161,25 @@ class UnityVersion : System.IComparable
 
 <#
 .Synopsis
+   Help to create UnitySetupComponent   
+.PARAMETER Components
+   What components would you like included?
+.EXAMPLE
+   New-UnitySetupComponent -Components Setup,Metro
+#>
+function New-UnitySetupComponent
+{
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory=$true)]
+        [UnitySetupComponent] $Components
+    )
+
+    $Components
+}
+
+<#
+.Synopsis
    Finds UnitySetup installers for a specified version.
 .DESCRIPTION
    Finds UnitySetup component installers for a specified version by querying Unity's website.
@@ -181,7 +200,7 @@ function Find-UnitySetupInstaller
         [UnityVersion] $Version,
 
         [parameter(Mandatory=$false)]
-        [UnitySetupComponentType] $Components = [UnitySetupComponentType]::All
+        [UnitySetupComponent] $Components = [UnitySetupComponent]::All
     )
 
     $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
@@ -192,21 +211,21 @@ function Find-UnitySetupInstaller
     )
 
     $installerTemplates = @{
-        [UnitySetupComponentType]::Setup = ,"Windows64EditorInstaller/UnitySetup64-$Version.exe";
-        [UnitySetupComponentType]::Documentation = ,"WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
-        [UnitySetupComponentType]::StandardAssets = ,"WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponentType]::Metro = ,"TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::UWP_IL2CPP = ,"TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Android = ,"TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::iOS = ,"TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::AppleTV = ,"TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Facebook = ,"TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Linux = ,"TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
+        [UnitySetupComponent]::Setup = ,"Windows64EditorInstaller/UnitySetup64-$Version.exe";
+        [UnitySetupComponent]::Documentation = ,"WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
+        [UnitySetupComponent]::StandardAssets = ,"WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
+        [UnitySetupComponent]::Metro = ,"TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::UWP_IL2CPP = ,"TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Android = ,"TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::iOS = ,"TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::AppleTV = ,"TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Facebook = ,"TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Linux = ,"TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
                                         "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Vuforia = ,"TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::WebGL = ,"TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Windows_IL2CPP = ,"TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Vuforia = ,"TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::WebGL = ,"TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Windows_IL2CPP = ,"TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
     }
 
     # By default Tls12 protocol is not enabled, but is what backs Unity's website, so enable it
@@ -240,7 +259,7 @@ function Find-UnitySetupInstaller
     {
         $webResult = Invoke-WebRequest $page -UseBasicParsing
         $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object { 
-            $_ -match "$($installerTemplates[[UnitySetupComponentType]::Setup])$" 
+            $_ -match "$($installerTemplates[[UnitySetupComponent]::Setup])$" 
         }
 
         if($null -ne $prototypeLink) { break }

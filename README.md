@@ -22,6 +22,7 @@ Install-Module UnitySetup -Scope CurrentUser
 
 ## Using
 
+### Cmdlets
 Find all of your Unity installs:
 ```powershell
 Get-UnitySetupInstance
@@ -113,6 +114,29 @@ Find-UnitySetupInstaller -Version '2017.3.0f3' | Install-UnitySetupInstance
 Install-UnitySetupInstance -Installers (Find-UnitySetupInstaller -Version '2017.3.0f3')
 ```
 
+### DSC
+UnitySetup includes the xUnitySetup DSC Resource. An example configuration might look like:
+
+```powershell
+<#
+    Install multiple versions of Unity and several components
+#>
+Configuration Sample_xUnitySetup_Install {
+
+    Import-DscResource -ModuleName UnitySetup
+
+    Node 'localhost' {
+
+        xUnitySetup Unity {
+            Versions = '2017.3.1f1,2018.1.0b9'
+            Components = 'Setup', 'Mac', 'Linux', 'Metro', 'iOS'
+            Ensure = 'Present'
+        }
+    }
+}
+```
+
+See more by perusing the `UnitySetup\Examples` folder.
 
 # Feedback
 To file issues or suggestions, please use the [Issues](https://github.com/Microsoft/unitysetup.powershell/issues) page for this project on GitHub.
