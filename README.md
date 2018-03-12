@@ -30,17 +30,17 @@ Get-UnitySetupInstance
 # Example output:
 # Version                                        Components Path
 # -------                                        ---------- ----
-# 2017.1.2f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\Editor\
-# 2017.1.3f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\Editor\
-# 2017.2.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\Editor\
-# 2017.3.1f1       Setup, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\Editor\
-# 2018.1.0b4              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\Editor\
-# 2018.1.0b8                                            All C:\Program Files\Unity-2018.1.0b8\Editor\
-# 2017.1.0p5                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\Editor\
-# 2017.1.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\Editor\
-# 2017.1.1p3       Setup, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\Editor\
-# 2017.2.0f3              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\Editor\
-# 2017.3.0f3         Setup, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\Editor\
+# 2017.1.2f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\
+# 2017.1.3f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\
+# 2017.2.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\
+# 2017.3.1f1       Setup, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\
+# 2018.1.0b4              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\
+# 2018.1.0b8                                            All C:\Program Files\Unity-2018.1.0b8\
+# 2017.1.0p5                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\
+# 2017.1.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\
+# 2017.1.1p3       Setup, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\
+# 2017.2.0f3              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
+# 2017.3.0f3         Setup, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
 ```
 
 Select the Unity installs that you want:
