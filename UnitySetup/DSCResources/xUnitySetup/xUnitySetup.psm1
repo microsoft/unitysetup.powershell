@@ -22,7 +22,7 @@ function Get-TargetResource
     $setupInstances = Get-UnitySetupInstance | Where-Object { $splitVersions -contains $_.Version }
     $result = @{
         "Versions" = $setupInstances | Select-Object -ExpandProperty Version | Sort-Object -Unique
-        "Ensure" = ($setupInstances.Count -gt 0)
+        "Ensure" = if($setupInstances.Count -gt 0) { 'Present'} else { 'Absent' }
     }
 
     Write-Verbose "Found versions: $($result['Versions'])"
