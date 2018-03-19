@@ -8,9 +8,9 @@ Configuration Sample_xUnitySetup_Install {
     Node 'localhost' {
 
         xUnitySetup Unity {
-            Versions = '2017.3.1f1,2018.1.0b9'
+            Versions   = '2017.3.1f1,2018.1.0b9'
             Components = 'Setup', 'Mac', 'Linux', 'Metro', 'iOS'
-            Ensure = 'Present'
+            Ensure     = 'Present'
         }
     }
 }

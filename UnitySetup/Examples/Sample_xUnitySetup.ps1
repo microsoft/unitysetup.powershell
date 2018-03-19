@@ -12,7 +12,7 @@ Configuration Sample_xUnitySetup {
         $Ensure = 'Present',
 
         [System.String[]]
-        $Components = @('Setup','Linux','Metro','Mac','iOS')
+        $Components = @('Setup', 'Linux', 'Metro', 'Mac', 'iOS')
     )
 
     Import-DscResource -ModuleName UnitySetup
@@ -20,9 +20,9 @@ Configuration Sample_xUnitySetup {
     Node 'localhost' {
 
         xUnitySetup Unity {
-            Versions = $Versions
+            Versions   = $Versions
             Components = $Components
-            Ensure = $Ensure
+            Ensure     = $Ensure
         }
     }
 }
