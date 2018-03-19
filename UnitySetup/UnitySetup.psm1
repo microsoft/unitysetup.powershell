@@ -170,6 +170,7 @@ class UnityVersion : System.IComparable
 function New-UnitySetupComponent
 {
     [CmdletBinding()]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope = 'Function')]
     param(
         [parameter(Mandatory=$true)]
         [UnitySetupComponent] $Components
