@@ -79,7 +79,7 @@ function Set-TargetResource {
             foreach ($version in $splitVersions) {
                 $findArgs = @{ 
                     'Version'    = $version
-                    'Components' = New-UnitySetupComponent -Components $Components 
+                    'Components' = ConvertTo-UnitySetupComponent $Components 
                 }
 
                 $installArgs = @{ 'Cache' = "$env:TEMP\.unitysetup" }
@@ -156,7 +156,7 @@ function Test-TargetResource {
     $result = $true
     switch ( $Ensure ) {
         'Present' {
-            $setupComponents = New-UnitySetupComponent -Components $Components
+            $setupComponents = ConvertTo-UnitySetupComponent $Components
             foreach ($version in $splitVersions) {
                 Write-Verbose "Starting test for $version"
                 $setupInstances = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $version
@@ -170,7 +170,7 @@ function Test-TargetResource {
                 
                 $availableComponents = ($setupInstances[0].Components -band $setupComponents)
                 if ($availableComponents -ne $setupComponents) { 
-                    $missingComponents = New-UnitySetupComponent ($setupComponents -bxor $availableComponents)
+                    $missingComponents = ConvertTo-UnitySetupComponent ($setupComponents -bxor $availableComponents)
                     Write-Verbose "Found $version missing $($missingComponents)"
                     $result = $false 
                     break
