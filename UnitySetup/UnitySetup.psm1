@@ -158,17 +158,16 @@ class UnityVersion : System.IComparable {
 .PARAMETER Components
    What components would you like included?
 .EXAMPLE
-   New-UnitySetupComponent -Components Setup,Metro
+   ConvertTo-UnitySetupComponent Setup,Metro
 #>
-function New-UnitySetupComponent {
+function ConvertTo-UnitySetupComponent {
     [CmdletBinding()]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Scope = 'Function')]
     param(
-        [parameter(Mandatory = $true)]
-        [UnitySetupComponent] $Components
+        [parameter(Mandatory = $true, Position = 0)]
+        [UnitySetupComponent] $Component
     )
 
-    $Components
+    $Component
 }
 
 <#
