@@ -1,7 +1,7 @@
 <#
     Create a custom configuration by passing in necessary values
 #>
-Configuration Sample_xUnitySetup {
+Configuration Sample_xUnitySetupInstance {
     param 
     (       
         [System.String]
@@ -19,7 +19,7 @@ Configuration Sample_xUnitySetup {
 
     Node 'localhost' {
 
-        xUnitySetup Unity {
+        xUnitySetupInstance Unity {
             Versions   = $Versions
             Components = $Components
             Ensure     = $Ensure

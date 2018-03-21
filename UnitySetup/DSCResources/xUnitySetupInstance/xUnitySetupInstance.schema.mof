@@ -1,6 +1,6 @@
 
-[ClassVersion("1.0.0.0"), FriendlyName("xUnitySetup")]
-class xUnitySetup : OMI_BaseResource
+[ClassVersion("1.0.0.0"), FriendlyName("xUnitySetupInstance")]
+class xUnitySetupInstance : OMI_BaseResource
 {
     [Key, Description("Comma separated list of Unity versions. ")] string Versions;
     [Write, Description("Ensure present or absent?"), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] string Ensure;
