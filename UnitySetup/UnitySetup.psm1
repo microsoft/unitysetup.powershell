@@ -1,6 +1,6 @@
 ﻿# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-Import-Module powershell-yaml -Force -ErrorAction Stop
+Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
 [Flags()] 
 enum UnitySetupComponent {
