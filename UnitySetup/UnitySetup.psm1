@@ -808,7 +808,23 @@ function Start-UnityEditor {
     }
 }
 
-New-Alias -Name gusi -Value Get-UnitySetupInstance
-New-Alias -Name gupi -Value Get-UnityProjectInstance
-New-Alias -Name susi -Value Select-UnitySetupInstance
-New-Alias -Name sue -Value Start-UnityEditor
+@(
+    @{ 'Name' = 'gusi'; 'Value' = 'Get-UnitySetupInstance' },
+    @{ 'Name' = 'gupi'; 'Value' = 'Get-UnityProjectInstance' },
+    @{ 'Name' = 'susi'; 'Value' = 'Select-UnitySetupInstance' },
+    @{ 'Name' = 'sue'; 'Value' = 'Start-UnityEditor' } 
+) | ForEach-Object { 
+
+    $alias = Get-Alias -Name $_.Name -ErrorAction 'SilentlyContinue'
+    if( -not $alias ) {
+        Write-Verbose "Creating new alias $($_.Name) for $($_.Value)" 
+        New-Alias @_ 
+    }
+    elseif( $alias.ModuleName -eq 'UnitySetup' ) {
+        Write-Verbose "Setting alias $($_.Name) to $($_.Value)" 
+        Set-Alias @_
+    }
+    else {
+        Write-Warning "Alias $($_.Name) already configured by $($alias.Source)"
+    }
+}
