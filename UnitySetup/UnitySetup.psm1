@@ -777,11 +777,17 @@ function Start-UnityEditor {
             # clone the shared args list
             $unityArgs = $sharedArgs | ForEach-Object { $_ }
             if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
+
             $setProcessArgs = @{
                 'FilePath' = $editor;
                 'PassThru' = $true;
                 'ErrorAction' = 'Stop';
+                'RedirectStandardOutput' = New-TemporaryFile;
+                'RedirectStandardError' = New-TemporaryFile;
             }
+
+            Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
+            Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
 
             if ($unityArgs -and $unityArgs.Length -gt 0) {
                 $setProcessArgs['ArgumentList'] = $unityArgs
