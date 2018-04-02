@@ -471,11 +471,26 @@ function Get-UnitySetupInstance {
     [CmdletBinding()]
     param(
         [parameter(Mandatory = $false)]
-        [string[]] $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
+        [string[]] $BasePath
     )
 
+    # Windows
+    if ((-not $PSVersionTable.Platform) -or ($PSVersionTable.Platform -eq "Win32NT")) {
+        if (-not $BasePath) {
+            $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
+        }
+        $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
+    }
+    # Mac or Linux
+    else {
+        if (-not $BasePath) {
+            $BasePath = @('/Applications/Unity*')
+        }
+        $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
+    }
+
     foreach ( $folder in $BasePath ) {
-        $path = [io.path]::Combine("$folder", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
+        $path = [io.path]::Combine("$folder", $ivyPath);
 
         Get-ChildItem  $path -Recurse -ErrorAction Ignore | 
             ForEach-Object {
