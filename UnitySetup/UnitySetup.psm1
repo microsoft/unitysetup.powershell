@@ -1,14 +1,13 @@
 ﻿# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-Import-Module powershell-yaml -Force -ErrorAction Stop
+Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
 [Flags()] 
-enum UnitySetupComponentType
-{
+enum UnitySetupComponent {
     Setup = (1 -shl 0)
     Documentation = (1 -shl 1)
     StandardAssets = (1 -shl 2)
-    ExampleProject = (1 -shl 3)
+    Windows_IL2CPP = (1 -shl 3)
     Metro = (1 -shl 4)
     UWP_IL2CPP = (1 -shl 5)
     Android = (1 -shl 6)
@@ -19,58 +18,81 @@ enum UnitySetupComponentType
     Mac = (1 -shl 11)
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
-    Windows_IL2CPP = (1 -shl 14)
-    All = (-1)
+    All = (1 -shl 14) - 1
 }
 
-class UnitySetupInstaller
-{
-    [UnitySetupComponentType] $ComponentType
+class UnitySetupInstaller {
+    [UnitySetupComponent] $ComponentType
     [UnityVersion] $Version
     [int64]$Length
     [DateTime]$LastModified
     [string]$DownloadUrl
 }
 
-class UnitySetupInstance
-{
+class UnitySetupInstance {
     [UnityVersion]$Version
+    [UnitySetupComponent]$Components
     [string]$Path
-
+    
     UnitySetupInstance([string]$path) {
         
-        $ivyPath = [io.path]::Combine("$path", 'Data\UnityExtensions\Unity\Networking\ivy.xml');
-        if(!(Test-Path $ivyPath)) { throw "Path is not a Unity setup: $path"}
+        $ivyPath = [io.path]::Combine("$path", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
+        if (!(Test-Path $ivyPath)) { throw "Path is not a Unity setup: $path"}
         [xml]$xmlDoc = Get-Content $ivyPath
 
-        if( !($xmlDoc.'ivy-module'.info.unityVersion)) {
+        if ( !($xmlDoc.'ivy-module'.info.unityVersion)) {
             throw "Unity setup ivy is missing version: $ivyPath"
-         }        
+        }        
 
         $this.Path = $path
         $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
+        $this.Components = [UnitySetupComponent]::Setup
+
+        $componentTests = @{
+            [UnitySetupComponent]::Documentation = , "$Path\Editor\Data\Documentation";
+            [UnitySetupComponent]::StandardAssets = , "$Path\Editor\Standard Assets";
+            [UnitySetupComponent]::Windows_IL2CPP = , "$Path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp";
+            [UnitySetupComponent]::Metro = "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D",
+            "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_D3D";
+            [UnitySetupComponent]::UWP_IL2CPP = , "$Path\Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D";
+            [UnitySetupComponent]::Android = , "$Path\Editor\Data\PlaybackEngines\AndroidPlayer";
+            [UnitySetupComponent]::iOS = , "$Path\Editor\Data\PlaybackEngines\iOSSupport";
+            [UnitySetupComponent]::AppleTV = , "$Path\Editor\Data\PlaybackEngines\AppleTVSupport";
+            [UnitySetupComponent]::Facebook = , "$Path\Editor\Data\PlaybackEngines\Facebook";
+            [UnitySetupComponent]::Linux = , "$Path\Editor\Data\PlaybackEngines\LinuxStandaloneSupport";
+            [UnitySetupComponent]::Mac = , "$Path\Editor\Data\PlaybackEngines\MacStandaloneSupport";
+            [UnitySetupComponent]::Vuforia = , "$Path\Editor\Data\PlaybackEngines\VuforiaSupport";
+            [UnitySetupComponent]::WebGL = , "$Path\Editor\Data\PlaybackEngines\WebGLSupport";
+        }
+
+        $componentTests.Keys | ForEach-Object {
+            foreach ( $test in $componentTests[$_] ) {
+                if ( Test-Path -PathType Container -Path $test ) {
+                    $this.Components += $_
+                    break;
+                }
+            }
+        }
     }
 }
 
-class UnityProjectInstance
-{
+class UnityProjectInstance {
     [UnityVersion]$Version    
     [string]$Path
     
     UnityProjectInstance([string]$path) {
         $versionFile = [io.path]::Combine($path, "ProjectSettings\ProjectVersion.txt")
-        if(!(Test-Path $versionFile)) { throw "Path is not a Unity project: $path"}
+        if (!(Test-Path $versionFile)) { throw "Path is not a Unity project: $path"}
 
         $fileVersion = (Get-Content $versionFile -Raw | ConvertFrom-Yaml)['m_EditorVersion'];
-        if(!$fileVersion) { throw "Project is missing a version in: $versionFile"}
+        if (!$fileVersion) { throw "Project is missing a version in: $versionFile"}
         
         $this.Path = $path
         $this.Version = $fileVersion
     }
 }
 
-class UnityVersion : System.IComparable
-{
+class UnityVersion : System.IComparable {
     [int] $Major;
     [int] $Minor;
     [int] $Revision;
@@ -80,56 +102,72 @@ class UnityVersion : System.IComparable
 
     [string] ToString() {
         $result = "$($this.Major).$($this.Minor).$($this.Revision)$($this.Release)$($this.Build)"
-        if( $this.Suffix ) { $result += "-$($this.Suffix)"}
+        if ( $this.Suffix ) { $result += "-$($this.Suffix)"}
         return $result
     }
 
-    UnityVersion([string] $version){
+    UnityVersion([string] $version) {
         $parts = $version.Split('-')
 
         $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
-        if( $Matches.Count -ne 6 ){ throw "Invalid unity version: $version" } 
+        if ( $Matches.Count -ne 6 ) { throw "Invalid unity version: $version" } 
         $this.Major = [int]($Matches[1]);
         $this.Minor = [int]($Matches[2]);
         $this.Revision = [int]($Matches[3]);
         $this.Release = [char]($Matches[4]);
         $this.Build = [int]($Matches[5]);
         
-        if($parts.Length -gt 1) {
+        if ($parts.Length -gt 1) {
             $this.Suffix = $parts[1];
         }
     }
 
-    [int] CompareTo([object]$obj)
-    {
-        if($null -eq $obj) { return 1 }
-        if($obj -isnot [UnityVersion]) { throw "Object is not a UnityVersion"}
+    [int] CompareTo([object]$obj) {
+        if ($null -eq $obj) { return 1 }
+        if ($obj -isnot [UnityVersion]) { throw "Object is not a UnityVersion"}
         
         return [UnityVersion]::Compare($this, $obj)
     }
 
-    static [int] Compare([UnityVersion]$a, [UnityVersion]$b)
-    {
-        if($a.Major -lt $b.Major) { return -1 }
-        if($a.Major -gt $b.Major) { return 1 }
+    static [int] Compare([UnityVersion]$a, [UnityVersion]$b) {
+        if ($a.Major -lt $b.Major) { return -1 }
+        if ($a.Major -gt $b.Major) { return 1 }
         
-        if($a.Minor -lt $b.Minor) { return -1 }
-        if($a.Minor -gt $b.Minor) { return 1 }
+        if ($a.Minor -lt $b.Minor) { return -1 }
+        if ($a.Minor -gt $b.Minor) { return 1 }
         
-        if($a.Revision -lt $b.Revision) { return -1 }
-        if($a.Revision -gt $b.Revision) { return 1 }
+        if ($a.Revision -lt $b.Revision) { return -1 }
+        if ($a.Revision -gt $b.Revision) { return 1 }
         
-        if($a.Release -lt $b.Release) { return -1 }
-        if($a.Release -gt $b.Release) { return 1 }
+        if ($a.Release -lt $b.Release) { return -1 }
+        if ($a.Release -gt $b.Release) { return 1 }
 
-        if($a.Build -lt $b.Build) { return -1 }
-        if($a.Build -gt $b.Build) { return 1 }
+        if ($a.Build -lt $b.Build) { return -1 }
+        if ($a.Build -gt $b.Build) { return 1 }
 
-        if($a.Suffix -lt $b.Suffix) { return -1 }
-        if($a.Suffix -gt $b.Suffix) { return 1 }
+        if ($a.Suffix -lt $b.Suffix) { return -1 }
+        if ($a.Suffix -gt $b.Suffix) { return 1 }
 
         return 0
     }
+}
+
+<#
+.Synopsis
+   Help to create UnitySetupComponent   
+.PARAMETER Components
+   What components would you like included?
+.EXAMPLE
+   ConvertTo-UnitySetupComponent Setup,Metro
+#>
+function ConvertTo-UnitySetupComponent {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory = $true, Position = 0)]
+        [UnitySetupComponent] $Component
+    )
+
+    $Component
 }
 
 <#
@@ -140,107 +178,125 @@ class UnityVersion : System.IComparable
 .PARAMETER Version
    What version of Unity are you looking for?
 .PARAMETER Components
-   What components would you like to search for? Defaults to [UnitySetupComponentType]::All
+   What components would you like to search for? Defaults to All
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3
 .EXAMPLE
-   Find-UnitySetupInstaller -Version 2017.3.0f3 -Components ([UnitySetupComponentType]::Setup, [UnitySetupComponentType]::Documentation) 
+   Find-UnitySetupInstaller -Version 2017.3.0f3 -Components Setup,Documentation 
 #>
-function Find-UnitySetupInstaller
-{
+function Find-UnitySetupInstaller {
     [CmdletBinding()]
     param(
-        [parameter(Mandatory=$true)]
+        [parameter(Mandatory = $true)]
         [UnityVersion] $Version,
 
-        [parameter(Mandatory=$false)]
-        [UnitySetupComponentType] $Components = [UnitySetupComponentType]::All
+        [parameter(Mandatory = $false)]
+        [UnitySetupComponent] $Components = [UnitySetupComponent]::All
+    )
+
+    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+    $knownBaseUrls = @(
+        "https://download.unity3d.com/download_unity",
+        "https://netstorage.unity3d.com/unity",
+        "https://beta.unity3d.com/download"
     )
 
     $installerTemplates = @{
-        [UnitySetupComponentType]::Setup = "Windows64EditorInstaller/UnitySetup64-$Version.exe";
-        [UnitySetupComponentType]::Documentation = "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
-        [UnitySetupComponentType]::StandardAssets = "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponentType]::ExampleProject = "WindowsExampleProjectInstaller/UnityExampleProjectSetup-$Version.exe";
-        [UnitySetupComponentType]::Metro = "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::UWP_IL2CPP = "TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Android = "TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::iOS = "TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::AppleTV = "TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Facebook = "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Linux = "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Vuforia = "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::WebGL = "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
-        [UnitySetupComponentType]::Windows_IL2CPP = "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Setup = , "Windows64EditorInstaller/UnitySetup64-$Version.exe";
+        [UnitySetupComponent]::Documentation = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
+        [UnitySetupComponent]::StandardAssets = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
+        [UnitySetupComponent]::Metro = , "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::UWP_IL2CPP = , "TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Android = , "TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::iOS = , "TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::AppleTV = , "TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Facebook = , "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Linux = , "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
+        "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Vuforia = , "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::WebGL = , "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::Windows_IL2CPP = , "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
     }
 
     # By default Tls12 protocol is not enabled, but is what backs Unity's website, so enable it
     $secProtocol = [System.Net.ServicePointManager]::SecurityProtocol
-    if( ($secProtocol -band [System.Net.SecurityProtocolType]::Tls12) -eq 0 )
-    {
+    if ( ($secProtocol -band [System.Net.SecurityProtocolType]::Tls12) -eq 0 ) {
         $secProtocol += [System.Net.SecurityProtocolType]::Tls12;
         [System.Net.ServicePointManager]::SecurityProtocol = $secProtocol
     }
 
     # Every release type has a different pattern for finding installers
     $searchPages = @()
-    switch($Version.Release)
-    {
+    switch ($Version.Release) {
         'f' { $searchPages += "https://unity3d.com/get-unity/download/archive" }
         'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
         'p' {
-                $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
-                $searchPages += $patchPage
+            $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
+            $searchPages += $patchPage
 
-                $webResult = Invoke-WebRequest $patchPage
-                $searchPages += $webResult.Links | Where-Object { 
-                    $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" -and $Matches[1] -gt 1
-                } | ForEach-Object {
-                    "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
-                }
+            $webResult = Invoke-WebRequest $patchPage -UseBasicParsing 
+            $searchPages += $webResult.Links | Where-Object { 
+                $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" -and $Matches[1] -gt 1
+            } | ForEach-Object {
+                "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
+            }
         }
     }
 
-    foreach($page in $searchPages)
-    {
-        $webResult = Invoke-WebRequest $page
-        $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href | Where-Object { 
-            $_ -match "$($installerTemplates[[UnitySetupComponentType]::Setup])$" 
+    foreach ($page in $searchPages) {
+        $webResult = Invoke-WebRequest $page -UseBasicParsing
+        $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object { 
+            $_ -match "$($installerTemplates[[UnitySetupComponent]::Setup])$" 
         }
 
-        if($null -ne $prototypeLink) { break }
+        if ($null -ne $prototypeLink) { break }
     }
   
-    if($null -eq $prototypeLink)
-    {
+    if ($null -eq $prototypeLink) {
         throw "Could not find archives for Unity version $Version"
     }
 
-    $prototypeLink = $prototypeLink.Replace("$($installerTemplates[[UnitySetupComponentType]::Setup])", '')
+    $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
 
-    $installerTemplates.Keys | 
-        Where-Object { $Components -band $_ } | 
-        ForEach-Object {
-            $template = $installerTemplates.Item($_);
-            $endpoint = [System.IO.Path]::Combine($prototypeLink, $template);
-            try
-            {
-                $testResult = Invoke-WebRequest $endpoint -Method HEAD
-                New-Object UnitySetupInstaller -Property @{
-                    'ComponentType' = $_;
-                    'Version' = $Version;
-                    'DownloadUrl' = $endpoint;
-                    'Length' = [int64]$testResult.Headers['Content-Length'];
-                    'LastModified' = ([System.DateTime]$testResult.Headers['Last-Modified']);
+    if ($knownBaseUrls -notcontains $linkComponents[0]) {
+        $knownBaseUrls = $linkComponents[0], $knownBaseUrls
+    }
+    else {
+        $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = {[math]::Abs(($_.CompareTo($linkComponents[0])))}; Ascending = $true}
+    }
+    
+    $installerTemplates.Keys |  Where-Object { $Components -band $_ } | ForEach-Object {
+        $templates = $installerTemplates.Item($_);
+        $result = $null
+        foreach ($template in $templates ) {
+            foreach ( $baseUrl in $knownBaseUrls) {
+                $endpoint = [uri][System.IO.Path]::Combine($baseUrl, $linkComponents[1], $template);
+                try {
+                    $testResult = Invoke-WebRequest $endpoint -Method HEAD -UseBasicParsing
+                    $result = New-Object UnitySetupInstaller -Property @{
+                        'ComponentType' = $_;
+                        'Version' = $Version;
+                        'DownloadUrl' = $endpoint;
+                        'Length' = [int64]$testResult.Headers['Content-Length'];
+                        'LastModified' = ([System.DateTime]$testResult.Headers['Last-Modified']);
+                    }
+
+                    break
+                }
+                catch {
+                    Write-Verbose "$endpoint failed: $_"
                 }
             }
-            catch 
-            {
-                Write-Verbose "$endpoint failed: $_"
-            }
-        } | 
-        Sort-Object -Property ComponentType
+
+            if ( $result ) { break }
+        }
+
+        if ( -not $result ) {
+            Write-Warning "Unable to find installer for the $_ component."
+        }
+        else { $result }
+    } | Sort-Object -Property ComponentType
 }
 
 <#
@@ -259,29 +315,26 @@ function Find-UnitySetupInstaller
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3 | Install-UnitySetupInstance -Destination D:\Unity-2017.3.0f3
 #>
-function Install-UnitySetupInstance
-{
+function Install-UnitySetupInstance {
     [CmdletBinding()]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope='Function')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope = 'Function')]
     param(
-       [parameter(ValueFromPipeline=$true)]
-       [UnitySetupInstaller[]] $Installers,
+        [parameter(ValueFromPipeline = $true)]
+        [UnitySetupInstaller[]] $Installers,
 
-       [parameter(Mandatory=$false)]
-       [string]$Destination,
+        [parameter(Mandatory = $false)]
+        [string]$Destination,
 
-       [parameter(Mandatory=$false)]
-       [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup"),
+        [parameter(Mandatory = $false)]
+        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup"),
 
-       [parameter(Mandatory=$false)]
-       [ValidateSet('Open','RunAs')]
-       [string]$Verb
+        [parameter(Mandatory = $false)]
+        [ValidateSet('Open', 'RunAs')]
+        [string]$Verb
     )
 
-    process
-    {
-        if(!(Test-Path $Cache -PathType Container))
-        {
+    process {
+        if (!(Test-Path $Cache -PathType Container)) {
             New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
         }
 
@@ -290,24 +343,21 @@ function Install-UnitySetupInstance
 
         $downloadSource = @()
         $downloadDest = @()
-        foreach( $i in $Installers)
-        {
+        foreach ( $i in $Installers) {
             $fileName = [io.Path]::GetFileName($i.DownloadUrl)
             $destPath = [io.Path]::Combine($Cache, "Installers\Unity-$($i.Version)\$fileName")
 
-            $localInstallers += ,$destPath
-            if($Destination) {
-                $localDestinations += ,$Destination
+            $localInstallers += , $destPath
+            if ($Destination) {
+                $localDestinations += , $Destination
             }
             else {
-                $localDestinations += ,"C:\Program Files\Unity-$($i.Version)"
+                $localDestinations += , "C:\Program Files\Unity-$($i.Version)"
             }
 
-            if( Test-Path $destPath )
-            {   
+            if ( Test-Path $destPath ) {   
                 $destItem = Get-Item $destPath
-                if( ($destItem.Length -eq $i.Length ) -and ($destItem.LastWriteTime -eq $i.LastModified) )
-                {
+                if ( ($destItem.Length -eq $i.Length ) -and ($destItem.LastWriteTime -eq $i.LastModified) ) {
                     Write-Verbose "Skipping download because it's already in the cache: $($i.DownloadUrl)"
                     continue
                 }
@@ -317,14 +367,11 @@ function Install-UnitySetupInstance
             $downloadDest += $destPath
         }
 
-        if( $downloadSource.Length -gt 0 )
-        {
-            for($i=0; $i -lt $downloadSource.Length; $i++)  
-            {
+        if ( $downloadSource.Length -gt 0 ) {
+            for ($i = 0; $i -lt $downloadSource.Length; $i++) {
                 Write-Verbose "Downloading $($downloadSource[$i]) to $($downloadDest[$i])"
                 $destDirectory = [io.path]::GetDirectoryName($downloadDest[$i])
-                if(!(Test-Path $destDirectory -PathType Container))
-                {
+                if (!(Test-Path $destDirectory -PathType Container)) {
                     New-Item "$destDirectory" -ItemType Directory | Out-Null
                 }
             }
@@ -333,8 +380,7 @@ function Install-UnitySetupInstance
         }
        
         $spins = @('|', '/', '-', '\')
-        for($i = 0; $i -lt $localInstallers.Length; $i++)
-        {
+        for ($i = 0; $i -lt $localInstallers.Length; $i++) {
             $installer = $localInstallers[$i]
             $destination = $localDestinations[$i]
 
@@ -344,26 +390,22 @@ function Install-UnitySetupInstance
                 'PassThru' = $true;
             }
 
-            if($Verb)
-            {
+            if ($Verb) {
                 $startProcessArgs['Verb'] = $Verb
             }
             
             $spinnerIndex = 0
             $process = Start-Process @startProcessArgs
-            while(!$process.HasExited)
-            {
+            while (!$process.HasExited) {
                 Write-Host "`rInstalling $installer to $destination - $($spins[$spinnerIndex++ % $spins.Length])" -NoNewline
                 Start-Sleep -Milliseconds 100
             }
 
-            if( $process.ExitCode -ne 0)
-            {
+            if ( $process.ExitCode -ne 0) {
                 Write-Host "`bFailed."
                 Write-Error "Installing $installer failed with exit code: $($process.ExitCode)"
             }
-            else
-            { 
+            else { 
                 Write-Host "`bSucceeded."
             }
         }
@@ -392,7 +434,7 @@ function Uninstall-UnitySetupInstance {
             $uninstaller = Get-ChildItem "$($setupInstance.Path)" -Filter 'Uninstall.exe' -Recurse |
                 Select-Object -First 1 -ExpandProperty FullName
 
-            if($null -eq $uninstaller) { 
+            if ($null -eq $uninstaller) { 
                 Write-Error "Could not find Uninstaller.exe under $($setupInstance.Path)"
                 continue
             }
@@ -405,7 +447,7 @@ function Uninstall-UnitySetupInstance {
                 'ArgumentList' = @("/S");
             }
 
-            if( -not $PSCmdlet.ShouldProcess("$uninstaller", "Start-Process")) { continue }
+            if ( -not $PSCmdlet.ShouldProcess("$uninstaller", "Start-Process")) { continue }
 
             $process = Start-Process @startProcessArgs
             if ( $process.ExitCode -ne 0 ) {
@@ -421,24 +463,25 @@ function Uninstall-UnitySetupInstance {
 .DESCRIPTION
    Get the Unity versions installed and their locations
 .PARAMETER BasePath
-   Under what base pattern should we look for Unity installs? Defaults to 'C:\Program Files*\Unity*'.
+   Under what base patterns should we look for Unity installs?
 .EXAMPLE
    Get-UnitySetupInstance
 #>
-function Get-UnitySetupInstance
-{
-     [CmdletBinding()]
-     param(
-        [parameter(Mandatory=$false)]
-        [string] $BasePath = 'C:\Program Files*\Unity*'
-     )
+function Get-UnitySetupInstance {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory = $false)]
+        [string[]] $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
+    )
 
-     $Path = [io.path]::Combine("$BasePath", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
+    foreach ( $folder in $BasePath ) {
+        $path = [io.path]::Combine("$folder", 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml');
 
-     Get-ChildItem  $Path -Recurse -ErrorAction Ignore | 
-     ForEach-Object {
-            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\" | Convert-Path))
-     }
+        Get-ChildItem  $path -Recurse -ErrorAction Ignore | 
+            ForEach-Object {
+            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\..\" | Convert-Path))
+        }
+    }
 }
 
 <#
@@ -459,42 +502,35 @@ function Get-UnitySetupInstance
 .EXAMPLE
    Get-UnitySetupInstance | Select-UnitySetupInstance -Version 2017.1.0f3
 #>
-function Select-UnitySetupInstance
-{
+function Select-UnitySetupInstance {
     [CmdletBinding()]
     param(
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [switch] $Latest,
 
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [UnityVersion] $Version,
 
-        [parameter(Mandatory=$true, ValueFromPipeline=$true)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [UnitySetupInstance[]] $Instances
     )
     
-    process
-    {
-        if( $Version )
-        { 
+    process {
+        if ( $Version ) { 
             $Instances = $Instances | Where-Object { [UnityVersion]::Compare($_.Version, $Version) -eq 0 }
         }
 
-        if( $Latest )
-        {
-            foreach( $i in $Instances ) 
-            { 
-                if( $null -eq $latestInstance -or [UnityVersion]::Compare($i.Version, $latestInstance.Version) -gt 0)
-                {   
+        if ( $Latest ) {
+            foreach ( $i in $Instances ) { 
+                if ( $null -eq $latestInstance -or [UnityVersion]::Compare($i.Version, $latestInstance.Version) -gt 0) {   
                     $latestInstance = $i
                 } 
             }
         }
-        elseif( $Instances.Count -gt 0 ) { $Instances }
+        elseif ( $Instances.Count -gt 0 ) { $Instances }
     }
-    end
-    {
-        if($latestInstance) { $latestInstance }
+    end {
+        if ($latestInstance) { $latestInstance }
     }
 }
 
@@ -510,14 +546,13 @@ function Select-UnitySetupInstance
 .EXAMPLE
    Get-UnityProjectInstance -BasePath .\MyUnityProjects -Recurse
 #>
-function Get-UnityProjectInstance
-{
+function Get-UnityProjectInstance {
     [CmdletBinding()]
     param(
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [string] $BasePath = $PWD,
 
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [switch] $Recurse
     )
 
@@ -528,16 +563,14 @@ function Get-UnityProjectInstance
         'Directory' = $true;
     }
 
-    if( $Recurse )
-    {
+    if ( $Recurse ) {
         $args['Recurse'] = $true;
     }
 
     Get-ChildItem @args |
-    ForEach-Object {
+        ForEach-Object {
         $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
-        if( Test-Path $path )
-        {
+        if ( Test-Path $path ) {
             [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
         }
     }
@@ -587,141 +620,131 @@ function Get-UnityProjectInstance
 .EXAMPLE
    Get-UnitySetupInstance | Start-UnityEditor
 #>
-function Start-UnityEditor
-{
-    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName="Context")]
+function Start-UnityEditor {
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = "Context")]
     param(
-        [parameter(Mandatory=$false, ValueFromPipeline = $true, ParameterSetName='Projects')]
-        [parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName='ProjectsLatest')]
-        [parameter(Mandatory=$true, ValueFromPipeline = $true, ParameterSetName='ProjectsVersion')]
+        [parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = 'Projects')]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'ProjectsLatest')]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'ProjectsVersion')]
         [ValidateNotNullOrEmpty()]
         [UnityProjectInstance[]] $Project,
-        [parameter(Mandatory=$false, ValueFromPipeline = $true, ParameterSetName='Setups')]
+        [parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = 'Setups')]
         [ValidateNotNullOrEmpty()]
         [UnitySetupInstance[]]$Setup,
-        [parameter(Mandatory=$true, ParameterSetName='Latest')]
-        [parameter(Mandatory=$true, ParameterSetName='ProjectsLatest')]
+        [parameter(Mandatory = $true, ParameterSetName = 'Latest')]
+        [parameter(Mandatory = $true, ParameterSetName = 'ProjectsLatest')]
         [switch]$Latest,
-        [parameter(Mandatory=$true, ParameterSetName='Version')]
-        [parameter(Mandatory=$true, ParameterSetName='ProjectsVersion')]
+        [parameter(Mandatory = $true, ParameterSetName = 'Version')]
+        [parameter(Mandatory = $true, ParameterSetName = 'ProjectsVersion')]
         [UnityVersion]$Version,
-        [parameter(Mandatory=$false, ParameterSetName='Latest')]
-        [parameter(Mandatory=$false, ParameterSetName='Version')]
-        [parameter(Mandatory=$false, ParameterSetName='Context')]
+        [parameter(Mandatory = $false, ParameterSetName = 'Latest')]
+        [parameter(Mandatory = $false, ParameterSetName = 'Version')]
+        [parameter(Mandatory = $false, ParameterSetName = 'Context')]
         [switch]$IgnoreProjectContext,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [string]$ExecuteMethod,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [string[]]$ExportPackage,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
+        [string]$ImportPackage,
+        [parameter(Mandatory = $false)]
         [string]$CreateProject,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [string]$OutputPath,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [string]$LogFile,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
+        [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch')]
         [string]$BuildTarget,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [switch]$BatchMode,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [switch]$Quit,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [switch]$Wait,
-        [parameter(Mandatory=$false)]
+        [parameter(Mandatory = $false)]
         [switch]$PassThru
     )
-    process
-    {  
-        switch -wildcard ( $PSCmdlet.ParameterSetName )
-        {
-            'Context'
-            {
+    process {  
+        switch -wildcard ( $PSCmdlet.ParameterSetName ) {
+            'Context' {
                 $projectInstances = [UnityProjectInstance[]]@()
-                $setupInstances =  [UnitySetupInstance[]]@()
+                $setupInstances = [UnitySetupInstance[]]@()
 
-                $currentFolderProject = if( !$IgnoreProjectContext ) { Get-UnityProjectInstance $PWD.Path }
-                if($null -ne $currentFolderProject)
-                {
-                    $projectInstances += ,$currentFolderProject
+                $currentFolderProject = if ( !$IgnoreProjectContext ) { Get-UnityProjectInstance $PWD.Path }
+                if ($null -ne $currentFolderProject) {
+                    $projectInstances += , $currentFolderProject
                 }
-                else
-                {
+                else {
                     $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
-                    if($setupInstance.Count -gt 0)
-                    {
-                        $setupInstances += ,$setupInstance
+                    if ($setupInstance.Count -gt 0) {
+                        $setupInstances += , $setupInstance
                     }
                 }
             }
-            'Projects*' 
-            { 
+            'Projects*' { 
                 $projectInstances = $Project
-                $setupInstances =  [UnitySetupInstance[]]@()
+                $setupInstances = [UnitySetupInstance[]]@()
             }
-            'Setups' 
-            { 
+            'Setups' { 
                 $projectInstances = [UnityProjectInstance[]]@()
                 $setupInstances = $Setup
             }
-            'Latest'
-            {
+            'Latest' {
                 $projectInstances = [UnityProjectInstance[]]@()
                 
-                $currentFolderProject = if(!$IgnoreProjectContext) { Get-UnityProjectInstance $PWD.Path }
-                if($null -ne $currentFolderProject)
-                {
-                    $projectInstances += ,$currentFolderProject
+                $currentFolderProject = if (!$IgnoreProjectContext) { Get-UnityProjectInstance $PWD.Path }
+                if ($null -ne $currentFolderProject) {
+                    $projectInstances += , $currentFolderProject
                 }
-                elseif( $Latest )
-                {
+                elseif ( $Latest ) {
                     $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
-                    if($setupInstance.Count -gt 0)
-                    {
-                        $setupInstances = ,$setupInstance
+                    if ($setupInstance.Count -gt 0) {
+                        $setupInstances = , $setupInstance
                     }
                 }
             }
-            'Version'
-            {
+            'Version' {
                 $projectInstances = [UnityProjectInstance[]]@()
 
-                $currentFolderProject = if(!$IgnoreProjectContext) { Get-UnityProjectInstance $PWD.Path }
-                if($null -ne $currentFolderProject)
-                {
-                    $projectInstances += ,$currentFolderProject
+                $currentFolderProject = if (!$IgnoreProjectContext) { Get-UnityProjectInstance $PWD.Path }
+                if ($null -ne $currentFolderProject) {
+                    $projectInstances += , $currentFolderProject
                 }
-                elseif($null -ne $Version)
-                {
+                elseif ($null -ne $Version) {
                     $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $Version
-                    if($setupInstance.Count -gt 0)
-                    {
-                        $setupInstances = ,$setupInstance
+                    if ($setupInstance.Count -gt 0) {
+                        $setupInstances = , $setupInstance
+                    }
+                    else {
+                        Write-Error "Could not find Unity Editor for version $Version"
                     }
                 }
             }
         }
 
         $sharedArgs = @()
-        if( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
-        if( $ExecuteMethod ) { $sharedArgs += "-executeMethod",  $ExecuteMethod }
-        if( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
-        if( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
-        if( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
-        if( $BatchMode ) { $sharedArgs += "-batchmode" }
-        if( $Quit ) { $sharedArgs += "-quit" }
-        if( $ExportPackage ) { $sharedArgs += "-exportPackage","$ExportPackage" }
+        if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
+        if ( $ExecuteMethod ) { $sharedArgs += "-executeMethod", $ExecuteMethod }
+        if ( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
+        if ( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
+        if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
+        if ( $BatchMode ) { $sharedArgs += "-batchmode" }
+        if ( $Quit ) { $sharedArgs += "-quit" }
+        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
+        if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
 
         $instanceArgs = @()
-        foreach( $p in $projectInstances ) { 
+        foreach ( $p in $projectInstances ) { 
             
-            if( $Latest ) {
+            if ( $Latest ) {
                 $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
-                if($setupInstance.Count -eq 0) {
+                if ($setupInstance.Count -eq 0) {
                     Write-Error "Could not find any Unity Editor installed"
                     continue
                 }
             }
-            elseif($null -ne $Version) {
+            elseif ($null -ne $Version) {
                 $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $Version
                 if ($setupInstance.Count -eq 0) {
                     Write-Error "Could not find Unity Editor for version $Version"
@@ -730,55 +753,49 @@ function Start-UnityEditor
             }
             else {   
                 $setupInstance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $p.Version
-                if($setupInstance.Count -eq 0) {
+                if ($setupInstance.Count -eq 0) {
                     Write-Error "Could not find Unity Editor for version $($p.Version)"
                     continue
                 }
             }
             
             $projectPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($($p.Path))
-            $instanceArgs += ,("-projectPath", $projectPath)
-            $setupInstances += ,$setupInstance
+            $instanceArgs += , ("-projectPath", $projectPath)
+            $setupInstances += , $setupInstance
         }
 
-        for($i=0; $i -lt $setupInstances.Length; $i++)
-        {
+        for ($i = 0; $i -lt $setupInstances.Length; $i++) {
             $setupInstance = $setupInstances[$i]
             $editor = Get-ChildItem "$($setupInstance.Path)" -Filter 'Unity.exe' -Recurse | 
-                      Select-Object -First 1 -ExpandProperty FullName
+                Select-Object -First 1 -ExpandProperty FullName
 
-            if([string]::IsNullOrEmpty($editor))
-            {
+            if ([string]::IsNullOrEmpty($editor)) {
                 Write-Error "Could not find Unity.exe under setup instance path: $($setupInstance.Path)"
                 continue
             }
             
             # clone the shared args list
             $unityArgs = $sharedArgs | ForEach-Object { $_ }
-            if( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
+            if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
             $setProcessArgs = @{
                 'FilePath' = $editor;
                 'PassThru' = $true;
                 'ErrorAction' = 'Stop';
             }
 
-            if($unityArgs -and $unityArgs.Length -gt 0) {
+            if ($unityArgs -and $unityArgs.Length -gt 0) {
                 $setProcessArgs['ArgumentList'] = $unityArgs
             }
 
-            if(-not $PSCmdlet.ShouldProcess("$editor $unityArgs", "Start-Process"))
-            {
+            if (-not $PSCmdlet.ShouldProcess("$editor $unityArgs", "Start-Process")) {
                 continue
             }
 
             $process = Start-Process @setProcessArgs
-            if( $Wait )
-            {
+            if ( $Wait ) {
                 $process.WaitForExit();
-                if( $process.ExitCode -ne 0 )
-                {
-                    if( $LogFile -and (Test-Path $LogFile -Type Leaf) )
-                    {
+                if ( $process.ExitCode -ne 0 ) {
+                    if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                         Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
 
@@ -786,7 +803,28 @@ function Start-UnityEditor
                 }
             }
 
-            if($PassThru) { $process }
+            if ($PassThru) { $process }
         }
+    }
+}
+
+@(
+    @{ 'Name' = 'gusi'; 'Value' = 'Get-UnitySetupInstance' },
+    @{ 'Name' = 'gupi'; 'Value' = 'Get-UnityProjectInstance' },
+    @{ 'Name' = 'susi'; 'Value' = 'Select-UnitySetupInstance' },
+    @{ 'Name' = 'sue'; 'Value' = 'Start-UnityEditor' } 
+) | ForEach-Object { 
+
+    $alias = Get-Alias -Name $_.Name -ErrorAction 'SilentlyContinue'
+    if( -not $alias ) {
+        Write-Verbose "Creating new alias $($_.Name) for $($_.Value)" 
+        New-Alias @_ 
+    }
+    elseif( $alias.ModuleName -eq 'UnitySetup' ) {
+        Write-Verbose "Setting alias $($_.Name) to $($_.Value)" 
+        Set-Alias @_
+    }
+    else {
+        Write-Warning "Alias $($_.Name) already configured by $($alias.Source)"
     }
 }

@@ -10,134 +10,142 @@
 
 @{
 
-# Script module or binary module file associated with this manifest.
-RootModule = 'UnitySetup'
+    # Script module or binary module file associated with this manifest.
+    RootModule        = 'UnitySetup'
 
-# Version number of this module.
-ModuleVersion = '2.2'
+    # Version number of this module.
+    ModuleVersion     = '3.0'
 
-# Supported PSEditions
-# CompatiblePSEditions = @()
+    # Supported PSEditions
+    # CompatiblePSEditions = @()
 
-# ID used to uniquely identify this module
-GUID = '6dc524ef-5f56-4bc3-b04d-3c2906898f40'
+    # ID used to uniquely identify this module
+    GUID              = '6dc524ef-5f56-4bc3-b04d-3c2906898f40'
 
-# Author of this module
-Author = 'Josh Wittner'
+    # Author of this module
+    Author            = 'Josh Wittner'
 
-# Company or vendor of this module
-CompanyName = 'Microsoft'
+    # Company or vendor of this module
+    CompanyName       = 'Microsoft'
 
-# Copyright statement for this module
-Copyright = 'Copyright (c) Microsoft Corporation. All rights reserved.'
+    # Copyright statement for this module
+    Copyright         = 'Copyright (c) Microsoft Corporation. All rights reserved.'
 
-# Description of the functionality provided by this module
-Description = 'Tools for managing and automating your Unity installs and projects.'
+    # Description of the functionality provided by this module
+    Description       = 'Tools for managing and automating your Unity installs and projects.'
 
-# Minimum version of the Windows PowerShell engine required by this module
-# PowerShellVersion = ''
+    # Minimum version of the Windows PowerShell engine required by this module
+    # PowerShellVersion = ''
 
-# Name of the Windows PowerShell host required by this module
-# PowerShellHostName = ''
+    # Name of the Windows PowerShell host required by this module
+    # PowerShellHostName = ''
 
-# Minimum version of the Windows PowerShell host required by this module
-# PowerShellHostVersion = ''
+    # Minimum version of the Windows PowerShell host required by this module
+    # PowerShellHostVersion = ''
 
-# Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-# DotNetFrameworkVersion = ''
+    # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+    # DotNetFrameworkVersion = ''
 
-# Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-# CLRVersion = ''
+    # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+    # CLRVersion = ''
 
-# Processor architecture (None, X86, Amd64) required by this module
-# ProcessorArchitecture = ''
+    # Processor architecture (None, X86, Amd64) required by this module
+    # ProcessorArchitecture = ''
 
-# Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-    @{ModuleName="powershell-yaml"; ModuleVersion="0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da"}
+    # Modules that must be imported into the global environment prior to importing this module
+    RequiredModules   = @(
+        @{ModuleName = "powershell-yaml"; ModuleVersion = "0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da"}
     )
 
-# Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+    # Assemblies that must be loaded prior to importing this module
+    # RequiredAssemblies = @()
 
-# Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = @()
+    # Script files (.ps1) that are run in the caller's environment prior to importing this module.
+    ScriptsToProcess  = @()
 
-# Type files (.ps1xml) to be loaded when importing this module
-# TypesToProcess = @()
+    # Type files (.ps1xml) to be loaded when importing this module
+    # TypesToProcess = @()
 
-# Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+    # Format files (.ps1xml) to be loaded when importing this module
+    # FormatsToProcess = @()
 
-# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-# NestedModules = @()
+    # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
+    # NestedModules = @()
 
-# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @(
-    'Find-UnitySetupInstaller',
-    'Get-UnityProjectInstance',
-    'Get-UnitySetupInstance',
-    'Install-UnitySetupInstance',
-    'Select-UnitySetupInstance',
-    'Uninstall-UnitySetupInstance',
-    'Start-UnityEditor'
-)
-# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+    # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 
-# Variables to export from this module
-VariablesToExport = @()
+    FunctionsToExport = @(
+        'Find-UnitySetupInstaller',
+        'Get-UnityProjectInstance',
+        'Get-UnitySetupInstance',
+        'Install-UnitySetupInstance',
+        'Select-UnitySetupInstance',
+        'Uninstall-UnitySetupInstance',
+        'Start-UnityEditor',
+        'ConvertTo-UnitySetupComponent'
+    )
 
-# Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+    # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
+    CmdletsToExport   = @()
 
-# DSC resources to export from this module
-# DscResourcesToExport = @()
+    # Variables to export from this module
+    VariablesToExport = @()
 
-# List of all modules packaged with this module
-# ModuleList = @()
+    # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
+    AliasesToExport   = @(
+        'gusi',
+        'gupi',
+        'susi',
+        'sue'
+    )
 
-# List of all files packaged with this module
-# FileList = @()
+    # DSC resources to export from this module
+    # DscResourcesToExport = @()
 
-# Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
-PrivateData = @{
+    # List of all modules packaged with this module
+    # ModuleList = @()
 
-    PSData = @{
+    # List of all files packaged with this module
+    # FileList = @()
 
-        # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = 'Unity'
+    # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
+    PrivateData       = @{
 
-        # A URL to the license for this module.
-        LicenseUri = 'https://github.com/Microsoft/unitysetup.powershell/blob/master/LICENSE'
+        PSData = @{
 
-        # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/Microsoft/unitysetup.powershell'
+            # Tags applied to this module. These help with module discovery in online galleries.
+            Tags       = 'Unity'
 
-        # A URL to an icon representing this module.
-        # IconUri = ''
+            # A URL to the license for this module.
+            LicenseUri = 'https://github.com/Microsoft/unitysetup.powershell/blob/master/LICENSE'
 
-        # ReleaseNotes of this module
-        # ReleaseNotes = ''
+            # A URL to the main website for this project.
+            ProjectUri = 'https://github.com/Microsoft/unitysetup.powershell'
 
-        # Prerelease string of this module
-        # Prerelease = ''
+            # A URL to an icon representing this module.
+            # IconUri = ''
 
-        # Flag to indicate whether the module requires explicit user acceptance for install/update
-        # RequireLicenseAcceptance = $false
+            # ReleaseNotes of this module
+            # ReleaseNotes = ''
 
-        # External dependent modules of this module
-        # ExternalModuleDependencies = @()
+            # Prerelease string of this module
+            # Prerelease = ''
 
-    } # End of PSData hashtable
+            # Flag to indicate whether the module requires explicit user acceptance for install/update
+            # RequireLicenseAcceptance = $false
+
+            # External dependent modules of this module
+            # ExternalModuleDependencies = @()
+
+        } # End of PSData hashtable
     
- } # End of PrivateData hashtable
+    } # End of PrivateData hashtable
 
-# HelpInfo URI of this module
-HelpInfoURI = 'https://github.com/Microsoft/unitysetup.powershell/blob/master/README.md'
+    # HelpInfo URI of this module
+    HelpInfoURI       = 'https://github.com/Microsoft/unitysetup.powershell/blob/master/README.md'
 
-# Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-# DefaultCommandPrefix = ''
+    # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
+    # DefaultCommandPrefix = ''
 
 }
 

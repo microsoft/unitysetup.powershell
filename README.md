@@ -22,20 +22,25 @@ Install-Module UnitySetup -Scope CurrentUser
 
 ## Using
 
+### Cmdlets
 Find all of your Unity installs:
 ```powershell
 Get-UnitySetupInstance
 
 # Example output:
-# InstallationVersion InstallationPath
-# ------------------- ----------------
-# 2017.2.1f1          C:\Program Files\Unity-2017.2.1f1\Editor\
-# 2017.1.0p5          C:\Program Files\Unity.2017.1.0p5\Editor\
-# 2017.1.1f1          C:\Program Files\Unity.2017.1.1f1\Editor\
-# 2017.1.1p3          C:\Program Files\Unity.2017.1.1p3\Editor\
-# 2017.2.0f3          C:\Program Files\Unity.2017.2.0f3\Editor\
-# 2017.3.0f3          C:\Program Files\Unity.2017.3.0f3\Editor\
-# 5.5.4p3             C:\Program Files (x86)\Unity.5.5.4p3\Editor\
+# Version                                        Components Path
+# -------                                        ---------- ----
+# 2017.1.2f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\
+# 2017.1.3f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\
+# 2017.2.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\
+# 2017.3.1f1       Setup, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\
+# 2018.1.0b4              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\
+# 2018.1.0b8                                            All C:\Program Files\Unity-2018.1.0b8\
+# 2017.1.0p5                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\
+# 2017.1.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\
+# 2017.1.1p3       Setup, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\
+# 2017.2.0f3              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
+# 2017.3.0f3         Setup, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
 ```
 
 Select the Unity installs that you want:
@@ -50,12 +55,12 @@ Find all the Unity projects recursively:
 Get-UnityProjectInstance -Recurse
 
 # Example output:
-# ProjectPath                                    UnityInstanceVersion
-# -----------                                    --------------------
-# C:\Projects\Project1\OneUnity\                 2017.2.0f3
-# C:\Projects\Project1\TwoUnity\                 2017.3.0f3
-# C:\Projects\Project2\                          2017.1.1p1
-# C:\Projects\Project3\App.Unity\                2017.1.2f1
+# Version    Path
+# -------    ----
+# 2017.2.0f3 C:\Projects\Project1\OneUnity\                 
+# 2017.3.0f3 C:\Projects\Project1\TwoUnity\                 
+# 2017.1.1p1 C:\Projects\Project2\                          
+# 2017.1.2f1 C:\Projects\Project3\App.Unity\                
 ```
 Launch the right Unity editor for a project:
 ```powershell
@@ -78,7 +83,6 @@ Find-UnitySetupInstaller -Version '2017.3.0f3' | Format-Table
 #          Setup 2017.3.0f3 553688024 2017-12-18 08:15:20 https://netstorage.unity3d.com/unity/...
 #  Documentation 2017.3.0f3 358911256 2017-12-18 08:18:37 https://netstorage.unity3d.com/unity/...
 # StandardAssets 2017.3.0f3 189886032 2017-12-18 08:15:52 https://netstorage.unity3d.com/unity/...
-# ExampleProject 2017.3.0f3 258824680 2017-12-18 08:15:39 https://netstorage.unity3d.com/unity/...
 #          Metro 2017.3.0f3 172298008 2017-12-18 08:17:44 https://netstorage.unity3d.com/unity/...
 #     UWP_IL2CPP 2017.3.0f3 152933480 2017-12-18 08:17:55 https://netstorage.unity3d.com/unity/...
 #        Android 2017.3.0f3 194240888 2017-12-18 08:16:06 https://netstorage.unity3d.com/unity/...
@@ -110,6 +114,29 @@ Find-UnitySetupInstaller -Version '2017.3.0f3' | Install-UnitySetupInstance
 Install-UnitySetupInstance -Installers (Find-UnitySetupInstaller -Version '2017.3.0f3')
 ```
 
+### DSC
+UnitySetup includes the xUnitySetupInstance DSC Resource. An example configuration might look like:
+
+```powershell
+<#
+    Install multiple versions of Unity and several components
+#>
+Configuration Sample_xUnitySetupInstance_Install {
+
+    Import-DscResource -ModuleName UnitySetup
+
+    Node 'localhost' {
+
+        xUnitySetupInstance Unity {
+            Versions = '2017.3.1f1,2018.1.0b9'
+            Components = 'Setup', 'Mac', 'Linux', 'Metro', 'iOS'
+            Ensure = 'Present'
+        }
+    }
+}
+```
+
+See more by perusing the `UnitySetup\Examples` folder.
 
 # Feedback
 To file issues or suggestions, please use the [Issues](https://github.com/Microsoft/unitysetup.powershell/issues) page for this project on GitHub.
