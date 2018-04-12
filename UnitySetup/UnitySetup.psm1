@@ -264,12 +264,10 @@ function Find-UnitySetupInstaller {
             $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
             $searchPages += $patchPage
 
-            $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
-            $searchPages += $webResult.Links | Where-Object {
-                $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&amp;page=(\d+)" -and $Matches[1] -gt 1
-            } | ForEach-Object {
-                "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)&page=$($Matches[1])"
-            }
+            $webResult = Invoke-WebRequest $patchPage -UseBasicParsing 
+            $searchPages += $webResult.Links | Where-Object { 
+                $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1
+            } | ForEach-Object { "https://unity3d.com$($_.href)" }
         }
     }
 
@@ -873,12 +871,12 @@ function Start-UnityEditor {
 ) | ForEach-Object {
 
     $alias = Get-Alias -Name $_.Name -ErrorAction 'SilentlyContinue'
-    if( -not $alias ) {
-        Write-Verbose "Creating new alias $($_.Name) for $($_.Value)"
-        New-Alias @_
+    if ( -not $alias ) {
+        Write-Verbose "Creating new alias $($_.Name) for $($_.Value)" 
+        New-Alias @_ 
     }
-    elseif( $alias.ModuleName -eq 'UnitySetup' ) {
-        Write-Verbose "Setting alias $($_.Name) to $($_.Value)"
+    elseif ( $alias.ModuleName -eq 'UnitySetup' ) {
+        Write-Verbose "Setting alias $($_.Name) to $($_.Value)" 
         Set-Alias @_
     }
     else {
