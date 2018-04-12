@@ -315,7 +315,6 @@ function Find-UnitySetupInstaller {
 #>
 function Install-UnitySetupInstance {
     [CmdletBinding()]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Scope = 'Function')]
     param(
         [parameter(ValueFromPipeline = $true)]
         [UnitySetupInstaller[]] $Installers,
@@ -377,14 +376,13 @@ function Install-UnitySetupInstance {
             Start-BitsTransfer -Source $downloadSource -Destination $downloadDest
         }
        
-        $spins = @('|', '/', '-', '\')
         for ($i = 0; $i -lt $localInstallers.Length; $i++) {
             $installer = $localInstallers[$i]
             $destination = $localDestinations[$i]
 
             $startProcessArgs = @{
                 'FilePath' = $installer;
-                'ArgumentList' = @("/S", "/D=$($localDestinations[$i])");
+                'ArgumentList' = @("/S", "/D=$destination");
                 'PassThru' = $true;
             }
 
@@ -392,19 +390,17 @@ function Install-UnitySetupInstance {
                 $startProcessArgs['Verb'] = $Verb
             }
             
-            $spinnerIndex = 0
+            Write-Verbose "$(Get-Date): Installing $installer to $destination."
             $process = Start-Process @startProcessArgs
-            while (!$process.HasExited) {
-                Write-Host "`rInstalling $installer to $destination - $($spins[$spinnerIndex++ % $spins.Length])" -NoNewline
-                Start-Sleep -Milliseconds 100
-            }
+            if( $process ) {
+                $process.WaitForExit()
 
-            if ( $process.ExitCode -ne 0) {
-                Write-Host "`bFailed."
-                Write-Error "Installing $installer failed with exit code: $($process.ExitCode)"
-            }
-            else { 
-                Write-Host "`bSucceeded."
+                if ( $process.ExitCode -ne 0) {
+                    Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
+                }
+                else { 
+                    Write-Verbose "$(Get-Date): Succeeded."
+                }
             }
         }
     }
