@@ -19,7 +19,7 @@ enum UnitySetupComponent {
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
     Windows = (1 -shl 14)
-    All = (1 -shl 14) - 1
+    All = (1 -shl 15) - 1
 }
 
 class UnitySetupInstaller {
