@@ -194,6 +194,8 @@ class UnityVersion : System.IComparable {
    Easy way to determine the current operating system platform being executed on.
 .DESCRIPTION
    Determine which operating system that's executing the script for things like path variants.
+.OUTPUTS
+   Get-OperatingSystem returns a [OperatingSystem] enumeration based off the Powershell platform being run on.
 .EXAMPLE
    $OS = Get-OperatingSystem
 .EXAMPLE
