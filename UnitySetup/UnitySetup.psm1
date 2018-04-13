@@ -4,22 +4,28 @@ Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
 [Flags()]
 enum UnitySetupComponent {
-    Setup = (1 -shl 0)
-    Documentation = (1 -shl 1)
-    StandardAssets = (1 -shl 2)
-    Windows_IL2CPP = (1 -shl 3)
-    Metro = (1 -shl 4)
-    UWP_IL2CPP = (1 -shl 5)
-    Android = (1 -shl 6)
-    iOS = (1 -shl 7)
-    AppleTV = (1 -shl 8)
-    Facebook = (1 -shl 9)
-    Linux = (1 -shl 10)
-    Mac = (1 -shl 11)
+    Windows = (1 -shl 0)
+    Linux = (1 -shl 1)
+    Mac = (1 -shl 2)
+    Documentation = (1 -shl 3)
+    StandardAssets = (1 -shl 4)
+    Windows_IL2CPP = (1 -shl 5)
+    Metro = (1 -shl 6)
+    UWP_IL2CPP = (1 -shl 7)
+    Android = (1 -shl 8)
+    iOS = (1 -shl 9)
+    AppleTV = (1 -shl 10)
+    Facebook = (1 -shl 11)
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
-    Windows = (1 -shl 14)
-    All = (1 -shl 15) - 1
+    All = (1 -shl 14) - 1
+}
+
+[Flags()]
+enum OperatingSystem {
+    Windows
+    Linux
+    Mac
 }
 
 class UnitySetupInstaller {
@@ -37,13 +43,11 @@ class UnitySetupInstance {
 
     UnitySetupInstance([string]$path) {
 
-        # Windows
-        if ((-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT")) {
-            $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
-        }
-        # Mac or Linux
-        else {
-            $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
+        $currentOS = Get-OperatingSystem
+        $ivyPath = switch ($currentOS) {
+            ([OperatingSystem]::Windows) { 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml' }
+            ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
+            ([OperatingSystem]::Mac) { 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml' }
         }
 
         $ivyPath = [io.path]::Combine("$path", $ivyPath);
@@ -56,43 +60,47 @@ class UnitySetupInstance {
 
         $this.Path = $path
         $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
-        $this.Components = [UnitySetupComponent]::Setup
 
-        # Windows
-        if ((-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT")) {
-            $componentTests = @{
-                [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
-                [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
-                [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win32_development_il2cpp");
-                [UnitySetupComponent]::Metro = [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_.NET_D3D"),
-                    [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_D3D");
-                [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\MetroSupport\Templates\UWP_IL2CPP_D3D");
-                [UnitySetupComponent]::Android = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\AndroidPlayer");
-                [UnitySetupComponent]::iOS = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\iOSSupport");
-                [UnitySetupComponent]::AppleTV = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\AppleTVSupport");
-                [UnitySetupComponent]::Facebook = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\Facebook");
-                [UnitySetupComponent]::Linux = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\LinuxStandaloneSupport");
-                [UnitySetupComponent]::Mac = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\MacStandaloneSupport");
-                [UnitySetupComponent]::Vuforia = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\VuforiaSupport");
-                [UnitySetupComponent]::WebGL = , [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines\WebGLSupport");
+        $playbackEnginePath = $null
+        $componentTests = switch ($currentOS) {
+            ([OperatingSystem]::Windows) {
+                $this.Components = [UnitySetupComponent]::Windows
+                $playbackEnginePath = [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines");
+                @{
+                    [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
+                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
+                    [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
+                    [UnitySetupComponent]::Metro = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                        [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
+                    [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
+                    [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Mac = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
+                }
+            }
+            ([OperatingSystem]::Linux) {
+                $this.Components = [UnitySetupComponent]::Linux
+
+                throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+            }
+            ([OperatingSystem]::Mac) {
+                $this.Components = [UnitySetupComponent]::Mac
+                $playbackEnginePath = [io.path]::Combine("$Path", "PlaybackEngines");
+                @{
+                    [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Documentation");
+                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
+                    [UnitySetupComponent]::Windows = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                }
             }
         }
-        # Mac or Linux
-        else {
-            $componentTests = @{
-                [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Documentation");
-                [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
-                [UnitySetupComponent]::Android = , [io.path]::Combine("$Path", "PlaybackEngines/AndroidPlayer");
-                [UnitySetupComponent]::iOS = , [io.path]::Combine("$Path", "PlaybackEngines/iOSSupport");
-                [UnitySetupComponent]::AppleTV = , [io.path]::Combine("$Path", "PlaybackEngines/AppleTVSupport");
-                [UnitySetupComponent]::Facebook = , [io.path]::Combine("$Path", "PlaybackEngines/Facebook");
-                [UnitySetupComponent]::Linux = , [io.path]::Combine("$Path", "PlaybackEngines/LinuxStandaloneSupport");
-                [UnitySetupComponent]::Windows = , [io.path]::Combine("$Path", "PlaybackEngines/WindowsStandaloneSupport");
-                [UnitySetupComponent]::Mac = , [io.path]::Combine("$Path", "Unity.app/Contents/PlaybackEngines/MacStandaloneSupport");
-                [UnitySetupComponent]::Vuforia = , [io.path]::Combine("$Path", "PlaybackEngines/VuforiaSupport");
-                [UnitySetupComponent]::WebGL = , [io.path]::Combine("$Path", "PlaybackEngines/WebGLSupport");
-            }
-        }
+
+        # Common playback engines:
+        $componentTests[[UnitySetupComponent]::Android] = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
+        $componentTests[[UnitySetupComponent]::iOS] = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
+        $componentTests[[UnitySetupComponent]::AppleTV] = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
+        $componentTests[[UnitySetupComponent]::Facebook] = , [io.path]::Combine("$playbackEnginePath", "Facebook");
+        $componentTests[[UnitySetupComponent]::Vuforia] = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
+        $componentTests[[UnitySetupComponent]::WebGL] = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -183,11 +191,49 @@ class UnityVersion : System.IComparable {
 
 <#
 .Synopsis
+   Easy way to determine the current operating system platform being executed on.
+.DESCRIPTION
+   Determine which operating system that's executing the script for things like path variants.
+.EXAMPLE
+   $OS = Get-OperatingSystem
+.EXAMPLE
+   # Loosely typed.
+   switch (Get-OperatingSystem) {
+       Windows { echo "On Windows" }
+       Linux { echo "On Linux" }
+       Mac { echo "On Mac" }
+   }
+.EXAMPLE
+   # Strongly typed.
+   switch (Get-OperatingSystem) {
+       ([OperatingSystem]::Windows) { echo "On Windows" }
+       ([OperatingSystem]::Linux) { echo "On Linux" }
+       ([OperatingSystem]::Mac) { echo "On Mac" }
+   }
+.EXAMPLE
+   if (Get-OperatingSystem == [OperatingSystem]::Linux) {
+       echo "On Linux"
+   }
+#>
+function Get-OperatingSystem {
+    if ((-not $global:PSVersionTable.Platform) -or ($global:PSVersionTable.Platform -eq "Win32NT")) {
+        return [OperatingSystem]::Windows
+    }
+    elseif ($global:PSVersionTable.OS.Contains("Linux")) {
+        return [OperatingSystem]::Linux
+    }
+    elseif ($global:PSVersionTable.OS.Contains("Darwin")) {
+        return [OperatingSystem]::Mac
+    }
+}
+
+<#
+.Synopsis
    Help to create UnitySetupComponent
 .PARAMETER Components
    What components would you like included?
 .EXAMPLE
-   ConvertTo-UnitySetupComponent Setup,Metro
+   ConvertTo-UnitySetupComponent Windows,Metro
 #>
 function ConvertTo-UnitySetupComponent {
     [CmdletBinding()]
@@ -211,7 +257,7 @@ function ConvertTo-UnitySetupComponent {
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3
 .EXAMPLE
-   Find-UnitySetupInstaller -Version 2017.3.0f3 -Components Setup,Documentation
+   Find-UnitySetupInstaller -Version 2017.3.0f3 -Components Windows,Documentation
 #>
 function Find-UnitySetupInstaller {
     [CmdletBinding()]
@@ -231,7 +277,6 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::Setup = , "Windows64EditorInstaller/UnitySetup64-$Version.exe";
         [UnitySetupComponent]::Documentation = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
         [UnitySetupComponent]::StandardAssets = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
         [UnitySetupComponent]::Metro = , "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
@@ -242,10 +287,30 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Facebook = , "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Linux = , "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
-        "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
+            "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Vuforia = , "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::WebGL = , "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Windows_IL2CPP = , "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
+    }
+
+    $currentOS = Get-OperatingSystem
+    switch ($currentOS) {
+        ([OperatingSystem]::Windows) {
+            $setupComponent = [UnitySetupComponent]::Windows
+            $installerTemplates[$setupComponent] = , "Windows64EditorInstaller/UnitySetup64-$Version.exe";
+        }
+        ([OperatingSystem]::Linux) {
+            $setupComponent = [UnitySetupComponent]::Linux
+            # TODO: $installerTemplates[$setupComponent] = , "???/UnitySetup64-$Version.exe";
+
+            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+        }
+        ([OperatingSystem]::Mac) {
+            $setupComponent = [UnitySetupComponent]::Mac
+            # TODO: $installerTemplates[$setupComponent] = , "???/UnitySetup64-$Version.exe";
+
+            throw "Find-UnitySetupInstaller has not been implemented on the Mac platform. Contributions welcomed!";
+        }
     }
 
     # By default Tls12 protocol is not enabled, but is what backs Unity's website, so enable it
@@ -274,7 +339,7 @@ function Find-UnitySetupInstaller {
     foreach ($page in $searchPages) {
         $webResult = Invoke-WebRequest $page -UseBasicParsing
         $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object {
-            $_ -match "$($installerTemplates[[UnitySetupComponent]::Setup])$"
+            $_ -match "$($installerTemplates[$setupComponent])$"
         }
 
         if ($null -ne $prototypeLink) { break }
@@ -497,19 +562,22 @@ function Get-UnitySetupInstance {
         [string[]] $BasePath
     )
 
-    # Windows
-    if ((-not $PSVersionTable.Platform) -or ($PSVersionTable.Platform -eq "Win32NT")) {
-        if (-not $BasePath) {
-            $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
+    switch (Get-OperatingSystem) {
+        ([OperatingSystem]::Windows) {
+            if (-not $BasePath) {
+                $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
+            }
+            $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
         }
-        $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
-    }
-    # Mac or Linux
-    else {
-        if (-not $BasePath) {
-            $BasePath = @('/Applications/Unity*')
+        ([OperatingSystem]::Linux) {
+            throw "Get-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
         }
-        $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
+        ([OperatingSystem]::Mac) {
+            if (-not $BasePath) {
+                $BasePath = @('/Applications/Unity*')
+            }
+            $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
+        }
     }
 
     foreach ( $folder in $BasePath ) {
@@ -802,26 +870,31 @@ function Start-UnityEditor {
             $setupInstances += , $setupInstance
         }
 
+        $currentOS = Get-OperatingSystem
+
         for ($i = 0; $i -lt $setupInstances.Length; $i++) {
             $setupInstance = $setupInstances[$i]
 
-            # Windows
-            if ((-not $PSVersionTable.Platform) -or ($PSVersionTable.Platform -eq "Win32NT")) {
-                $editor = Get-ChildItem "$($setupInstance.Path)" -Filter 'Unity.exe' -Recurse |
-                    Select-Object -First 1 -ExpandProperty FullName
-
-                if ([string]::IsNullOrEmpty($editor)) {
-                    Write-Error "Could not find Unity.exe under setup instance path: $($setupInstance.Path)"
-                    continue
+            switch ($currentOS) {
+                ([OperatingSystem]::Windows) {
+                    $editor = Get-ChildItem "$($setupInstance.Path)" -Filter 'Unity.exe' -Recurse |
+                        Select-Object -First 1 -ExpandProperty FullName
+    
+                    if ([string]::IsNullOrEmpty($editor)) {
+                        Write-Error "Could not find Unity.exe under setup instance path: $($setupInstance.Path)"
+                        continue
+                    }
                 }
-            }
-            # Mac or Linux
-            else {
-                $editor = [io.path]::Combine("$($setupInstance.Path)", "Unity.app/Contents/MacOS/Unity")
-
-                if ([string]::IsNullOrEmpty($editor)) {
-                    Write-Error "Could not find Unity app under setup instance path: $($setupInstance.Path)"
-                    continue
+                ([OperatingSystem]::Linux) {
+                    throw "Start-UnityEditor has not been implemented on the Linux platform. Contributions welcomed!";
+                }
+                ([OperatingSystem]::Mac) {
+                    $editor = [io.path]::Combine("$($setupInstance.Path)", "Unity.app/Contents/MacOS/Unity")
+    
+                    if ([string]::IsNullOrEmpty($editor)) {
+                        Write-Error "Could not find Unity app under setup instance path: $($setupInstance.Path)"
+                        continue
+                    }
                 }
             }
 
