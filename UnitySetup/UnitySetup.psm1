@@ -709,6 +709,8 @@ function Get-UnityProjectInstance {
    The log file for the Unity Editor to write to.
 .PARAMETER BuildTarget
    The platform build target for the Unity Editor to start in.
+.PARAMETER AcceptAPIUpdate
+   Accept the API Updater automatically. Implies BatchMode unless explicitly specified by the user.
 .PARAMETER BatchMode
    Should the Unity Editor start in batch mode?
 .PARAMETER Quit
@@ -764,6 +766,8 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch')]
         [string]$BuildTarget,
+        [parameter(Mandatory = $false)]
+        [switch]$AcceptAPIUpdate,
         [parameter(Mandatory = $false)]
         [switch]$BatchMode,
         [parameter(Mandatory = $false)]
@@ -832,6 +836,11 @@ function Start-UnityEditor {
         }
 
         $sharedArgs = @()
+        if ( $AcceptAPIUpdate ) { 
+            $sharedArgs += '-accept-apiupdate'
+            if( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
+        }
+
         if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
         if ( $ExecuteMethod ) { $sharedArgs += "-executeMethod", $ExecuteMethod }
         if ( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
