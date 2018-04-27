@@ -733,9 +733,9 @@ function Get-UnityProjectInstance {
 function Start-UnityEditor {
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = "Context")]
     param(
-        [parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = 'Projects')]
-        [parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'ProjectsLatest')]
-        [parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'ProjectsVersion')]
+        [parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = 'Projects', Position = 0)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'ProjectsLatest', Position = 0)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'ProjectsVersion', Position = 0)]
         [ValidateNotNullOrEmpty()]
         [UnityProjectInstance[]] $Project,
         [parameter(Mandatory = $false, ValueFromPipeline = $true, ParameterSetName = 'Setups')]
