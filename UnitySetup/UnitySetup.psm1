@@ -71,7 +71,7 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
                     [UnitySetupComponent]::Metro = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
-                        [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
+                    [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                     [UnitySetupComponent]::Mac = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
@@ -289,7 +289,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Facebook = , "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Linux = , "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
-            "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
+        "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Vuforia = , "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::WebGL = , "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Windows_IL2CPP = , "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
@@ -480,6 +480,7 @@ function Install-UnitySetupInstance {
                 'FilePath' = $installer;
                 'ArgumentList' = @("/S", "/D=$destination");
                 'PassThru' = $true;
+                'Wait' = $true;
             }
 
             if ($Verb) {
@@ -488,9 +489,7 @@ function Install-UnitySetupInstance {
             
             Write-Verbose "$(Get-Date): Installing $installer to $destination."
             $process = Start-Process @startProcessArgs
-            if( $process ) {
-                $process.WaitForExit()
-
+            if ( $process ) {
                 if ( $process.ExitCode -ne 0) {
                     Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
                 }
@@ -838,7 +837,7 @@ function Start-UnityEditor {
         $sharedArgs = @()
         if ( $AcceptAPIUpdate ) { 
             $sharedArgs += '-accept-apiupdate'
-            if( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
+            if ( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
         }
 
         if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
@@ -921,6 +920,8 @@ function Start-UnityEditor {
                 'RedirectStandardError' = New-TemporaryFile;
             }
 
+            if ($Wait) { $setProcessArgs['Wait'] = $true }
+
             Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
             Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
 
@@ -934,13 +935,12 @@ function Start-UnityEditor {
 
             $process = Start-Process @setProcessArgs
             if ( $Wait ) {
-                $process.WaitForExit();
                 if ( $process.ExitCode -ne 0 ) {
                     if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                         Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
 
-                    Write-Error "Unity quit with non-zero exit code"
+                    Write-Error "Unity quit with non-zero exit code: $($process.ExitCode)"
                 }
             }
 
