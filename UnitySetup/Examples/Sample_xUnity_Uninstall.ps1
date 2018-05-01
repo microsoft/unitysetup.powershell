@@ -1,7 +1,7 @@
 <#
     Uninstall multiple versions of Unity
 #>
-Configuration Sample_xUnitySetupInstance_Install {
+Configuration Sample_xUnity_Install {
     
     param(
         [PSCredential]$UnityCredential,

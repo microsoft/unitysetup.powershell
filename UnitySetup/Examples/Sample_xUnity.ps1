@@ -1,11 +1,11 @@
 <#
     Create a custom configuration by passing in necessary values
 #>
-Configuration Sample_xUnitySetupInstance {
+Configuration Sample_xUnity {
     param 
     (       
         [System.String]
-        $Versions = '2017.4.2f2'
+        $Version = '2017.4.2f2',
 
         [ValidateSet('Present', 'Absent')]
         [System.String]
@@ -26,10 +26,10 @@ Configuration Sample_xUnitySetupInstance {
     Node 'localhost' {
 
         xUnitySetupInstance Unity {
-            Versions   = $Versions
+            Versions   = $Version
             Components = $Components
             Ensure     = $Ensure
-            DependsOn  = if( $Ensure -eq 'Absent' ) { '[xUnityLicense]UnityLicense' }
+            DependsOn  = if( $Ensure -eq 'Absent' ) { '[xUnityLicense]UnityLicense' } else { $null }
         }
 
         xUnityLicense UnityLicense {
@@ -37,7 +37,8 @@ Configuration Sample_xUnitySetupInstance {
             Credential = $UnityCredential
             Serial = $UnitySerial
             Ensure = $Ensure
-            DependsOn = if( $Ensure -eq 'Present' ) { '[xUnitySetupInstance]Unity' }
+            UnityVersion = $Version
+            DependsOn = if( $Ensure -eq 'Present' ) { '[xUnitySetupInstance]Unity' } else { $null }
         }
     }
 }
