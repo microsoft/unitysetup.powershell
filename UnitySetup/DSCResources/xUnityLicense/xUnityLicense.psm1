@@ -3,15 +3,19 @@
     [OutputType([System.Collections.Hashtable])]
     param
     (
+        [parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
         $Credential,
 
+        [parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
         $Serial,
 
+        [parameter(Mandatory = $false)]
         [System.String]
         $UnityVersion,
 
+        [parameter(Mandatory = $true)]
         [System.String]
         $Name
     )
@@ -64,6 +68,7 @@ function Test-TargetResource {
     [OutputType([System.Boolean])]
     param
     (
+        [parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
         $Credential,
 
@@ -75,6 +80,7 @@ function Test-TargetResource {
         [System.Management.Automation.PSCredential]
         $Serial,
 
+        [parameter(Mandatory = $false)]
         [System.String]
         $UnityVersion,
 

@@ -1,7 +1,7 @@
 <#
     Install multiple versions of Unity and several components
 #>
-Configuration Sample_xUnitySetupInstance_Install {
+Configuration Sample_xUnity_Install {
 
     param(
         [PSCredential]$UnityCredential,
