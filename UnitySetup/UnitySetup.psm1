@@ -710,6 +710,12 @@ function Get-UnityProjectInstance {
    The platform build target for the Unity Editor to start in.
 .PARAMETER AcceptAPIUpdate
    Accept the API Updater automatically. Implies BatchMode unless explicitly specified by the user.
+.PARAMETER Credential
+   What user name and password should be used by Unity for activation?
+.PARAMETER Serial
+   What serial should be used by Unity for activation? Implies BatchMode and Quit if they're not supplied by the User.
+.PARAMETER ReturnLicense
+   Unity should return the current license it's been activated with. Implies Quit if not supplied by the User.
 .PARAMETER BatchMode
    Should the Unity Editor start in batch mode?
 .PARAMETER Quit
@@ -767,6 +773,14 @@ function Start-UnityEditor {
         [string]$BuildTarget,
         [parameter(Mandatory = $false)]
         [switch]$AcceptAPIUpdate,
+        [parameter(Mandatory = $false)]
+        [pscredential]$Credential,
+        [parameter(Mandatory = $false)]
+        [securestring]$Serial,
+        [parameter(Mandatory = $false)]
+        [switch]$ReturnLicense,
+        [parameter(Mandatory = $false)]
+        [switch]$ForceFree,
         [parameter(Mandatory = $false)]
         [switch]$BatchMode,
         [parameter(Mandatory = $false)]
@@ -835,11 +849,20 @@ function Start-UnityEditor {
         }
 
         $sharedArgs = @()
+        if ( $ReturnLicense ) {
+            if ( -not $PSBoundParameters.ContainsKey('BatchMode') ) { $BatchMode = $true }
+            if ( -not $PSBoundParameters.ContainsKey('Quit') ) { $Quit = $true }
+
+            $sharedArgs += '-returnLicense'
+        }
+        if ( $Serial ) {
+            if ( -not $PSBoundParameters.ContainsKey('BatchMode') ) { $BatchMode = $true }
+            if ( -not $PSBoundParameters.ContainsKey('Quit') ) { $Quit = $true }
+        }
         if ( $AcceptAPIUpdate ) { 
             $sharedArgs += '-accept-apiupdate'
             if ( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
         }
-
         if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
         if ( $ExecuteMethod ) { $sharedArgs += "-executeMethod", $ExecuteMethod }
         if ( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
@@ -849,6 +872,8 @@ function Start-UnityEditor {
         if ( $Quit ) { $sharedArgs += "-quit" }
         if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
         if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
+        if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
+        if ( $ForceFree) { $sharedArgs += '-force-free' }
 
         $instanceArgs = @()
         foreach ( $p in $projectInstances ) {
@@ -925,18 +950,27 @@ function Start-UnityEditor {
             Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
             Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
 
-            if ($unityArgs -and $unityArgs.Length -gt 0) {
-                $setProcessArgs['ArgumentList'] = $unityArgs
+            $actionString = "$editor $unityArgs"
+            if( $Credential ) { $actionString += " -password (hidden)"}
+            if( $Serial ) { $actionString += " -serial (hidden)"}
+
+            if (-not $PSCmdlet.ShouldProcess($actionString, "Start-Process")) {
+                continue
             }
 
-            if (-not $PSCmdlet.ShouldProcess("$editor $unityArgs", "Start-Process")) {
-                continue
+            # Defered till after potential display by ShouldProcess
+            if ( $Credential ) { $unityArgs += '-password', $Credential.GetNetworkCredential().Password }
+            if ( $Serial ) { $unityArgs += '-serial', [System.Net.NetworkCredential]::new($null, $Serial).Password }
+
+            if ($unityArgs -and $unityArgs.Length -gt 0) {
+                $setProcessArgs['ArgumentList'] = $unityArgs
             }
 
             $process = Start-Process @setProcessArgs
             if ( $Wait ) {
                 if ( $process.ExitCode -ne 0 ) {
                     if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
+                        Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
                         Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
 
@@ -945,6 +979,42 @@ function Start-UnityEditor {
             }
 
             if ($PassThru) { $process }
+        }
+    }
+}
+
+function ConvertTo-DateTime {
+    param([string] $Text)
+
+    if( -not $text -or $text.Length -eq 0 ) { [DateTime]::MaxValue }
+    else { [DateTime]$Text }
+}
+
+function Get-UnityLicense
+{
+    [CmdletBinding()]
+    param([SecureString]$Serial, [UnityVersion]$UnityVersion)
+
+    $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf"
+    foreach ( $licenseFile in $licenseFiles ) {
+        Write-Verbose "Discovered License File at $licenseFile"
+        $doc = [xml](Get-Content "$licenseFile")
+        $devBytes = [System.Convert]::FromBase64String($doc.root.License.DeveloperData.Value)
+
+        # The first four bytes look like a count so skip that to pull out the serial string
+        $licenseSerial = [String]::new($devBytes[4..($devBytes.Length - 1)])
+        if( $Serial -and [System.Net.NetworkCredential]::new($null, $Serial).Password -ne $licenseSerial ) { continue; }
+        
+        $license = $doc.root.License
+        [PSCustomObject]@{
+            'LicenseVersion' = $license.LicenseVersion.Value
+            'Serial' = ConvertTo-SecureString $licenseSerial -AsPlainText -Force
+            'UnityVersion' = [UnityVersion]$license.ClientProvidedVersion.Value
+            'DisplaySerial' = $license.SerialMasked.Value
+            'ActivationDate' = ConvertTo-DateTime $license.InitialActivationDate.Value
+            'StartDate' = ConvertTo-DateTime $license.StartDate.Value
+            'StopDate' = ConvertTo-DateTime $license.StopDate.Value
+            'UpdateDate' = ConvertTo-DateTime $license.UpdateDate.Value
         }
     }
 }
