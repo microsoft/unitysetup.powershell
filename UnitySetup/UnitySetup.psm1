@@ -995,7 +995,7 @@ function Get-UnityLicense
     [CmdletBinding()]
     param([SecureString]$Serial, [UnityVersion]$UnityVersion)
 
-    $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf"
+    $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf" -ErrorAction 'SilentlyContinue'
     foreach ( $licenseFile in $licenseFiles ) {
         Write-Verbose "Discovered License File at $licenseFile"
         $doc = [xml](Get-Content "$licenseFile")
