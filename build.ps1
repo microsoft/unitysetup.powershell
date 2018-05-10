@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
 param([int]$Revision = 0, [string]$Suffix = '')
 Import-Module 'PowerShellGet' -Force
 
