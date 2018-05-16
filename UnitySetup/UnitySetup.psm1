@@ -990,10 +990,18 @@ function ConvertTo-DateTime {
     else { [DateTime]$Text }
 }
 
+<#
+.Synopsis
+   Get the active Unity licenses for the machine.
+.PARAMETER Serial
+   Filter licenses to the specified serial
+.EXAMPLE
+   Get-UnityLicense
+#>
 function Get-UnityLicense
 {
     [CmdletBinding()]
-    param([SecureString]$Serial, [UnityVersion]$UnityVersion)
+    param([SecureString]$Serial)
 
     $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf" -ErrorAction 'SilentlyContinue'
     foreach ( $licenseFile in $licenseFiles ) {

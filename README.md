@@ -115,6 +115,28 @@ Find-UnitySetupInstaller -Version '2017.3.0f3' | Install-UnitySetupInstance
 Install-UnitySetupInstance -Installers (Find-UnitySetupInstaller -Version '2017.3.0f3')
 ```
 
+Manage Unity licenses.
+```powershell
+# Get any active licenses
+Get-UnityLicense
+
+# Example Output:
+# LicenseVersion : 6.x
+# Serial         : System.Security.SecureString
+# UnityVersion   : 2017.4.2f2
+# DisplaySerial  : AB-CDEF-GHIJ-KLMN-OPQR-XXXX
+# ActivationDate : 2017-07-13 16:32:16
+# StartDate      : 2017-07-12 00:00:00
+# StopDate       : 2019-01-01 00:00:00
+# UpdateDate     : 2018-05-11 23:47:10
+
+# Activate a license
+Start-UnityEditor -Credential <unityAccount> -Serial <unitySerial> -Wait
+
+# Return license
+Start-UnityEditor -Credential <unityAccount> -ReturnLicense -Wait
+```
+
 ### DSC
 UnitySetup includes the xUnitySetupInstance DSC Resource. An example configuration might look like:
 
@@ -123,15 +145,28 @@ UnitySetup includes the xUnitySetupInstance DSC Resource. An example configurati
     Install multiple versions of Unity and several components
 #>
 Configuration Sample_xUnitySetupInstance_Install {
+    param(
+        [PSCredential]$UnityCredential,
+        [PSCredential]$UnitySerial
+    )
 
     Import-DscResource -ModuleName UnitySetup
 
     Node 'localhost' {
 
         xUnitySetupInstance Unity {
-            Versions = '2017.3.1f1,2018.1.0b9'
+            Versions = '2017.4.2f2,2018.1.0f2'
             Components = 'Windows', 'Mac', 'Linux', 'Metro', 'iOS'
             Ensure = 'Present'
+        }
+
+        xUnityLicense UnityLicense {
+            Name = 'UL01'
+            Credential = $UnityCredential
+            Serial = $UnitySerial
+            Ensure = 'Present'
+            UnityVersion = '2017.4.2f2'
+            DependsOn = '[xUnitySetupInstance]Unity'   
         }
     }
 }
