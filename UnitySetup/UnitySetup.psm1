@@ -482,10 +482,6 @@ function Install-UnitySetupInstance {
                 'PassThru' = $true;
                 'Wait' = $true;
             }
-
-            if ($Verb) {
-                $startProcessArgs['Verb'] = $Verb
-            }
             
             Write-Verbose "$(Get-Date): Installing $installer to $destination."
             $process = Start-Process @startProcessArgs
@@ -1001,6 +997,7 @@ function ConvertTo-DateTime {
 function Get-UnityLicense
 {
     [CmdletBinding()]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "", Justification="Used to convert discovered plaintext serials into secure strings.")]
     param([SecureString]$Serial)
 
     $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf" -ErrorAction 'SilentlyContinue'
