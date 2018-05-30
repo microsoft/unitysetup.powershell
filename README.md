@@ -28,19 +28,19 @@ Find all of your Unity installs:
 Get-UnitySetupInstance
 
 # Example output:
-# Version                                        Components Path
-# -------                                        ---------- ----
-# 2017.1.2f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\
-# 2017.1.3f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\
-# 2017.2.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\
-# 2017.3.1f1       Setup, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\
-# 2018.1.0b4              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\
-# 2018.1.0b8                                            All C:\Program Files\Unity-2018.1.0b8\
-# 2017.1.0p5                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\
-# 2017.1.1f1                       Setup, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\
-# 2017.1.1p3       Setup, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\
-# 2017.2.0f3              Setup, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
-# 2017.3.0f3         Setup, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
+# Version                                          Components Path
+# -------                                          ---------- ----
+# 2017.1.2f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\
+# 2017.1.3f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\
+# 2017.2.1f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\
+# 2017.3.1f1       Windows, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\
+# 2018.1.0b4              Windows, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\
+# 2018.1.0b8                                              All C:\Program Files\Unity-2018.1.0b8\
+# 2017.1.0p5                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\
+# 2017.1.1f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\
+# 2017.1.1p3       Windows, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\
+# 2017.2.0f3              Windows, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
+# 2017.3.0f3         Windows, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
 ```
 
 Select the Unity installs that you want:
@@ -78,31 +78,32 @@ Find the installers for a particular version:
 Find-UnitySetupInstaller -Version '2017.3.0f3' | Format-Table
 
 # Example output:
-# ComponentType Version       Length LastModified        DownloadUrl
-#  ------------- -------       ------ ------------        -----------
-#          Setup 2017.3.0f3 553688024 2017-12-18 08:15:20 https://netstorage.unity3d.com/unity/...
-#  Documentation 2017.3.0f3 358911256 2017-12-18 08:18:37 https://netstorage.unity3d.com/unity/...
-# StandardAssets 2017.3.0f3 189886032 2017-12-18 08:15:52 https://netstorage.unity3d.com/unity/...
-#          Metro 2017.3.0f3 172298008 2017-12-18 08:17:44 https://netstorage.unity3d.com/unity/...
-#     UWP_IL2CPP 2017.3.0f3 152933480 2017-12-18 08:17:55 https://netstorage.unity3d.com/unity/...
-#        Android 2017.3.0f3 194240888 2017-12-18 08:16:06 https://netstorage.unity3d.com/unity/...
-#            iOS 2017.3.0f3 802853872 2017-12-18 08:17:21 https://netstorage.unity3d.com/unity/...
-#        AppleTV 2017.3.0f3 273433528 2017-12-18 08:16:24 https://netstorage.unity3d.com/unity/...
-#       Facebook 2017.3.0f3  32131560 2017-12-18 08:16:27 https://netstorage.unity3d.com/unity/...
-#          Linux 2017.3.0f3 122271984 2017-12-18 08:17:30 https://netstorage.unity3d.com/unity/...
-#        Vuforia 2017.3.0f3  65677296 2017-12-18 08:18:00 https://netstorage.unity3d.com/unity/...
-#          WebGL 2017.3.0f3 134133288 2017-12-18 08:18:09 https://netstorage.unity3d.com/unity/...
+#  ComponentType Version       Length LastModified          DownloadUrl
+#  ------------- -------       ------ ------------          -----------
+#        Windows 2017.3.0f3 553688024 12/18/2017 8:05:31 AM https://download.unity3d.com/download_unity/...
+#          Linux 2017.3.0f3 122271984 12/18/2017 8:06:53 AM https://download.unity3d.com/download_unity/...
+#            Mac 2017.3.0f3  28103888 12/18/2017 8:06:53 AM https://download.unity3d.com/download_unity/...
+#  Documentation 2017.3.0f3 358911256 12/18/2017 8:07:34 AM https://download.unity3d.com/download_unity/...
+# StandardAssets 2017.3.0f3 189886032 12/18/2017 8:05:50 AM https://download.unity3d.com/download_unity/...
+#          Metro 2017.3.0f3 172298008 12/18/2017 8:07:04 AM https://download.unity3d.com/download_unity/...
+#     UWP_IL2CPP 2017.3.0f3 152933480 12/18/2017 8:07:10 AM https://download.unity3d.com/download_unity/...
+#        Android 2017.3.0f3 194240888 12/18/2017 8:05:58 AM https://download.unity3d.com/download_unity/...
+#            iOS 2017.3.0f3 802853872 12/18/2017 8:06:46 AM https://download.unity3d.com/download_unity/...
+#        AppleTV 2017.3.0f3 273433528 12/18/2017 8:06:09 AM https://download.unity3d.com/download_unity/...
+#       Facebook 2017.3.0f3  32131560 12/18/2017 8:06:12 AM https://download.unity3d.com/download_unity/...
+#        Vuforia 2017.3.0f3  65677296 12/18/2017 8:07:12 AM https://download.unity3d.com/download_unity/...
+#          WebGL 2017.3.0f3 134133288 12/18/2017 8:07:19 AM https://download.unity3d.com/download_unity/...
 ```
 
 Limit what components you search for:
 ```powershell
-Find-UnitySetupInstaller -Version 2017.3.0f3 -Components 'Setup','Documentation' | Format-Table
+Find-UnitySetupInstaller -Version 2017.3.0f3 -Components 'Windows','Documentation' | Format-Table
 
 # Example output:
-# ComponentType Version       Length LastModified        DownloadUrl
-#  ------------- -------       ------ ------------        -----------
-#          Setup 2017.3.0f3 553688024 2017-12-18 08:15:20 https://netstorage.unity3d.com/unity/...
-#  Documentation 2017.3.0f3 358911256 2017-12-18 08:18:37 https://netstorage.unity3d.com/unity/...
+# ComponentType Version       Length LastModified          DownloadUrl
+# ------------- -------       ------ ------------          -----------
+#       Windows 2017.3.0f3 553688024 12/18/2017 8:05:31 AM https://download.unity3d.com/download_unity/...
+# Documentation 2017.3.0f3 358911256 12/18/2017 8:07:34 AM https://download.unity3d.com/download_unity/...
 ```
 
 Install UnitySetup instances:
@@ -114,6 +115,28 @@ Find-UnitySetupInstaller -Version '2017.3.0f3' | Install-UnitySetupInstance
 Install-UnitySetupInstance -Installers (Find-UnitySetupInstaller -Version '2017.3.0f3')
 ```
 
+Manage Unity licenses.
+```powershell
+# Get any active licenses
+Get-UnityLicense
+
+# Example Output:
+# LicenseVersion : 6.x
+# Serial         : System.Security.SecureString
+# UnityVersion   : 2017.4.2f2
+# DisplaySerial  : AB-CDEF-GHIJ-KLMN-OPQR-XXXX
+# ActivationDate : 2017-07-13 16:32:16
+# StartDate      : 2017-07-12 00:00:00
+# StopDate       : 2019-01-01 00:00:00
+# UpdateDate     : 2018-05-11 23:47:10
+
+# Activate a license
+Start-UnityEditor -Credential <unityAccount> -Serial <unitySerial> -Wait
+
+# Return license
+Start-UnityEditor -Credential <unityAccount> -ReturnLicense -Wait
+```
+
 ### DSC
 UnitySetup includes the xUnitySetupInstance DSC Resource. An example configuration might look like:
 
@@ -122,15 +145,28 @@ UnitySetup includes the xUnitySetupInstance DSC Resource. An example configurati
     Install multiple versions of Unity and several components
 #>
 Configuration Sample_xUnitySetupInstance_Install {
+    param(
+        [PSCredential]$UnityCredential,
+        [PSCredential]$UnitySerial
+    )
 
     Import-DscResource -ModuleName UnitySetup
 
     Node 'localhost' {
 
         xUnitySetupInstance Unity {
-            Versions = '2017.3.1f1,2018.1.0b9'
-            Components = 'Setup', 'Mac', 'Linux', 'Metro', 'iOS'
+            Versions = '2017.4.2f2,2018.1.0f2'
+            Components = 'Windows', 'Mac', 'Linux', 'Metro', 'iOS'
             Ensure = 'Present'
+        }
+
+        xUnityLicense UnityLicense {
+            Name = 'UL01'
+            Credential = $UnityCredential
+            Serial = $UnitySerial
+            Ensure = 'Present'
+            UnityVersion = '2017.4.2f2'
+            DependsOn = '[xUnitySetupInstance]Unity'   
         }
     }
 }
@@ -149,3 +185,7 @@ This project welcomes contributions and suggestions.  Most contributions require
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+# Reporting Security Issues
+
+Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) at [secure@microsoft.com](mailto:secure@microsoft.com). You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the [MSRC PGP](https://technet.microsoft.com/en-us/security/dn606155) key, can be found in the [Security TechCenter](https://technet.microsoft.com/en-us/security/default).

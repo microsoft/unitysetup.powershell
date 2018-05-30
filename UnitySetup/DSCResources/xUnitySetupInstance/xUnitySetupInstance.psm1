@@ -1,4 +1,6 @@
 
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
 <#
 .Synopsis
     Returns the status of Unity installs and the set of their overlapping components.
