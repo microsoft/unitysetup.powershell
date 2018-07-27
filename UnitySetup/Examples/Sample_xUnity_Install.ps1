@@ -14,7 +14,7 @@ Configuration Sample_xUnity_Install {
 
         xUnitySetupInstance Unity {
             Versions   = '2017.4.2f2'
-            Components = 'Windows', 'Mac', 'Linux', 'Metro', 'iOS', 'Android'
+            Components = 'Windows', 'Mac', 'Linux', 'UWP', 'iOS', 'Android'
             Ensure     = 'Present'
         }
 
