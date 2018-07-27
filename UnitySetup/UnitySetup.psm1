@@ -11,6 +11,7 @@ enum UnitySetupComponent {
     StandardAssets = (1 -shl 4)
     Windows_IL2CPP = (1 -shl 5)
     Metro = (1 -shl 6)
+    UWP = (1 -shl 6)
     UWP_IL2CPP = (1 -shl 7)
     Android = (1 -shl 8)
     iOS = (1 -shl 9)
@@ -70,7 +71,7 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
-                    [UnitySetupComponent]::Metro = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                    [UnitySetupComponent]::UWP = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                     [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
@@ -235,7 +236,7 @@ function Get-OperatingSystem {
 .PARAMETER Components
    What components would you like included?
 .EXAMPLE
-   ConvertTo-UnitySetupComponent Windows,Metro
+   ConvertTo-UnitySetupComponent Windows,UWP
 #>
 function ConvertTo-UnitySetupComponent {
     [CmdletBinding()]
@@ -281,7 +282,8 @@ function Find-UnitySetupInstaller {
     $installerTemplates = @{
         [UnitySetupComponent]::Documentation = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
         [UnitySetupComponent]::StandardAssets = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponent]::Metro = , "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::UWP = "TargetSupportInstaller/UnitySetup-UWP-.NET-Support-for-Editor-$Version.exe",
+         "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::UWP_IL2CPP = , "TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::Android = , "TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
         [UnitySetupComponent]::iOS = , "TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";

@@ -30,17 +30,17 @@ Get-UnitySetupInstance
 # Example output:
 # Version                                          Components Path
 # -------                                          ---------- ----
-# 2017.1.2f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\
-# 2017.1.3f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\
-# 2017.2.1f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\
-# 2017.3.1f1       Windows, Metro, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\
-# 2018.1.0b4              Windows, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\
+# 2017.1.2f1                       Windows, UWP, UWP_IL2CPP C:\Program Files\Unity-2017.1.2f1\
+# 2017.1.3f1                       Windows, UWP, UWP_IL2CPP C:\Program Files\Unity-2017.1.3f1\
+# 2017.2.1f1                       Windows, UWP, UWP_IL2CPP C:\Program Files\Unity-2017.2.1f1\
+# 2017.3.1f1       Windows, UWP, UWP_IL2CPP, Linux, Vuforia C:\Program Files\Unity-2017.3.1f1\
+# 2018.1.0b4              Windows, UWP, UWP_IL2CPP, Vuforia C:\Program Files\Unity-2018.1.0b4\
 # 2018.1.0b8                                              All C:\Program Files\Unity-2018.1.0b8\
-# 2017.1.0p5                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\
-# 2017.1.1f1                       Windows, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\
-# 2017.1.1p3       Windows, StandardAssets, Metro, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\
-# 2017.2.0f3              Windows, Metro, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
-# 2017.3.0f3         Windows, Metro, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
+# 2017.1.0p5                       Windows, UWP, UWP_IL2CPP C:\Program Files\Unity.2017.1.0p5\
+# 2017.1.1f1                       Windows, UWP, UWP_IL2CPP C:\Program Files\Unity.2017.1.1f1\
+# 2017.1.1p3       Windows, StandardAssets, UWP, UWP_IL2CPP C:\Program Files\Unity.2017.1.1p3\
+# 2017.2.0f3              Windows, UWP, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
+# 2017.3.0f3         Windows, UWP, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
 ```
 
 Select the Unity installs that you want:
@@ -85,7 +85,7 @@ Find-UnitySetupInstaller -Version '2017.3.0f3' | Format-Table
 #            Mac 2017.3.0f3  28103888 12/18/2017 8:06:53 AM https://download.unity3d.com/download_unity/...
 #  Documentation 2017.3.0f3 358911256 12/18/2017 8:07:34 AM https://download.unity3d.com/download_unity/...
 # StandardAssets 2017.3.0f3 189886032 12/18/2017 8:05:50 AM https://download.unity3d.com/download_unity/...
-#          Metro 2017.3.0f3 172298008 12/18/2017 8:07:04 AM https://download.unity3d.com/download_unity/...
+#          UWP 2017.3.0f3 172298008 12/18/2017 8:07:04 AM https://download.unity3d.com/download_unity/...
 #     UWP_IL2CPP 2017.3.0f3 152933480 12/18/2017 8:07:10 AM https://download.unity3d.com/download_unity/...
 #        Android 2017.3.0f3 194240888 12/18/2017 8:05:58 AM https://download.unity3d.com/download_unity/...
 #            iOS 2017.3.0f3 802853872 12/18/2017 8:06:46 AM https://download.unity3d.com/download_unity/...
@@ -156,7 +156,7 @@ Configuration Sample_xUnitySetupInstance_Install {
 
         xUnitySetupInstance Unity {
             Versions = '2017.4.2f2,2018.1.0f2'
-            Components = 'Windows', 'Mac', 'Linux', 'Metro', 'iOS'
+            Components = 'Windows', 'Mac', 'Linux', 'UWP', 'iOS'
             Ensure = 'Present'
         }
 
