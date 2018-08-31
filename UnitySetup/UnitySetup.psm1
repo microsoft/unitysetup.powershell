@@ -465,9 +465,9 @@ function Install-UnitySetupInstance {
                 if (!(Test-Path $destDirectory -PathType Container)) {
                     New-Item "$destDirectory" -ItemType Directory | Out-Null
                 }
-            }
 
-            (New-Object System.Net.WebClient).DownloadFile($downloadSource, $downloadDest)
+                (New-Object System.Net.WebClient).DownloadFile($downloadSource, $downloadDest)
+            }
         }
        
         for ($i = 0; $i -lt $localInstallers.Length; $i++) {
