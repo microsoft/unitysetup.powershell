@@ -466,7 +466,7 @@ function Install-UnitySetupInstance {
                     New-Item "$destDirectory" -ItemType Directory | Out-Null
                 }
 
-                (New-Object System.Net.WebClient).DownloadFile($downloadSource, $downloadDest)
+                (New-Object System.Net.WebClient).DownloadFile($downloadSource[$i], $downloadDest[$i])
             }
         }
        
