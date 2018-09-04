@@ -421,11 +421,7 @@ function Install-UnitySetupInstance {
         [string]$Destination,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup"),
-
-        [parameter(Mandatory = $false)]
-        [ValidateSet('Open', 'RunAs')]
-        [string]$Verb
+        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup")
     )
 
     process {
@@ -469,9 +465,9 @@ function Install-UnitySetupInstance {
                 if (!(Test-Path $destDirectory -PathType Container)) {
                     New-Item "$destDirectory" -ItemType Directory | Out-Null
                 }
-            }
 
-            Start-BitsTransfer -Source $downloadSource -Destination $downloadDest
+                (New-Object System.Net.WebClient).DownloadFile($downloadSource[$i], $downloadDest[$i])
+            }
         }
        
         for ($i = 0; $i -lt $localInstallers.Length; $i++) {
