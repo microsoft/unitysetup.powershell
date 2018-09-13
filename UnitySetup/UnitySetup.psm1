@@ -427,6 +427,134 @@ function Find-UnitySetupInstaller {
     } | Sort-Object -Property ComponentType
 }
 
+function Test-UnitySetupInstance {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory = $false)]
+        [UnityVersion] $Version,
+
+        [parameter(Mandatory = $false)]
+        [string] $Path
+    )
+
+    $instance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $Version -Path $Path
+    return $null -ne $instance
+}
+
+<#
+.Synopsis
+   Select installers by a version and/or components.
+.DESCRIPTION
+   Filters a list of `UnitySetupInstaller` down to a specific version and/or specific components.
+.PARAMETER Installers
+   List of installers that needs to be reduced.
+.PARAMETER Version
+   What version of UnitySetupInstaller that you want to keep.
+.PARAMETER Components
+   What components should be maintained.
+.EXAMPLE
+   $installers = Find-UnitySetupInstaller -Version 2017.3.0f3
+   $installers += Find-UnitySetupInstaller -Version 2018.2.5f1
+   $installers | Select-UnitySetupInstaller -Component Windows,Linux,Mac
+#>
+function Select-UnitySetupInstaller {
+    [CmdletBinding()]
+    param(
+        [parameter(ValueFromPipeline = $true)]
+        [UnitySetupInstaller[]] $Installers,
+
+        [parameter(Mandatory = $false)]
+        [UnityVersion] $Version,
+
+        [parameter(Mandatory = $false)]
+        [UnitySetupComponent] $Components = [UnitySetupComponent]::All
+    )
+    begin {
+        $selectedInstallers = @()
+    }
+    process {
+        # Keep only the matching version specified.
+        if ( $PSBoundParameters.ContainsKey('Version') ) {
+            $Installers = $Installers | Where-Object { [UnityVersion]::Compare($_.Version, $Version) -eq 0 }
+        }
+
+        # Keep only the matching component(s).
+        $Installers = $Installers | Where-Object { $Components -band $_.ComponentType } | ForEach-Object { $_ }
+
+        $selectedInstallers += $Installers
+    }
+    end {
+        return $selectedInstallers
+    }
+}
+
+function Request-UnitySetupInstaller {
+    [CmdletBinding()]
+    param(
+        [parameter(ValueFromPipeline = $true)]
+        [UnitySetupInstaller[]] $Installers,
+
+        [parameter(Mandatory = $false)]
+        [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
+    )
+    begin {
+        # Note that this has to happen before calculating the full path since
+        # Resolve-Path throws an exception on missing paths.
+        if (!(Test-Path $Cache -PathType Container)) {
+            New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
+        }
+
+        # Expanding '~' to the absolute path on the system. `WebClient` on macOS asumes
+        # relative path. macOS also treats alt directory separators as part of the file
+        # name and this corrects the separators to current environment.
+        $fullCachePath = (Resolve-Path -Path $Cache).Path
+
+        $downloads = @()
+    }
+    process {
+        $Installers | ForEach-Object {
+            $installerFileName = [io.Path]::GetFileName($_.DownloadUrl)
+            $destination = [io.Path]::Combine($fullCachePath, "Installers", "Unity-$($_.Version)", "$installerFileName")
+
+            # Already downloaded?
+            if ( Test-Path $destination ) {
+                $destinationItem = Get-Item $destination
+                if ( ($destinationItem.Length -eq $_.Length ) -and
+                     ($destinationItem.LastWriteTime -eq $_.LastModified) ) {
+                    Write-Verbose "Skipping download because it's already in the cache: $($_.DownloadUrl)"
+
+                    $downloads += ,$destination
+                    return
+                }
+            }
+
+            $destinationDirectory = [io.path]::GetDirectoryName($destination)
+            if (!(Test-Path $destinationDirectory -PathType Container)) {
+                New-Item "$destinationDirectory" -ItemType Directory | Out-Null
+            }
+
+            try
+            {
+                Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
+                (New-Object System.Net.WebClient).DownloadFile($_.DownloadUrl, $destination)
+
+                # Re-writes the last modified time for ensuring downloads cache.
+                $downloadedFile = Get-Item $destination
+                $downloadedFile.LastWriteTime = $_.LastModified
+
+                $downloads += ,$destination
+            }
+            catch [System.Net.WebException]
+            {
+                Write-Error "Failed downloading $($installerFileName): $($_.Exception.Message)"
+            }
+        }
+    }
+    end {
+        return $downloads
+    }
+}
+
 <#
 .Synopsis
    Installs a UnitySetup instance.
@@ -434,14 +562,20 @@ function Find-UnitySetupInstaller {
    Downloads and installs UnitySetup installers found via Find-UnitySetupInstaller.
 .PARAMETER Installers
    What installers would you like to download and execute?
+.PARAMETER BasePath
+   Under what base patterns is Unity customly installed at.
 .PARAMETER Destination
    Where would you like the UnitySetup instance installed?
 .PARAMETER Cache
-   Where should the installers be cached. This defaults to $env:USERPROFILE\.unitysetup.
+   Where should the installers be cached. This defaults to ~\.unitysetup.
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3 | Install-UnitySetupInstance
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3 | Install-UnitySetupInstance -Destination D:\Unity-2017.3.0f3
+.EXAMPLE
+   Find-UnitySetupInstaller -Version 2017.3.0f3 | Install-UnitySetupInstance -BasePath D:\UnitySetup\
+.EXAMPLE
+   Find-UnitySetupInstaller -Version 2017.3.0f3 | Install-UnitySetupInstance -BasePath D:\UnitySetup\ -Destination Unity-2017
 #>
 function Install-UnitySetupInstance {
     [CmdletBinding()]
@@ -450,78 +584,118 @@ function Install-UnitySetupInstance {
         [UnitySetupInstaller[]] $Installers,
 
         [parameter(Mandatory = $false)]
+        [string]$BasePath,
+
+        [parameter(Mandatory = $false)]
         [string]$Destination,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup")
+        [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
     )
-
-    process {
-        if (!(Test-Path $Cache -PathType Container)) {
-            New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
+    begin {
+        $currentOS = Get-OperatingSystem
+        if ($currentOS == [OperatingSystem]::Linux) {
+            throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
         }
 
-        $localInstallers = @()
-        $localDestinations = @()
+        if ( -not $PSBoundParameters.ContainsKey('BasePath') ) {
+            $defaultInstallPath = switch ($currentOS) {
+                ([OperatingSystem]::Windows) { 'C:\Program Files\Unity' }
+                ([OperatingSystem]::Linux) { throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
+                ([OperatingSystem]::Mac) { '/Applications/Unity' }
+            }
+        }
+        else {
+            $defaultInstallPath = $BasePath
+        }
 
-        $downloadSource = @()
-        $downloadDest = @()
-        foreach ( $i in $Installers) {
-            $fileName = [io.Path]::GetFileName($i.DownloadUrl)
-            $destPath = [io.Path]::Combine($Cache, "Installers\Unity-$($i.Version)\$fileName")
+        $unitySetupInstances = Get-UnitySetupInstance -BasePath $BasePath
 
-            $localInstallers += , $destPath
-            if ($Destination) {
-                $localDestinations += , $Destination
+        $versionInstallers = @{}
+    }
+    process {
+        # Sort each installer received from the pipe into versions
+        $Installers | ForEach-Object {
+            $versionInstallers[$_.Version] += , $_
+        }
+    }
+    end {
+        # foreach unity version
+        #   If macOS, move previous install back to default directory
+        #   Install main Unity setup installer first
+        #   Install all components to default Unity version
+        #   If macOS, move install to versioned directory
+        $versionInstallers.Keys | ForEach-Object {
+            $installVersion = $_
+            $installerInstances = $versionInstallers[$installVersion]
+
+            if ($currentOS == [OperatingSystem]::Mac) {
+                # On macOS we must notify the user to take an action if the default location
+                # is currently in use. Either there's a previous version of Unity installed
+                # manually or another install through UnitySetup possibly failed.
+                if (Test-UnitySetupInstance -Path /Applications/Unity/) {
+                    # TODO: Work in a `$host.ui.PromptForChoice` / -Force param for resolving this.
+                    throw "Install-UnitySetupInstance has not yet handled working around the base install directory already existing. Please move this manually and try again. Contributions welcomed!";
+                }
+
+
+            }
+
+            if ( $PSBoundParameters.ContainsKey('Destination') ) {
+                # Slight API change here. If BasePath is also provided treat Destination as a relative path.
+                if ( $PSBoundParameters.ContainsKey('BasePath') ) {
+                    $installPath = $Destination
+                }
+                else {
+                    $installPath = [io.path]::Combine($BasePath, $Destination)
+                }
             }
             else {
-                $localDestinations += , "C:\Program Files\Unity-$($i.Version)"
+                $installPath = "$defaultInstallPath-$installVersion"
             }
 
-            if ( Test-Path $destPath ) {
-                $destItem = Get-Item $destPath
-                if ( ($destItem.Length -eq $i.Length ) -and ($destItem.LastWriteTime -eq $i.LastModified) ) {
-                    Write-Verbose "Skipping download because it's already in the cache: $($i.DownloadUrl)"
-                    continue
+            $installerPaths = $installerInstances | Request-UnitySetupInstaller -Cache $Cache
+
+            # TODO: Install Unity component first
+
+            foreach ($componentInstallerPath in $installerPaths) {
+                switch ($currentOS) {
+                    ([OperatingSystem]::Windows) {
+                        $startProcessArgs = @{
+                            'FilePath' = $_;
+                            'ArgumentList' = @("/S", "/D=$installPath");
+                            'PassThru' = $true;
+                            'Wait' = $true;
+                        }
+                    }
+                    ([OperatingSystem]::Linux) {
+                        throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                    }
+                    ([OperatingSystem]::Mac) {
+                        $startProcessArgs = @{
+                            'FilePath' = $installer;
+                            'ArgumentList' = @("/S", "/D=$destination");
+                            'PassThru' = $true;
+                            'Wait' = $true;
+                        }
+                    }
+                }
+                
+                Write-Verbose "$(Get-Date): Installing $installer to $destination."
+                $process = Start-Process @startProcessArgs
+                if ( $process ) {
+                    if ( $process.ExitCode -ne 0) {
+                        Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
+                    }
+                    else { 
+                        Write-Verbose "$(Get-Date): Succeeded."
+                    }
                 }
             }
 
-            $downloadSource += $i.DownloadUrl
-            $downloadDest += $destPath
-        }
-
-        if ( $downloadSource.Length -gt 0 ) {
-            for ($i = 0; $i -lt $downloadSource.Length; $i++) {
-                Write-Verbose "Downloading $($downloadSource[$i]) to $($downloadDest[$i])"
-                $destDirectory = [io.path]::GetDirectoryName($downloadDest[$i])
-                if (!(Test-Path $destDirectory -PathType Container)) {
-                    New-Item "$destDirectory" -ItemType Directory | Out-Null
-                }
-
-                (New-Object System.Net.WebClient).DownloadFile($downloadSource[$i], $downloadDest[$i])
-            }
-        }
-       
-        for ($i = 0; $i -lt $localInstallers.Length; $i++) {
-            $installer = $localInstallers[$i]
-            $destination = $localDestinations[$i]
-
-            $startProcessArgs = @{
-                'FilePath' = $installer;
-                'ArgumentList' = @("/S", "/D=$destination");
-                'PassThru' = $true;
-                'Wait' = $true;
-            }
-            
-            Write-Verbose "$(Get-Date): Installing $installer to $destination."
-            $process = Start-Process @startProcessArgs
-            if ( $process ) {
-                if ( $process.ExitCode -ne 0) {
-                    Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
-                }
-                else { 
-                    Write-Verbose "$(Get-Date): Succeeded."
-                }
+            # Move the install from the staging area to the desired destination
+            if ($currentOS == [OperatingSystem]::Mac) {
+                Move-Item -Path /Applications/Unity/ -Destination $installPath
             }
         }
     }
@@ -626,14 +800,16 @@ function Get-UnitySetupInstance {
    Select the latest version available.
 .PARAMETER Version
    Select only instances matching Version.
-.PARAMETER Project
-   Select only instances matching the version of the project at Project.
+.PARAMETER Path
+   Select only instances matching the project at the provided path.
 .PARAMETER instances
    The list of instances to Select from.
 .EXAMPLE
    Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
 .EXAMPLE
    Get-UnitySetupInstance | Select-UnitySetupInstance -Version 2017.1.0f3
+.EXAMPLE
+   Get-UnitySetupInstance | Select-UnitySetupInstance -Path (Get-Item /Applications/Unity*)
 #>
 function Select-UnitySetupInstance {
     [CmdletBinding()]
@@ -644,11 +820,21 @@ function Select-UnitySetupInstance {
         [parameter(Mandatory = $false)]
         [UnityVersion] $Version,
 
+        [parameter(Mandatory = $false)]
+        [string] $Path,
+
         [parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [UnitySetupInstance[]] $Instances
     )
 
     process {
+        if ( $PSBoundParameters.ContainsKey('Path') ) {
+            $Path = $Path.TrimEnd([io.path]::DirectorySeparatorChar)
+            $Instances = $Instances | Where-Object {
+                $Path -eq (Get-Item $_.Path).FullName.TrimEnd([io.path]::DirectorySeparatorChar)
+            }
+        }
+
         if ( $Version ) {
             $Instances = $Instances | Where-Object { [UnityVersion]::Compare($_.Version, $Version) -eq 0 }
         }
