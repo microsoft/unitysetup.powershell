@@ -29,6 +29,11 @@ enum OperatingSystem {
     Mac
 }
 
+class UnitySetupResource {
+    [UnitySetupComponent] $ComponentType
+    [string] $Path
+}
+
 class UnitySetupInstaller {
     [UnitySetupComponent] $ComponentType
     [UnityVersion] $Version
@@ -523,8 +528,24 @@ function Request-UnitySetupInstaller {
                      ($destinationItem.LastWriteTime -eq $_.LastModified) ) {
                     Write-Verbose "Skipping download because it's already in the cache: $($_.DownloadUrl)"
 
-                    $downloads += ,$destination
+                    $resource = New-Object UnitySetupResource -Property @{
+                        'ComponentType' = $_.ComponentType
+                        'Path' = $destination
+                    }
+                    $downloads += , $resource
                     return
+                }
+                elseif ($destinationItem.Length -eq $_.Length ) {
+                    Write-Verbose "Skipping download because file size is the same: $($_.DownloadUrl)"
+
+                    # Re-writes the last modified time for ensuring downloads cache.
+                    $downloadedFile = Get-Item $destination
+                    $downloadedFile.LastWriteTime = $_.LastModified
+
+                    $downloadedFile = Get-Item $destination
+                    if ( ($downloadedFile.LastWriteTime -ne $_.LastModified) ) {
+                        Write-Verbose "Modified time not set for $destination"
+                    }
                 }
             }
 
@@ -536,13 +557,37 @@ function Request-UnitySetupInstaller {
             try
             {
                 Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
-                (New-Object System.Net.WebClient).DownloadFile($_.DownloadUrl, $destination)
+
+                $webClient = New-Object System.Net.WebClient
+                Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted `
+                    -SourceIdentifier Web.DownloadFileCompleted -Action {
+                    $global:isDownloaded = $true
+                }
+                Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged `
+                    -SourceIdentifier Web.DownloadProgressChanged -Action {
+                    $global:DownloadProgressEvent = $event
+                }
+                $webClient.DownloadFileAsync($_.DownloadUrl, $destination)
+
+                $totalBytes = $_.Length
+                while (-not $isDownloaded) {
+                    $receivedBytes = $global:DownloadProgressEvent.SourceArgs.BytesReceived
+                    $progress = [int](($receivedBytes / [double]$totalBytes) * 100)
+
+                    Write-Progress -Activity "Downloading $($_.DownloadUrl)..." -Status "$receivedBytes bytes \ $totalBytes bytes" -PercentComplete $progress
+                    [System.Threading.Thread]::Sleep(500)
+                }
+                Write-Progress -Activity "Downloading $($_.DownloadUrl)..." -Status "$receivedBytes bytes \ $totalBytes bytes" -Completed
 
                 # Re-writes the last modified time for ensuring downloads cache.
                 $downloadedFile = Get-Item $destination
                 $downloadedFile.LastWriteTime = $_.LastModified
 
-                $downloads += ,$destination
+                $resource = New-Object UnitySetupResource -Property @{
+                    'ComponentType' = $_.ComponentType
+                    'Path' = $destination
+                }
+                $downloads += , $resource
             }
             catch [System.Net.WebException]
             {
@@ -552,6 +597,53 @@ function Request-UnitySetupInstaller {
     }
     end {
         return $downloads
+    }
+}
+
+function Install-UnitySetupPackage {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory = $true)]
+        [UnitySetupResource] $Package,
+
+        [parameter(Mandatory = $false)]
+        [string]$Destination
+    )
+
+    $currentOS = Get-OperatingSystem
+    switch ($currentOS) {
+        ([OperatingSystem]::Windows) {
+            $startProcessArgs = @{
+                'FilePath' = $Package.Path;
+                'ArgumentList' = @("/S", "/D=$Destination");
+                'PassThru' = $true;
+                'Wait' = $true;
+            }
+        }
+        ([OperatingSystem]::Linux) {
+            throw "Install-UnitySetupPackage has not been implemented on the Linux platform. Contributions welcomed!";
+        }
+        ([OperatingSystem]::Mac) {
+            # Note, ignores $Destination on Mac.
+            # sudo installer -package $Package.Path -target /
+            $startProcessArgs = @{
+                'FilePath' = 'sudo';
+                'ArgumentList' = @("installer", "-package", $Package.Path, "-target", "/");
+                'PassThru' = $true;
+                'Wait' = $true;
+            }
+        }
+    }
+    
+    Write-Verbose "$(Get-Date): Installing $($Package.ComponentType) to $Destination."
+    $process = Start-Process @startProcessArgs
+    if ( $process ) {
+        if ( $process.ExitCode -ne 0) {
+            Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
+        }
+        else { 
+            Write-Verbose "$(Get-Date): Succeeded."
+        }
     }
 }
 
@@ -637,8 +729,6 @@ function Install-UnitySetupInstance {
                     # TODO: Work in a `$host.ui.PromptForChoice` / -Force param for resolving this.
                     throw "Install-UnitySetupInstance has not yet handled working around the base install directory already existing. Please move this manually and try again. Contributions welcomed!";
                 }
-
-
             }
 
             if ( $PSBoundParameters.ContainsKey('Destination') ) {
@@ -654,48 +744,30 @@ function Install-UnitySetupInstance {
                 $installPath = "$defaultInstallPath-$installVersion"
             }
 
+            # TODO: Strip out components already installed in the destination.
+
             $installerPaths = $installerInstances | Request-UnitySetupInstaller -Cache $Cache
 
-            # TODO: Install Unity component first
+            # First install the Unity editor before other components.
+            $editorComponent = switch ($currentOS) {
+                ([OperatingSystem]::Windows) { [UnitySetupComponent]::Windows }
+                ([OperatingSystem]::Linux) { [UnitySetupComponent]::Linux }
+                ([OperatingSystem]::Mac) { [UnitySetupComponent]::Mac }
+            }
+            $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
+            if ($null -ne $editorInstaller) {
+                Write-Verbose "Installing $($editorInstaller.ComponentType)"
+                # Install-UnitySetupPackage -Package $editorInstaller -Destination $destination
+            }
 
-            foreach ($componentInstallerPath in $installerPaths) {
-                switch ($currentOS) {
-                    ([OperatingSystem]::Windows) {
-                        $startProcessArgs = @{
-                            'FilePath' = $_;
-                            'ArgumentList' = @("/S", "/D=$installPath");
-                            'PassThru' = $true;
-                            'Wait' = $true;
-                        }
-                    }
-                    ([OperatingSystem]::Linux) {
-                        throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
-                    }
-                    ([OperatingSystem]::Mac) {
-                        $startProcessArgs = @{
-                            'FilePath' = $installer;
-                            'ArgumentList' = @("/S", "/D=$destination");
-                            'PassThru' = $true;
-                            'Wait' = $true;
-                        }
-                    }
-                }
-                
-                Write-Verbose "$(Get-Date): Installing $installer to $destination."
-                $process = Start-Process @startProcessArgs
-                if ( $process ) {
-                    if ( $process.ExitCode -ne 0) {
-                        Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
-                    }
-                    else { 
-                        Write-Verbose "$(Get-Date): Succeeded."
-                    }
-                }
+            $installerPaths | ForEach-Object {
+                Write-Verbose "Installing $($editorInstaller.ComponentType)"
+                # Install-UnitySetupPackage -Package $_ -Destination $destination
             }
 
             # Move the install from the staging area to the desired destination
             if ($currentOS == [OperatingSystem]::Mac) {
-                Move-Item -Path /Applications/Unity/ -Destination $installPath
+                #Move-Item -Path /Applications/Unity/ -Destination $installPath
             }
         }
     }
@@ -775,7 +847,7 @@ function Get-UnitySetupInstance {
         }
         ([OperatingSystem]::Mac) {
             if (-not $BasePath) {
-                $BasePath = @('/Applications/Unity*')
+                $BasePath = @('/Applications/Unity*', '/Applications/Unity/Hub/Editor/*')
             }
             $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
         }
