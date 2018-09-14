@@ -486,11 +486,24 @@ function Select-UnitySetupInstaller {
         # Keep only the matching component(s).
         $Installers = $Installers | Where-Object { $Components -band $_.ComponentType } | ForEach-Object { $_ }
 
-        $selectedInstallers += $Installers
+        if ($Installers.Length -ne 0) {
+            $selectedInstallers += $Installers
+        }
     }
     end {
         return $selectedInstallers
     }
+}
+
+filter Get-FileSize {
+	return "{0:N2} {1}" -f $(
+        if ($_ -lt 1kb)     { $_, 'Bytes' }
+        elseif ($_ -lt 1mb) { ($_/1kb), 'KB' }
+        elseif ($_ -lt 1gb) { ($_/1mb), 'MB' }
+        elseif ($_ -lt 1tb) { ($_/1gb), 'GB' }
+        elseif ($_ -lt 1pb) { ($_/1tb), 'TB' }
+        else                { ($_/1pb), 'PB' }
+    )
 }
 
 function Request-UnitySetupInstaller {
@@ -535,18 +548,6 @@ function Request-UnitySetupInstaller {
                     $downloads += , $resource
                     return
                 }
-                elseif ($destinationItem.Length -eq $_.Length ) {
-                    Write-Verbose "Skipping download because file size is the same: $($_.DownloadUrl)"
-
-                    # Re-writes the last modified time for ensuring downloads cache.
-                    $downloadedFile = Get-Item $destination
-                    $downloadedFile.LastWriteTime = $_.LastModified
-
-                    $downloadedFile = Get-Item $destination
-                    if ( ($downloadedFile.LastWriteTime -ne $_.LastModified) ) {
-                        Write-Verbose "Modified time not set for $destination"
-                    }
-                }
             }
 
             $destinationDirectory = [io.path]::GetDirectoryName($destination)
@@ -554,45 +555,76 @@ function Request-UnitySetupInstaller {
                 New-Item "$destinationDirectory" -ItemType Directory | Out-Null
             }
 
+            $webClient = New-Object System.Net.WebClient
+
+            # Register to events for showing progress of file download.
+            Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -SourceIdentifier DownloadProgressChanged -Action {
+                $global:DownloadProgressEvent = $event
+            } | Out-Null
+            Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted -SourceIdentifier DownloadFileCompleted -Action {
+                $global:isDownloaded = $true
+            } | Out-Null
+
             try
             {
-                Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
+                $startTime = Get-Date
 
-                $webClient = New-Object System.Net.WebClient
-                Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted `
-                    -SourceIdentifier Web.DownloadFileCompleted -Action {
-                    $global:isDownloaded = $true
-                }
-                Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged `
-                    -SourceIdentifier Web.DownloadProgressChanged -Action {
-                    $global:DownloadProgressEvent = $event
-                }
+                $global:DownloadProgressEvent = $null
+                $global:isDownloaded = $false
+
+                Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
                 $webClient.DownloadFileAsync($_.DownloadUrl, $destination)
 
+                # Showing progress of file download
                 $totalBytes = $_.Length
-                while (-not $isDownloaded) {
+                while (-not $global:isDownloaded) {
+                    if ($null -eq $global:DownloadProgressEvent) {
+                        continue
+                    }
+
+                    $elapsedTime = (Get-Date) - $startTime
+
                     $receivedBytes = $global:DownloadProgressEvent.SourceArgs.BytesReceived
                     $progress = [int](($receivedBytes / [double]$totalBytes) * 100)
 
-                    Write-Progress -Activity "Downloading $($_.DownloadUrl)..." -Status "$receivedBytes bytes \ $totalBytes bytes" -PercentComplete $progress
-                    [System.Threading.Thread]::Sleep(500)
-                }
-                Write-Progress -Activity "Downloading $($_.DownloadUrl)..." -Status "$receivedBytes bytes \ $totalBytes bytes" -Completed
+                    # Average speed in Mbps
+                    $averageSpeed = ($receivedBytes * 8 / 1mb) / $elapsedTime.TotalSeconds
+                    $secondsRemaining = ($totalBytes - $receivedBytes) * 8 / 1mb / $averageSpeed
 
-                # Re-writes the last modified time for ensuring downloads cache.
-                $downloadedFile = Get-Item $destination
-                $downloadedFile.LastWriteTime = $_.LastModified
+                    if ([double]::IsInfinity($secondsRemaining)) {
+                        $averageSpeed = 0
+                        # -1 for Write-Progress prevents seconds remaining from showing.
+                        $secondsRemaining = -1
+                    }
 
-                $resource = New-Object UnitySetupResource -Property @{
-                    'ComponentType' = $_.ComponentType
-                    'Path' = $destination
+                    # TODO: Display in Kbps on slow networks.
+                    Write-Progress -Activity "$("{0:N2}" -f $averageSpeed) Mbps`nDownloading $($_.DownloadUrl)" `
+                        -Status "$($receivedBytes | Get-FileSize) of $($totalBytes | Get-FileSize)" `
+                        -SecondsRemaining $secondsRemaining `
+                        -PercentComplete $progress
                 }
-                $downloads += , $resource
             }
-            catch [System.Net.WebException]
-            {
-                Write-Error "Failed downloading $($installerFileName): $($_.Exception.Message)"
+            catch [System.Net.WebException] {
+                Write-Error "Failed downloading $installerFileName - $($_.Exception.Message)"
             }
+            finally {
+                Unregister-Event -SourceIdentifier DownloadFileCompleted -Force
+                Unregister-Event -SourceIdentifier DownloadProgressChanged -Force
+
+                $webClient.Dispose()
+
+                Write-Progress -Activity "Downloading $($_.DownloadUrl)" -Status "Done" -Completed
+            }
+
+            # Re-writes the last modified time for ensuring downloads are cached properly.
+            $downloadedFile = Get-Item $destination
+            $downloadedFile.LastWriteTime = $_.LastModified
+
+            $resource = New-Object UnitySetupResource -Property @{
+                'ComponentType' = $_.ComponentType
+                'Path' = $destination
+            }
+            $downloads += , $resource
         }
     }
     end {
@@ -606,7 +638,7 @@ function Install-UnitySetupPackage {
         [parameter(Mandatory = $true)]
         [UnitySetupResource] $Package,
 
-        [parameter(Mandatory = $false)]
+        [parameter(Mandatory = $true)]
         [string]$Destination
     )
 
