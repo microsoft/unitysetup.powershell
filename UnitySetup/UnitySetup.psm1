@@ -598,7 +598,7 @@ function Request-UnitySetupInstaller {
                     }
 
                     # TODO: Display in Kbps on slow networks.
-                    Write-Progress -Activity "$("{0:N2}" -f $averageSpeed) Mbps`nDownloading $($_.DownloadUrl)" `
+                    Write-Progress -Activity "$("{0:N2}" -f $averageSpeed) Mbps | Downloading $installerFileName" `
                         -Status "$($receivedBytes | Get-FileSize) of $($totalBytes | Get-FileSize)" `
                         -SecondsRemaining $secondsRemaining `
                         -PercentComplete $progress
