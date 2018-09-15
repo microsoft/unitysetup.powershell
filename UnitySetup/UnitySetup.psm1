@@ -219,7 +219,7 @@ class UnityVersion : System.IComparable {
        ([OperatingSystem]::Mac) { echo "On Mac" }
    }
 .EXAMPLE
-   if (Get-OperatingSystem == [OperatingSystem]::Linux) {
+   if (Get-OperatingSystem -eq [OperatingSystem]::Linux) {
        echo "On Linux"
    }
 #>
@@ -495,7 +495,7 @@ function Select-UnitySetupInstaller {
     }
 }
 
-filter Get-FileSize {
+filter Format-Bytes {
 	return "{0:N2} {1}" -f $(
         if ($_ -lt 1kb)     { $_, 'Bytes' }
         elseif ($_ -lt 1mb) { ($_/1kb), 'KB' }
@@ -503,6 +503,30 @@ filter Get-FileSize {
         elseif ($_ -lt 1tb) { ($_/1gb), 'GB' }
         elseif ($_ -lt 1pb) { ($_/1tb), 'TB' }
         else                { ($_/1pb), 'PB' }
+    )
+}
+
+function Format-BitsPerSecond {
+    [CmdletBinding()]
+    param(
+        [parameter(Mandatory = $true)]
+        [int] $Bytes,
+
+        [parameter(Mandatory = $true)]
+        [int] $Seconds
+    )
+    if ($Seconds -le 0.001) {
+        return "0 Bps"
+    }
+    # Convert from bytes to bits
+    $Bits = ($Bytes * 8) / $Seconds
+	return "{0:N2} {1}" -f $(
+        if ($Bits -lt 1kb)     { $Bits, 'Bps' }
+        elseif ($Bits -lt 1mb) { ($Bits/1kb), 'Kbps' }
+        elseif ($Bits -lt 1gb) { ($Bits/1mb), 'Mbps' }
+        elseif ($Bits -lt 1tb) { ($Bits/1gb), 'Gbps' }
+        elseif ($Bits -lt 1pb) { ($Bits/1tb), 'Tbps' }
+        else                   { ($Bits/1pb), 'Pbps' }
     )
 }
 
@@ -587,9 +611,8 @@ function Request-UnitySetupInstaller {
                     $receivedBytes = $global:DownloadProgressEvent.SourceArgs.BytesReceived
                     $progress = [int](($receivedBytes / [double]$totalBytes) * 100)
 
-                    # Average speed in Mbps
-                    $averageSpeed = ($receivedBytes * 8 / 1mb) / $elapsedTime.TotalSeconds
-                    $secondsRemaining = ($totalBytes - $receivedBytes) * 8 / 1mb / $averageSpeed
+                    $averageSpeed = $receivedBytes / $elapsedTime.TotalSeconds
+                    $secondsRemaining = ($totalBytes - $receivedBytes) / $averageSpeed
 
                     if ([double]::IsInfinity($secondsRemaining)) {
                         $averageSpeed = 0
@@ -597,9 +620,10 @@ function Request-UnitySetupInstaller {
                         $secondsRemaining = -1
                     }
 
-                    # TODO: Display in Kbps on slow networks.
-                    Write-Progress -Activity "$("{0:N2}" -f $averageSpeed) Mbps | Downloading $installerFileName" `
-                        -Status "$($receivedBytes | Get-FileSize) of $($totalBytes | Get-FileSize)" `
+                    $downloadSpeed = Format-BitsPerSecond -Bytes $receivedBytes -Seconds $elapsedTime.TotalSeconds
+
+                    Write-Progress -Activity "Downloading $installerFileName | $downloadSpeed" `
+                        -Status "$($receivedBytes | Format-Bytes) of $($totalBytes | Format-Bytes)" `
                         -SecondsRemaining $secondsRemaining `
                         -PercentComplete $progress
                 }
@@ -718,7 +742,7 @@ function Install-UnitySetupInstance {
     )
     begin {
         $currentOS = Get-OperatingSystem
-        if ($currentOS == [OperatingSystem]::Linux) {
+        if ($currentOS -eq [OperatingSystem]::Linux) {
             throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
         }
 
@@ -744,24 +768,9 @@ function Install-UnitySetupInstance {
         }
     }
     end {
-        # foreach unity version
-        #   If macOS, move previous install back to default directory
-        #   Install main Unity setup installer first
-        #   Install all components to default Unity version
-        #   If macOS, move install to versioned directory
         $versionInstallers.Keys | ForEach-Object {
             $installVersion = $_
             $installerInstances = $versionInstallers[$installVersion]
-
-            if ($currentOS == [OperatingSystem]::Mac) {
-                # On macOS we must notify the user to take an action if the default location
-                # is currently in use. Either there's a previous version of Unity installed
-                # manually or another install through UnitySetup possibly failed.
-                if (Test-UnitySetupInstance -Path /Applications/Unity/) {
-                    # TODO: Work in a `$host.ui.PromptForChoice` / -Force param for resolving this.
-                    throw "Install-UnitySetupInstance has not yet handled working around the base install directory already existing. Please move this manually and try again. Contributions welcomed!";
-                }
-            }
 
             if ( $PSBoundParameters.ContainsKey('Destination') ) {
                 # Slight API change here. If BasePath is also provided treat Destination as a relative path.
@@ -774,6 +783,18 @@ function Install-UnitySetupInstance {
             }
             else {
                 $installPath = "$defaultInstallPath-$installVersion"
+            }
+
+            if ($currentOS -eq [OperatingSystem]::Mac) {
+                # On macOS we must notify the user to take an action if the default location
+                # is currently in use. Either there's a previous version of Unity installed
+                # manually or another install through UnitySetup possibly failed.
+                if (Test-UnitySetupInstance -Path /Applications/Unity/) {
+                    # TODO: Work in a `$host.ui.PromptForChoice` / -Force param for resolving this.
+                    throw "Install-UnitySetupInstance has not yet handled working around the base install directory already existing. Please move this manually and try again. Contributions welcomed!";
+                }
+
+                # TODO: Test if $installPath contains a/this version of Unity to move back to /Applications/Unity/
             }
 
             # TODO: Strip out components already installed in the destination.
@@ -789,17 +810,22 @@ function Install-UnitySetupInstance {
             $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
             if ($null -ne $editorInstaller) {
                 Write-Verbose "Installing $($editorInstaller.ComponentType)"
-                # Install-UnitySetupPackage -Package $editorInstaller -Destination $destination
+                Install-UnitySetupPackage -Package $editorInstaller -Destination $installPath
             }
 
             $installerPaths | ForEach-Object {
-                Write-Verbose "Installing $($editorInstaller.ComponentType)"
-                # Install-UnitySetupPackage -Package $_ -Destination $destination
+                # Already installed this earlier. Skipping.
+                if ($_.ComponentType -band $editorComponent) {
+                    return
+                }
+
+                Write-Verbose "Installing $($_.ComponentType)"
+                Install-UnitySetupPackage -Package $_ -Destination $installPath
             }
 
             # Move the install from the staging area to the desired destination
-            if ($currentOS == [OperatingSystem]::Mac) {
-                #Move-Item -Path /Applications/Unity/ -Destination $installPath
+            if ($currentOS -eq [OperatingSystem]::Mac) {
+                Move-Item -Path /Applications/Unity/ -Destination $installPath
             }
         }
     }
