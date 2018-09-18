@@ -439,10 +439,13 @@ function Test-UnitySetupInstance {
         [UnityVersion] $Version,
 
         [parameter(Mandatory = $false)]
+        [string] $BasePath,
+
+        [parameter(Mandatory = $false)]
         [string] $Path
     )
 
-    $instance = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $Version -Path $Path
+    $instance = Get-UnitySetupInstance -BasePath $BasePath | Select-UnitySetupInstance -Version $Version -Path $Path
     return $null -ne $instance
 }
 
@@ -680,11 +683,11 @@ function Install-UnitySetupPackage {
             throw "Install-UnitySetupPackage has not been implemented on the Linux platform. Contributions welcomed!";
         }
         ([OperatingSystem]::Mac) {
-            # Note, ignores $Destination on Mac.
+            # Note that $Destination has to be a disk path.
             # sudo installer -package $Package.Path -target /
             $startProcessArgs = @{
                 'FilePath' = 'sudo';
-                'ArgumentList' = @("installer", "-package", $Package.Path, "-target", "/");
+                'ArgumentList' = @("installer", "-package", $Package.Path, "-target", $Destination);
                 'PassThru' = $true;
                 'Wait' = $true;
             }
@@ -786,15 +789,28 @@ function Install-UnitySetupInstance {
             }
 
             if ($currentOS -eq [OperatingSystem]::Mac) {
-                # On macOS we must notify the user to take an action if the default location
-                # is currently in use. Either there's a previous version of Unity installed
-                # manually or another install through UnitySetup possibly failed.
-                if (Test-UnitySetupInstance -Path /Applications/Unity/) {
-                    # TODO: Work in a `$host.ui.PromptForChoice` / -Force param for resolving this.
-                    throw "Install-UnitySetupInstance has not yet handled working around the base install directory already existing. Please move this manually and try again. Contributions welcomed!";
+                # Creating sparse bundle to host installing Unity in other locations 
+                $unitySetupBundlePath = [io.path]::Combine($Cache, "UnitySetup.sparsebundle")
+                if (-not (Test-Path $unitySetupBundlePath)) {
+                    Write-Verbose "Creating new sparse bundle disk image for installation."
+                    & hdiutil create -size 32g -fs 'HFS+' -type 'SPARSEBUNDLE' -volname 'UnitySetup' $unitySetupBundlePath
+                }
+                Write-Verbose "Mounting sparse bundle disk."
+                & hdiutil mount $unitySetupBundlePath
+
+                # Previous version failed to remove. Cleaning up!
+                if (Test-Path /Volumes/UnitySetup/Applications/) {
+                    Write-Verbose "Previous install did not clean up properly. Doing that now."
+                    & sudo rm -Rf /Volumes/UnitySetup/Applications/
                 }
 
-                # TODO: Test if $installPath contains a/this version of Unity to move back to /Applications/Unity/
+                # Copy installed version back to the sparse bundle disk for Unity component installs.
+                if (Test-UnitySetupInstance -Path $installPath -BasePath $BasePath) {
+                    Write-Verbose "Copying current installation to sparse bundle disk."
+                    # -a for improved recursion to preserve file attributes and symlinks.
+                    # appended '.' is to allow the copy of all files and folders, even hidden.
+                    & sudo cp -a [io.path]::Combine($installPath, '.') /Volumes/UnitySetup/Applications/Unity/
+                }
             }
 
             # TODO: Strip out components already installed in the destination.
@@ -807,10 +823,17 @@ function Install-UnitySetupInstance {
                 ([OperatingSystem]::Linux) { [UnitySetupComponent]::Linux }
                 ([OperatingSystem]::Mac) { [UnitySetupComponent]::Mac }
             }
+
+            $packageDestination = $installPath
+            # Installers in macOS get installed to the sparse bundle disk first.
+            if ($currentOS -eq [OperatingSystem]::Mac) {
+                $packageDestination = "/Volumes/UnitySetup/"
+            }
+
             $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
             if ($null -ne $editorInstaller) {
                 Write-Verbose "Installing $($editorInstaller.ComponentType)"
-                Install-UnitySetupPackage -Package $editorInstaller -Destination $installPath
+                Install-UnitySetupPackage -Package $editorInstaller -Destination $packageDestination
             }
 
             $installerPaths | ForEach-Object {
@@ -820,12 +843,23 @@ function Install-UnitySetupInstance {
                 }
 
                 Write-Verbose "Installing $($_.ComponentType)"
-                Install-UnitySetupPackage -Package $_ -Destination $installPath
+                Install-UnitySetupPackage -Package $_ -Destination $packageDestination
             }
 
-            # Move the install from the staging area to the desired destination
+            # Move the install from the sparse bundle disk to the install directory.
             if ($currentOS -eq [OperatingSystem]::Mac) {
-                Move-Item -Path /Applications/Unity/ -Destination $installPath
+                Write-Verbose "Copying install to $installPath."
+                # Copy the files to the install directory.
+                & sudo cp -af /Volumes/UnitySetup/Applications/Unity/ $installPath
+                Write-Verbose "Freeing sparse bundle disk space and unmounting."
+                # Ensure the drive is cleaned up.
+                & sudo rm -Rf /Volumes/UnitySetup/Applications/
+
+                & hdiutil eject /Volumes/UnitySetup/
+                # Free up disk space since deleting items in the volume send them to the trash
+                # Also note that -batteryallowed enables compacting while not connected to
+                # power. The compact is quite quick since the volume is small.
+                & hdiutil compact $unitySetupBundlePath -batteryallowed
             }
         }
     }
