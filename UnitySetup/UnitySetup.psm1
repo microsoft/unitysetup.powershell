@@ -789,6 +789,15 @@ function Install-UnitySetupInstance {
             }
 
             if ($currentOS -eq [OperatingSystem]::Mac) {
+                $volumeRoot = "/Volumes/UnitySetup/"
+                $volumeInstallPath = [io.path]::Combine($volumeRoot, "Applications/Unity/")
+
+                # Make sure the install path ends with a trailing slash. This
+                # is required in some commands to treat as directory.
+                if (-not $installPath.EndsWith([io.path]::DirectorySeparatorChar)) {
+                    $installPath += [io.path]::DirectorySeparatorChar
+                }
+
                 # Creating sparse bundle to host installing Unity in other locations 
                 $unitySetupBundlePath = [io.path]::Combine($Cache, "UnitySetup.sparsebundle")
                 if (-not (Test-Path $unitySetupBundlePath)) {
@@ -799,17 +808,22 @@ function Install-UnitySetupInstance {
                 & hdiutil mount $unitySetupBundlePath
 
                 # Previous version failed to remove. Cleaning up!
-                if (Test-Path /Volumes/UnitySetup/Applications/) {
+                if (Test-Path $volumeInstallPath) {
                     Write-Verbose "Previous install did not clean up properly. Doing that now."
-                    & sudo rm -Rf /Volumes/UnitySetup/Applications/
+                    & sudo rm -Rf ([io.path]::Combine($volumeRoot, '*'))
                 }
 
                 # Copy installed version back to the sparse bundle disk for Unity component installs.
                 if (Test-UnitySetupInstance -Path $installPath -BasePath $BasePath) {
-                    Write-Verbose "Copying current installation to sparse bundle disk."
-                    # -a for improved recursion to preserve file attributes and symlinks.
-                    # appended '.' is to allow the copy of all files and folders, even hidden.
-                    & sudo cp -a [io.path]::Combine($installPath, '.') /Volumes/UnitySetup/Applications/Unity/
+                    Write-Verbose "Copying $installPath to $volumeInstallPath"
+
+                    # Ensure the path exists before copying the previous version to the sparse bundle disk.
+                    & mkdir -p $volumeInstallPath
+
+                    # Copy the files (-r) and recreate symlinks (-l) to the install directory.
+                    # Preserve permissions (-p) and owner (-o).
+                    # Need to mark the files with read permissions or installs may fail.
+                    & sudo rsync -rlpo $installPath $volumeInstallPath --chmod=+r
                 }
             }
 
@@ -827,7 +841,7 @@ function Install-UnitySetupInstance {
             $packageDestination = $installPath
             # Installers in macOS get installed to the sparse bundle disk first.
             if ($currentOS -eq [OperatingSystem]::Mac) {
-                $packageDestination = "/Volumes/UnitySetup/"
+                $packageDestination = $volumeRoot
             }
 
             $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
@@ -849,13 +863,16 @@ function Install-UnitySetupInstance {
             # Move the install from the sparse bundle disk to the install directory.
             if ($currentOS -eq [OperatingSystem]::Mac) {
                 Write-Verbose "Copying install to $installPath."
-                # Copy the files to the install directory.
-                & sudo cp -af /Volumes/UnitySetup/Applications/Unity/ $installPath
+                # Copy the files (-r) and recreate symlinks (-l) to the install directory.
+                # Preserve permissions (-p) and owner (-o).
+                # chmod gives files read permissions.
+                & sudo rsync -rlpo $volumeInstallPath $installPath --chmod=+r --remove-source-files
+
                 Write-Verbose "Freeing sparse bundle disk space and unmounting."
                 # Ensure the drive is cleaned up.
-                & sudo rm -Rf /Volumes/UnitySetup/Applications/
+                & sudo rm -Rf ([io.path]::Combine($volumeRoot, '*'))
 
-                & hdiutil eject /Volumes/UnitySetup/
+                & hdiutil eject $volumeRoot
                 # Free up disk space since deleting items in the volume send them to the trash
                 # Also note that -batteryallowed enables compacting while not connected to
                 # power. The compact is quite quick since the volume is small.
