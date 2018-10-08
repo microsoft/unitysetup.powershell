@@ -492,6 +492,7 @@ function Install-UnitySetupInstance {
                 }
             }
         }
+        [Environment]::SetEnvironmentVariable("UNITY_"+$version, $destPath, "Unity Installer Path")
     }
 }
 
