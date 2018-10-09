@@ -489,7 +489,7 @@ function Install-UnitySetupInstance {
                 }
                 else { 
                     Write-Verbose "$(Get-Date): Succeeded."
-                    [Environment]::SetEnvironmentVariable("UNITY_"+$version, $destPath, [System.EnvironmentVariableTarget]::User)
+                    [Environment]::SetEnvironmentVariable("UNITY_$($version)", $destPath, [System.EnvironmentVariableTarget]::User)
                 }
             }
         }        
