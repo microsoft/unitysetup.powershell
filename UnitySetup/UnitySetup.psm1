@@ -964,6 +964,7 @@ function Start-UnityEditor {
             if ( $Wait ) {
                 if ( $process.ExitCode -ne 0 ) {
                     if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
+                        Write-UnityErrors $LogFile
                         Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
                         Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                     }
@@ -975,6 +976,32 @@ function Start-UnityEditor {
             if ($PassThru) { $process }
         }
     }
+}
+
+# Open the specified Unity log file and write any errors found in the file to the error stream.
+function Write-UnityErrors {
+    param([string] $LogFileName)
+    $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
+    if ( $errors.Count -gt 0 ) {
+        $errorMessage = $errors -join "`r`n"
+        $errorMessage = "Errors were found in $LogFileName`:`r`n$errorMessage"
+        Write-Error $errorMessage
+    }
+}
+
+function Get-IsUnityError {
+    param([string] $LogLine)
+
+    # Detect compilation error, for example:
+    #   Assets/Errors.cs(7,9): error CS0103: The name `NonexistentFunction' does not exist in the current context
+    if ( $LogLine -match '\.cs\(\d+,\d+\): error ' ) {
+        return $true
+    }
+
+    # In the future, additional kinds of errors that can be found in Unity logs could be added here:
+    # ...
+
+    return $false
 }
 
 function ConvertTo-DateTime {
