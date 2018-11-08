@@ -999,11 +999,18 @@ function Get-IsUnityError {
         return $true
     }
 
+    # Detect that the method specified by -ExecuteMethod doesn't exist, for example:
+    # executeMethod method 'Invoke' in class 'Build' could not be found.
+    if ( $LogLine -match 'executeMethod method .* could not be found' ) {
+        return $true
+    }
+
     # Detect compilation error, for example:
     #   Assets/Errors.cs(7,9): error CS0103: The name `NonexistentFunction' does not exist in the current context
     if ( $LogLine -match '\.cs\(\d+,\d+\): error ' ) {
         return $true
     }
+
 
     # In the future, additional kinds of errors that can be found in Unity logs could be added here:
     # ...
