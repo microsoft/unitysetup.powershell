@@ -981,6 +981,7 @@ function Start-UnityEditor {
 # Open the specified Unity log file and write any errors found in the file to the error stream.
 function Write-UnityErrors {
     param([string] $LogFileName)
+    Write-Verbose "Checking $LogFileName for errors"
     $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
     if ( $errors.Count -gt 0 ) {
         $errorMessage = $errors -join "`r`n"
@@ -991,6 +992,12 @@ function Write-UnityErrors {
 
 function Get-IsUnityError {
     param([string] $LogLine)
+
+    # Detect Unity License error, for example:
+    # BatchMode: Unity has not been activated with a valid License. Could be a new activation or renewal...
+    if ( $LogLine -match 'Unity has not been activated with a valid License' ) {
+        return $true
+    }
 
     # Detect compilation error, for example:
     #   Assets/Errors.cs(7,9): error CS0103: The name `NonexistentFunction' does not exist in the current context
