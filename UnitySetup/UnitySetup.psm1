@@ -984,6 +984,7 @@ function Write-UnityErrors {
     Write-Verbose "Checking $LogFileName for errors"
     $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
     if ( $errors.Count -gt 0 ) {
+        $errors = $errors | select -uniq # Unity prints out errors as they occur and also in a summary list. We only want to see each unique error once.
         $errorMessage = $errors -join "`r`n"
         $errorMessage = "Errors were found in $LogFileName`:`r`n$errorMessage"
         Write-Error $errorMessage
