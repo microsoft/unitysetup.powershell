@@ -962,12 +962,16 @@ function Start-UnityEditor {
 
             $process = Start-Process @setProcessArgs
             if ( $Wait ) {
-                if ( $process.ExitCode -ne 0 ) {
-                    if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
-                        Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
-                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
-                    }
+                if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
+                    # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
+                    # to make sure that we flag such errors.
+                    Write-UnityErrors $LogFile
+                    
+                    Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
+                    Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
+                }
 
+                if ( $process.ExitCode -ne 0 ) {
                     Write-Error "Unity quit with non-zero exit code: $($process.ExitCode)"
                 }
             }
@@ -975,6 +979,46 @@ function Start-UnityEditor {
             if ($PassThru) { $process }
         }
     }
+}
+
+# Open the specified Unity log file and write any errors found in the file to the error stream.
+function Write-UnityErrors {
+    param([string] $LogFileName)
+    Write-Verbose "Checking $LogFileName for errors"
+    $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
+    if ( $errors.Count -gt 0 ) {
+        $errors = $errors | select -uniq # Unity prints out errors as they occur and also in a summary list. We only want to see each unique error once.
+        $errorMessage = $errors -join "`r`n"
+        $errorMessage = "Errors were found in $LogFileName`:`r`n$errorMessage"
+        Write-Error $errorMessage
+    }
+}
+
+function Get-IsUnityError {
+    param([string] $LogLine)
+
+    # Detect Unity License error, for example:
+    # BatchMode: Unity has not been activated with a valid License. Could be a new activation or renewal...
+    if ( $LogLine -match 'Unity has not been activated with a valid License' ) {
+        return $true
+    }
+
+    # Detect that the method specified by -ExecuteMethod doesn't exist, for example:
+    # executeMethod method 'Invoke' in class 'Build' could not be found.
+    if ( $LogLine -match 'executeMethod method .* could not be found' ) {
+        return $true
+    }
+
+    # Detect compilation error, for example:
+    #   Assets/Errors.cs(7,9): error CS0103: The name `NonexistentFunction' does not exist in the current context
+    if ( $LogLine -match '\.cs\(\d+,\d+\): error ' ) {
+        return $true
+    }
+
+    # In the future, additional kinds of errors that can be found in Unity logs could be added here:
+    # ...
+
+    return $false
 }
 
 function ConvertTo-DateTime {
