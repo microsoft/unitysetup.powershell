@@ -962,13 +962,16 @@ function Start-UnityEditor {
 
             $process = Start-Process @setProcessArgs
             if ( $Wait ) {
-                if ( $process.ExitCode -ne 0 ) {
-                    if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
-                        Write-UnityErrors $LogFile
-                        Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
-                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
-                    }
+                if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
+                    # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
+                    # to make sure that we flag such errors.
+                    Write-UnityErrors $LogFile
+                    
+                    Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
+                    Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
+                }
 
+                if ( $process.ExitCode -ne 0 ) {
                     Write-Error "Unity quit with non-zero exit code: $($process.ExitCode)"
                 }
             }
@@ -1011,7 +1014,6 @@ function Get-IsUnityError {
     if ( $LogLine -match '\.cs\(\d+,\d+\): error ' ) {
         return $true
     }
-
 
     # In the future, additional kinds of errors that can be found in Unity logs could be added here:
     # ...
