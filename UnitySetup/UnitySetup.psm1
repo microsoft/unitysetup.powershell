@@ -272,7 +272,23 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All
     )
 
-    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+    $currentOS = Get-OperatingSystem
+    switch ($currentOS) {
+        ([OperatingSystem]::Windows) {
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+            $targetSupport = "TargetSupportInstaller"
+            $installerExtension = "exe"
+        }
+        ([OperatingSystem]::Linux) {
+            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+        }
+        ([OperatingSystem]::Mac) {
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/MacEditorInstaller\/Unity-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).pkg$"
+            $targetSupport = "MacEditorTargetInstaller"
+            $installerExtension = "pkg"
+        }
+    }
+
     $knownBaseUrls = @(
         "https://download.unity3d.com/download_unity",
         "https://netstorage.unity3d.com/unity",
@@ -280,28 +296,28 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::Documentation = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
-        [UnitySetupComponent]::StandardAssets = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponent]::UWP = "TargetSupportInstaller/UnitySetup-UWP-.NET-Support-for-Editor-$Version.exe",
-         "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::UWP_IL2CPP = , "TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Android = , "TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::iOS = , "TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::AppleTV = , "TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Facebook = , "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Linux = , "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
-        "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Vuforia = , "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::WebGL = , "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Windows_IL2CPP = , "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::UWP = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
+         "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::UWP_IL2CPP = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Android = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::iOS = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::AppleTV = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Facebook = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Linux = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
+        "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Vuforia = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::WebGL = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
     }
 
-    $currentOS = Get-OperatingSystem
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
             $setupComponent = [UnitySetupComponent]::Windows
             $installerTemplates[$setupComponent] = , "Windows64EditorInstaller/UnitySetup64-$Version.exe";
+
+            $installerTemplates[[UnitySetupComponent]::Documentation] = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
+            $installerTemplates[[UnitySetupComponent]::StandardAssets] = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
         }
         ([OperatingSystem]::Linux) {
             $setupComponent = [UnitySetupComponent]::Linux
@@ -311,9 +327,12 @@ function Find-UnitySetupInstaller {
         }
         ([OperatingSystem]::Mac) {
             $setupComponent = [UnitySetupComponent]::Mac
-            # TODO: $installerTemplates[$setupComponent] = , "???/UnitySetup64-$Version.exe";
+            $installerTemplates[$setupComponent] = , "MacEditorInstaller/Unity-$Version.pkg";
 
-            throw "Find-UnitySetupInstaller has not been implemented on the Mac platform. Contributions welcomed!";
+            # Note: These links appear to be unavailable even on Unity's website for 2018.
+            # StandardAssets appears to work if you select a 2017 version.
+            $installerTemplates[[UnitySetupComponent]::Documentation] = , "MacDocumentationInstaller/DocumentationSetup-$Version.pkg";
+            $installerTemplates[[UnitySetupComponent]::StandardAssets] = , "MacStandardAssetsInstaller/StandardAssets-$Version.pkg";
         }
     }
 
@@ -370,12 +389,25 @@ function Find-UnitySetupInstaller {
                 $endpoint = [uri][System.IO.Path]::Combine($baseUrl, $linkComponents[1], $template);
                 try {
                     $testResult = Invoke-WebRequest $endpoint -Method HEAD -UseBasicParsing
+                    # For packages on macOS the Content-Length and Last-Modified are returned as an array.
+                    if ($testResult.Headers['Content-Length'] -is [System.Array]) {
+                        $installerLength = [int64]$testResult.Headers['Content-Length'][0]
+                    }
+                    else {
+                        $installerLength = [int64]$testResult.Headers['Content-Length']
+                    }
+                    if ($testResult.Headers['Last-Modified'] -is [System.Array]) {
+                        $lastModified = [System.DateTime]$testResult.Headers['Last-Modified'][0]
+                    }
+                    else {
+                        $lastModified = [System.DateTime]$testResult.Headers['Last-Modified']
+                    }
                     $result = New-Object UnitySetupInstaller -Property @{
                         'ComponentType' = $_;
                         'Version' = $Version;
                         'DownloadUrl' = $endpoint;
-                        'Length' = [int64]$testResult.Headers['Content-Length'];
-                        'LastModified' = ([System.DateTime]$testResult.Headers['Last-Modified']);
+                        'Length' = $installerLength;
+                        'LastModified' = $lastModified;
                     }
 
                     break
