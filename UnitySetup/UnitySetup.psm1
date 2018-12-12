@@ -742,6 +742,14 @@ function Get-UnityProjectInstance {
    What serial should be used by Unity for activation? Implies BatchMode and Quit if they're not supplied by the User.
 .PARAMETER ReturnLicense
    Unity should return the current license it's been activated with. Implies Quit if not supplied by the User.
+.PARAMETER EditorTestsCategories
+   Filter tests by category names.
+.PARAMETER EditorTestsFilter
+   Filter tests by test names.
+.PARAMETER EditorTestsResultFile
+   Where to put the results? Unity states, "If the path is a folder, the command line uses a default file name. If not specified, it places the results in the project’s root folder."
+.PARAMETER RunEditorTests
+   Should Unity run the editor tests? Unity states, "[...]it’s good practice to run it with batchmode argument. quit is not required, because the Editor automatically closes down after the run is finished."
 .PARAMETER BatchMode
    Should the Unity Editor start in batch mode?
 .PARAMETER Quit
@@ -807,6 +815,14 @@ function Start-UnityEditor {
         [switch]$ReturnLicense,
         [parameter(Mandatory = $false)]
         [switch]$ForceFree,
+        [parameter(Mandatory = $false)]
+        [string[]]$EditorTestsCategory,
+        [parameter(Mandatory = $false)]
+        [string[]]$EditorTestsFilter,
+        [parameter(Mandatory = $false)]
+        [string]$EditorTestsResultFile,
+        [parameter(Mandatory = $false)]
+        [switch]$RunEditorTests,
         [parameter(Mandatory = $false)]
         [switch]$BatchMode,
         [parameter(Mandatory = $false)]
@@ -899,6 +915,10 @@ function Start-UnityEditor {
         if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
         if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
+        if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
+        if ( $EditorTestsFilter ) { $sharedArgs += '-editorTestsFilter', ($EditorTestsFilter -join ',') }
+        if ( $EditorTestsResultFile ) { $sharedArgs += '-editorTestsResultFile', $EditorTestsResultFile }
+        if ( $RunEditorTests ) { $sharedArgs += '-runEditorTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
 
         $instanceArgs = @()
