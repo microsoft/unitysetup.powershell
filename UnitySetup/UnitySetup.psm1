@@ -147,7 +147,7 @@ class UnityVersion : System.IComparable {
     UnityVersion([string] $version) {
         $parts = $version.Split('-')
 
-        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
+        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)" | Out-Null
         if ( $Matches.Count -ne 6 ) { throw "Invalid unity version: $version" }
         $this.Major = [int]($Matches[1]);
         $this.Minor = [int]($Matches[2]);
@@ -347,6 +347,7 @@ function Find-UnitySetupInstaller {
     $searchPages = @()
     switch ($Version.Release) {
         'f' { $searchPages += "https://unity3d.com/get-unity/download/archive" }
+        'a' { $searchPages += "https://unity3d.com/unity/alpha/$Version" }
         'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
         'p' {
             $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
