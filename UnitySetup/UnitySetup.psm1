@@ -491,15 +491,31 @@ function Install-UnitySetupInstance {
         }
 
         if ( $downloadSource.Length -gt 0 ) {
-            for ($i = 0; $i -lt $downloadSource.Length; $i++) {
-                Write-Verbose "Downloading $($downloadSource[$i]) to $($downloadDest[$i])"
-                $destDirectory = [io.path]::GetDirectoryName($downloadDest[$i])
-                if (!(Test-Path $destDirectory -PathType Container)) {
-                    New-Item "$destDirectory" -ItemType Directory | Out-Null
+            [System.Net.WebClient[]]$webClients =  @()
+            try {
+                for ($i = 0; $i -lt $downloadSource.Length; $i++) {
+                    Write-Verbose "Downloading $($downloadSource[$i]) to $($downloadDest[$i])"
+                    $destDirectory = [io.path]::GetDirectoryName($downloadDest[$i])
+                    if (!(Test-Path $destDirectory -PathType Container)) {
+                        New-Item "$destDirectory" -ItemType Directory | Out-Null
+                    }
+                    
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.DownloadFileAsync($downloadSource[$i], $downloadDest[$i])
+                    $webClients += $webClient
                 }
 
-                (New-Object System.Net.WebClient).DownloadFile($downloadSource[$i], $downloadDest[$i])
+                # Wait for all the downloads to finish
+                while( $webClients.Where({ $_.IsBusy }, 'First').Count -gt 0 ) {}
+
+                # Clear the list so the finally does no work
+                $webClients = @()
             }
+            finally {
+                # If the script is stopped, e.g. Ctrl+C, we want to cancel any downloads
+                $webClients | ForEach-Object { $_.CancelAsync() } 
+            }
+            
         }
        
         for ($i = 0; $i -lt $localInstallers.Length; $i++) {
