@@ -19,7 +19,8 @@ enum UnitySetupComponent {
     Facebook = (1 -shl 11)
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
-    All = (1 -shl 14) - 1
+    Lumin = (1 -shl 14)
+    All = (1 -shl 15) - 1
 }
 
 [Flags()]
@@ -76,6 +77,7 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                     [UnitySetupComponent]::Mac = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
+                    [UnitySetupComponent]::Lumin = , [io.path]::Combine("$playbackEnginePath", "LuminSupport");
                 }
             }
             ([OperatingSystem]::Linux) {
@@ -309,6 +311,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Vuforia = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Lumin = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
     }
 
     switch ($currentOS) {
@@ -819,7 +822,7 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [string]$LogFile,
         [parameter(Mandatory = $false)]
-        [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch')]
+        [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch', 'Lumin')]
         [string]$BuildTarget,
         [parameter(Mandatory = $false)]
         [switch]$AcceptAPIUpdate,
