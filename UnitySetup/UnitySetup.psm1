@@ -475,7 +475,17 @@ function Install-UnitySetupInstance {
                 $localDestinations += , $Destination
             }
             else {
-                $localDestinations += , "C:\Program Files\Unity-$($i.Version)"
+                switch (Get-OperatingSystem) {
+                    ([OperatingSystem]::Windows) {
+                        $localDestinations += , "C:\Program Files\Unity\Hub\Editor\$($i.Version)"
+                    }
+                    ([OperatingSystem]::Linux) {
+                        throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                    }
+                    ([OperatingSystem]::Mac) {
+                        $localDestinations += , "/Applications/Unity/Hub/Editor/$($i.Version)"
+                    }
+                }
             }
 
             if ( Test-Path $destPath ) {
@@ -617,7 +627,7 @@ function Get-UnitySetupInstance {
         }
         ([OperatingSystem]::Mac) {
             if (-not $BasePath) {
-                $BasePath = @('/Applications/Unity*')
+                $BasePath = @('/Applications/Unity*', '/Applications/Unity/Hub/Editor/*')
             }
             $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
         }
