@@ -1007,10 +1007,14 @@ function Start-UnityEditor {
                 'RedirectStandardError' = New-TemporaryFile;
             }
 
-            if ($Wait) { $setProcessArgs['Wait'] = $true }
+            if ( $Wait ) {
+                 $setProcessArgs['Wait'] = $true
 
-            Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
-            Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
+                 if ( $LogFile ){
+                     Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
+                     Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
+                 }
+            }
 
             $actionString = "$editor $unityArgs"
             if( $Credential ) { $actionString += " -password (hidden)"}
