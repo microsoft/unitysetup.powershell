@@ -147,15 +147,23 @@ class UnityVersion : System.IComparable {
     UnityVersion([string] $version) {
         $parts = $version.Split('-')
 
-        $parts[0] -match "((\d+)\.(\d+)\.(\d+))|([fpb])(\d+)" | Out-Null
-        if ( $Matches.Count -ge 5 ) {
-            $this.Major = [int]($Matches[3]);
-            $this.Minor = [int]($Matches[4]);
-            $this.Revision = [int]($Matches[5]);
+        $isLongMatch = $parts[0] -match '(\d+)\.(\d+)\.(\d+)([fpb])(\d+)'
+
+        if ( !$isLongMatch ) {
+            $isShortMatch = $parts[0] -match '(\d+)\.(\d+)\.(\d+)'
+        }
+        else {
+            $isShortMatch = $true
+        }
         
-            if ( $Matches.Count -eq 8 ) {
-                $this.Release = [char]($Matches[7]);
-                $this.Build = [int]($Matches[8]);
+        if ( $isShortMatch ) {
+            $this.Major = [int]($Matches[1]);
+            $this.Minor = [int]($Matches[2]);
+            $this.Revision = [int]($Matches[3]);
+        
+            if ( $isLongMatch ) {
+                $this.Release = [char]($Matches[4]);
+                $this.Build = [int]($Matches[5]);
             }
         }
         else {
