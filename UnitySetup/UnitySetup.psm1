@@ -147,13 +147,20 @@ class UnityVersion : System.IComparable {
     UnityVersion([string] $version) {
         $parts = $version.Split('-')
 
-        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
-        if ( $Matches.Count -ne 6 ) { throw "Invalid unity version: $version" }
-        $this.Major = [int]($Matches[1]);
-        $this.Minor = [int]($Matches[2]);
-        $this.Revision = [int]($Matches[3]);
-        $this.Release = [char]($Matches[4]);
-        $this.Build = [int]($Matches[5]);
+        $parts[0] -match "((\d+)\.(\d+)\.(\d+))|([fpb])(\d+)" | Out-Null
+        if ( $Matches.Count -ge 5 ) {
+            $this.Major = [int]($Matches[3]);
+            $this.Minor = [int]($Matches[4]);
+            $this.Revision = [int]($Matches[5]);
+        
+            if ( $Matches.Count -eq 8 ) {
+                $this.Release = [char]($Matches[7]);
+                $this.Build = [int]($Matches[8]);
+            }
+        }
+        else {
+            throw "Invalid unity version: $version"
+        }
 
         if ($parts.Length -gt 1) {
             $this.Suffix = $parts[1];
