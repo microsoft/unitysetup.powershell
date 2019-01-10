@@ -676,6 +676,7 @@ function Request-UnitySetupInstaller {
 
                     # Finished downloading
                     if ($null -eq $data.webClient) {
+                        ++$installersDownloaded
                         return
                     }
                     if ($data.isDownloaded) {
