@@ -554,107 +554,165 @@ function Request-UnitySetupInstaller {
         # name and this corrects the separators to current environment.
         $fullCachePath = (Resolve-Path -Path $Cache).Path
 
-        $downloads = @()
+        $allInstallers = @()
     }
     process {
+        # Append the full list of installers to enable batch downloading of installers.
         $Installers | ForEach-Object {
-            $installerFileName = [io.Path]::GetFileName($_.DownloadUrl)
-            $destination = [io.Path]::Combine($fullCachePath, "Installers", "Unity-$($_.Version)", "$installerFileName")
+            $allInstallers += , $_
+        }
+    }
+    end {
+        $downloads = @()
 
-            # Already downloaded?
-            if ( Test-Path $destination ) {
-                $destinationItem = Get-Item $destination
-                if ( ($destinationItem.Length -eq $_.Length ) -and
-                     ($destinationItem.LastWriteTime -eq $_.LastModified) ) {
-                    Write-Verbose "Skipping download because it's already in the cache: $($_.DownloadUrl)"
+        try {
+            $global:downloadData = [ordered]@{}
+            $downloadIndex = 1
 
-                    $resource = New-Object UnitySetupResource -Property @{
-                        'ComponentType' = $_.ComponentType
-                        'Path' = $destination
+            $allInstallers | ForEach-Object {
+                $installerFileName = [io.Path]::GetFileName($_.DownloadUrl)
+                $destination = [io.Path]::Combine($fullCachePath, "Installers", "Unity-$($_.Version)", "$installerFileName")
+
+                # Already downloaded?
+                if ( Test-Path $destination ) {
+                    $destinationItem = Get-Item $destination
+                    if ( ($destinationItem.Length -eq $_.Length ) -and
+                        ($destinationItem.LastWriteTime -eq $_.LastModified) ) {
+                        Write-Verbose "Skipping download because it's already in the cache: $($_.DownloadUrl)"
+
+                        $resource = New-Object UnitySetupResource -Property @{
+                            'ComponentType' = $_.ComponentType
+                            'Path' = $destination
+                        }
+                        $downloads += , $resource
+                        return
                     }
-                    $downloads += , $resource
-                    return
+                }
+
+                $destinationDirectory = [io.path]::GetDirectoryName($destination)
+                if (!(Test-Path $destinationDirectory -PathType Container)) {
+                    New-Item "$destinationDirectory" -ItemType Directory | Out-Null
+                }
+
+                $webClient = New-Object System.Net.WebClient
+
+                ++$downloadIndex
+                $global:downloadData[$installerFileName] = New-Object PSObject -Property @{
+                    installerFileName = $installerFileName
+                    startTime = Get-Date
+                    totalBytes = $_.Length
+                    receivedBytes = 0
+                    isDownloaded = $false
+                    destination = $destination
+                    lastModified = $_.LastModified
+                    componentType = $_.ComponentType
+                    webClient = $webClient
+                    downloadIndex = $downloadIndex
+                }
+
+                # Register to events for showing progress of file download.
+                Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -SourceIdentifier "$installerFileName-Changed" -MessageData $installerFileName -Action {
+                    $global:downloadData[$event.MessageData].receivedBytes = $event.SourceArgs.BytesReceived
+                } | Out-Null
+                Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted -SourceIdentifier "$installerFileName-Completed" -MessageData $installerFileName -Action {
+                    $global:downloadData[$event.MessageData].isDownloaded = $true
+                } | Out-Null
+
+                try
+                {
+                    Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
+                    $webClient.DownloadFileAsync($_.DownloadUrl, $destination)
+                }
+                catch [System.Net.WebException] {
+                    Write-Error "Failed downloading $installerFileName - $($_.Exception.Message)"
+                    $global:downloadData.Remove($installerFileName)
+
+                    Unregister-Event -SourceIdentifier "$installerFileName-Completed" -Force
+                    Unregister-Event -SourceIdentifier "$installerFileName-Changed" -Force
+
+                    $webClient.Dispose()
                 }
             }
 
-            $destinationDirectory = [io.path]::GetDirectoryName($destination)
-            if (!(Test-Path $destinationDirectory -PathType Container)) {
-                New-Item "$destinationDirectory" -ItemType Directory | Out-Null
-            }
+            $totalDownloads = $global:downloadData.Count
 
-            $webClient = New-Object System.Net.WebClient
+            # Showing progress of all file downloads
+            while ($global:downloadData.Count -gt 0) {
+                $global:downloadData.Keys | ForEach-Object {
+                    $installerFileName = $_
+                    $data = $global:downloadData[$installerFileName]
 
-            # Register to events for showing progress of file download.
-            Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -SourceIdentifier DownloadProgressChanged -Action {
-                $global:DownloadProgressEvent = $event
-            } | Out-Null
-            Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted -SourceIdentifier DownloadFileCompleted -Action {
-                $global:isDownloaded = $true
-            } | Out-Null
+                    # Finished downloading
+                    if ($null -eq $data.webClient) {
+                        return
+                    }
+                    if ($data.isDownloaded) {
+                        Write-Progress -Activity "Downloading $installerFileName" -Status "Done" -Completed `
+                            -Id $data.downloadIndex
 
-            try
-            {
-                $startTime = Get-Date
+                        Unregister-Event -SourceIdentifier "$installerFileName-Completed" -Force
+                        Unregister-Event -SourceIdentifier "$installerFileName-Changed" -Force
+        
+                        $data.webClient.Dispose()
+                        $data.webClient = $null
 
-                $global:DownloadProgressEvent = $null
-                $global:isDownloaded = $false
-
-                Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
-                $webClient.DownloadFileAsync($_.DownloadUrl, $destination)
-
-                # Showing progress of file download
-                $totalBytes = $_.Length
-                while (-not $global:isDownloaded) {
-                    if ($null -eq $global:DownloadProgressEvent) {
-                        continue
+                        # Re-writes the last modified time for ensuring downloads are cached properly.
+                        $downloadedFile = Get-Item $data.destination
+                        $downloadedFile.LastWriteTime = $data.lastModified
+            
+                        $resource = New-Object UnitySetupResource -Property @{
+                            'ComponentType' = $data.componentType
+                            'Path' = $data.destination
+                        }
+                        $downloads += , $resource
+                        return
                     }
 
-                    $elapsedTime = (Get-Date) - $startTime
+                    $elapsedTime = (Get-Date) - $data.startTime
 
-                    $receivedBytes = $global:DownloadProgressEvent.SourceArgs.BytesReceived
-                    $progress = [int](($receivedBytes / [double]$totalBytes) * 100)
-
-                    $averageSpeed = $receivedBytes / $elapsedTime.TotalSeconds
-                    $secondsRemaining = ($totalBytes - $receivedBytes) / $averageSpeed
-
+                    $progress = [int](($data.receivedBytes / [double]$data.totalBytes) * 100)
+    
+                    $averageSpeed = $data.receivedBytes / $elapsedTime.TotalSeconds
+                    $secondsRemaining = ($data.totalBytes - $data.receivedBytes) / $averageSpeed
+    
                     if ([double]::IsInfinity($secondsRemaining)) {
                         $averageSpeed = 0
                         # -1 for Write-Progress prevents seconds remaining from showing.
                         $secondsRemaining = -1
                     }
-
-                    $downloadSpeed = Format-BitsPerSecond -Bytes $receivedBytes -Seconds $elapsedTime.TotalSeconds
+    
+                    $downloadSpeed = Format-BitsPerSecond -Bytes $data.receivedBytes -Seconds $elapsedTime.TotalSeconds
 
                     Write-Progress -Activity "Downloading $installerFileName | $downloadSpeed" `
-                        -Status "$($receivedBytes | Format-Bytes) of $($totalBytes | Format-Bytes)" `
+                        -Status "$($data.receivedBytes | Format-Bytes) of $($data.totalBytes | Format-Bytes)" `
                         -SecondsRemaining $secondsRemaining `
-                        -PercentComplete $progress
+                        -PercentComplete $progress `
+                        -Id $data.downloadIndex
                 }
             }
-            catch [System.Net.WebException] {
-                Write-Error "Failed downloading $installerFileName - $($_.Exception.Message)"
-            }
-            finally {
-                Unregister-Event -SourceIdentifier DownloadFileCompleted -Force
-                Unregister-Event -SourceIdentifier DownloadProgressChanged -Force
-
-                $webClient.Dispose()
-
-                Write-Progress -Activity "Downloading $($_.DownloadUrl)" -Status "Done" -Completed
-            }
-
-            # Re-writes the last modified time for ensuring downloads are cached properly.
-            $downloadedFile = Get-Item $destination
-            $downloadedFile.LastWriteTime = $_.LastModified
-
-            $resource = New-Object UnitySetupResource -Property @{
-                'ComponentType' = $_.ComponentType
-                'Path' = $destination
-            }
-            $downloads += , $resource
         }
-    }
-    end {
+        finally {
+            # If the script is stopped, e.g. Ctrl+C, we want to cancel any remaining downloads
+            $global:downloadData.Keys | ForEach-Object {
+                $installerFileName = $_
+                $data = $global:downloadData[$installerFileName]
+
+                if ($null -ne $data.webClient) {
+                    if (-not $data.isDownloaded) {
+                        $data.webClient.CancelAsync()
+                    }
+
+                    Unregister-Event -SourceIdentifier "$installerFileName-Completed" -Force
+                    Unregister-Event -SourceIdentifier "$installerFileName-Changed" -Force
+
+                    $data.webClient.Dispose()
+                    $data.webClient = $null
+                }
+            }
+
+            Remove-Variable -Name downloadData -Scope Global
+        }
+
         return $downloads
     }
 }
@@ -1109,6 +1167,14 @@ function Get-UnityProjectInstance {
    What serial should be used by Unity for activation? Implies BatchMode and Quit if they're not supplied by the User.
 .PARAMETER ReturnLicense
    Unity should return the current license it's been activated with. Implies Quit if not supplied by the User.
+.PARAMETER EditorTestsCategories
+   Filter tests by category names.
+.PARAMETER EditorTestsFilter
+   Filter tests by test names.
+.PARAMETER EditorTestsResultFile
+   Where to put the results? Unity states, "If the path is a folder, the command line uses a default file name. If not specified, it places the results in the project’s root folder."
+.PARAMETER RunEditorTests
+   Should Unity run the editor tests? Unity states, "[...]it’s good practice to run it with batchmode argument. quit is not required, because the Editor automatically closes down after the run is finished."
 .PARAMETER BatchMode
    Should the Unity Editor start in batch mode?
 .PARAMETER Quit
@@ -1174,6 +1240,14 @@ function Start-UnityEditor {
         [switch]$ReturnLicense,
         [parameter(Mandatory = $false)]
         [switch]$ForceFree,
+        [parameter(Mandatory = $false)]
+        [string[]]$EditorTestsCategory,
+        [parameter(Mandatory = $false)]
+        [string[]]$EditorTestsFilter,
+        [parameter(Mandatory = $false)]
+        [string]$EditorTestsResultFile,
+        [parameter(Mandatory = $false)]
+        [switch]$RunEditorTests,
         [parameter(Mandatory = $false)]
         [switch]$BatchMode,
         [parameter(Mandatory = $false)]
@@ -1266,6 +1340,10 @@ function Start-UnityEditor {
         if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
         if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
+        if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
+        if ( $EditorTestsFilter ) { $sharedArgs += '-editorTestsFilter', ($EditorTestsFilter -join ',') }
+        if ( $EditorTestsResultFile ) { $sharedArgs += '-editorTestsResultFile', $EditorTestsResultFile }
+        if ( $RunEditorTests ) { $sharedArgs += '-runEditorTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
 
         $instanceArgs = @()
@@ -1361,12 +1439,16 @@ function Start-UnityEditor {
 
             $process = Start-Process @setProcessArgs
             if ( $Wait ) {
-                if ( $process.ExitCode -ne 0 ) {
-                    if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
-                        Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
-                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
-                    }
+                if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
+                    # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
+                    # to make sure that we flag such errors.
+                    Write-UnityErrors $LogFile
+                    
+                    Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
+                    Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
+                }
 
+                if ( $process.ExitCode -ne 0 ) {
                     Write-Error "Unity quit with non-zero exit code: $($process.ExitCode)"
                 }
             }
@@ -1374,6 +1456,46 @@ function Start-UnityEditor {
             if ($PassThru) { $process }
         }
     }
+}
+
+# Open the specified Unity log file and write any errors found in the file to the error stream.
+function Write-UnityErrors {
+    param([string] $LogFileName)
+    Write-Verbose "Checking $LogFileName for errors"
+    $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
+    if ( $errors.Count -gt 0 ) {
+        $errors = $errors | select -uniq # Unity prints out errors as they occur and also in a summary list. We only want to see each unique error once.
+        $errorMessage = $errors -join "`r`n"
+        $errorMessage = "Errors were found in $LogFileName`:`r`n$errorMessage"
+        Write-Error $errorMessage
+    }
+}
+
+function Get-IsUnityError {
+    param([string] $LogLine)
+
+    # Detect Unity License error, for example:
+    # BatchMode: Unity has not been activated with a valid License. Could be a new activation or renewal...
+    if ( $LogLine -match 'Unity has not been activated with a valid License' ) {
+        return $true
+    }
+
+    # Detect that the method specified by -ExecuteMethod doesn't exist, for example:
+    # executeMethod method 'Invoke' in class 'Build' could not be found.
+    if ( $LogLine -match 'executeMethod method .* could not be found' ) {
+        return $true
+    }
+
+    # Detect compilation error, for example:
+    #   Assets/Errors.cs(7,9): error CS0103: The name `NonexistentFunction' does not exist in the current context
+    if ( $LogLine -match '\.cs\(\d+,\d+\): error ' ) {
+        return $true
+    }
+
+    # In the future, additional kinds of errors that can be found in Unity logs could be added here:
+    # ...
+
+    return $false
 }
 
 function ConvertTo-DateTime {
