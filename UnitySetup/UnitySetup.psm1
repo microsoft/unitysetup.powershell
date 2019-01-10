@@ -963,7 +963,7 @@ function Start-UnityEditor {
             }
 
             $projectPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($($p.Path))
-            $instanceArgs += , ("-projectPath", "$projectPath")
+            $instanceArgs += , ("-projectPath", "`"$projectPath`"")
             $setupInstances += , $setupInstance
         }
 
