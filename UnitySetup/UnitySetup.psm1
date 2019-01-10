@@ -432,6 +432,22 @@ function Find-UnitySetupInstaller {
     } | Sort-Object -Property ComponentType
 }
 
+<#
+.Synopsis
+   Test if a Unity instance is installed.
+.DESCRIPTION
+   Returns the status of a Unity install by Version and/or Path to install.
+.PARAMETER Version
+   What version of Unity are you looking for?
+.PARAMETER BasePath
+   Under what base patterns is Unity customly installed at.
+.PARAMETER Path
+   Exact path you expect Unity to be installed at.
+.EXAMPLE
+   Test-UnitySetupInstance -Version 2017.3.0f3
+.EXAMPLE
+   Test-UnitySetupInstance -BasePath D:/UnityInstalls/Unity2018
+#>
 function Test-UnitySetupInstance {
     [CmdletBinding()]
     param(
@@ -533,6 +549,21 @@ function Format-BitsPerSecond {
     )
 }
 
+<#
+.Synopsis
+   Download specified Unity installers.
+.DESCRIPTION
+   Filters a list of `UnitySetupInstaller` down to a specific version and/or specific components.
+.PARAMETER Installers
+   List of installers that needs to be downloaded.
+.PARAMETER Cache
+   File path where installers will be downloaded to.
+.EXAMPLE
+   $installers = Find-UnitySetupInstaller -Version 2017.3.0f3
+   Request-UnitySetupInstaller -Installers $installers
+.EXAMPLE
+   Find-UnitySetupInstaller -Version 2017.3.0f3 | Request-UnitySetupInstaller
+#>
 function Request-UnitySetupInstaller {
     [CmdletBinding()]
     param(
