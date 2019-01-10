@@ -665,10 +665,11 @@ function Request-UnitySetupInstaller {
                 }
             }
 
-            $totalDownloads = $global:downloadData.Count
-
             # Showing progress of all file downloads
-            while ($global:downloadData.Count -gt 0) {
+            $totalDownloads = $global:downloadData.Count
+            do {
+                $installersDownloaded = 0
+
                 $global:downloadData.Keys | ForEach-Object {
                     $installerFileName = $_
                     $data = $global:downloadData[$installerFileName]
@@ -720,7 +721,7 @@ function Request-UnitySetupInstaller {
                         -PercentComplete $progress `
                         -Id $data.downloadIndex
                 }
-            }
+            } while ($installersDownloaded -lt $totalDownloads)
         }
         finally {
             # If the script is stopped, e.g. Ctrl+C, we want to cancel any remaining downloads
