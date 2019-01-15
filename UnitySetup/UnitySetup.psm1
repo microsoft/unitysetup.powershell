@@ -11,6 +11,7 @@ enum UnitySetupComponent {
     StandardAssets = (1 -shl 4)
     Windows_IL2CPP = (1 -shl 5)
     Metro = (1 -shl 6)
+    UWP = (1 -shl 6)
     UWP_IL2CPP = (1 -shl 7)
     Android = (1 -shl 8)
     iOS = (1 -shl 9)
@@ -70,7 +71,7 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
-                    [UnitySetupComponent]::Metro = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                    [UnitySetupComponent]::UWP = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                     [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
@@ -235,7 +236,7 @@ function Get-OperatingSystem {
 .PARAMETER Components
    What components would you like included?
 .EXAMPLE
-   ConvertTo-UnitySetupComponent Windows,Metro
+   ConvertTo-UnitySetupComponent Windows,UWP
 #>
 function ConvertTo-UnitySetupComponent {
     [CmdletBinding()]
@@ -271,7 +272,23 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All
     )
 
-    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+    $currentOS = Get-OperatingSystem
+    switch ($currentOS) {
+        ([OperatingSystem]::Windows) {
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+            $targetSupport = "TargetSupportInstaller"
+            $installerExtension = "exe"
+        }
+        ([OperatingSystem]::Linux) {
+            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+        }
+        ([OperatingSystem]::Mac) {
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/MacEditorInstaller\/Unity-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).pkg$"
+            $targetSupport = "MacEditorTargetInstaller"
+            $installerExtension = "pkg"
+        }
+    }
+
     $knownBaseUrls = @(
         "https://download.unity3d.com/download_unity",
         "https://netstorage.unity3d.com/unity",
@@ -279,27 +296,28 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::Documentation = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
-        [UnitySetupComponent]::StandardAssets = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
-        [UnitySetupComponent]::Metro = , "TargetSupportInstaller/UnitySetup-Metro-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::UWP_IL2CPP = , "TargetSupportInstaller/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Android = , "TargetSupportInstaller/UnitySetup-Android-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::iOS = , "TargetSupportInstaller/UnitySetup-iOS-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::AppleTV = , "TargetSupportInstaller/UnitySetup-AppleTV-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Facebook = , "TargetSupportInstaller/UnitySetup-Facebook-Games-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Linux = , "TargetSupportInstaller/UnitySetup-Linux-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Mac = "TargetSupportInstaller/UnitySetup-Mac-Support-for-Editor-$Version.exe",
-        "TargetSupportInstaller/UnitySetup-Mac-Mono-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Vuforia = , "TargetSupportInstaller/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::WebGL = , "TargetSupportInstaller/UnitySetup-WebGL-Support-for-Editor-$Version.exe";
-        [UnitySetupComponent]::Windows_IL2CPP = , "TargetSupportInstaller/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.exe";
+        [UnitySetupComponent]::UWP = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
+         "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::UWP_IL2CPP = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Android = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::iOS = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::AppleTV = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Facebook = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Linux = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
+        "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Vuforia = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::WebGL = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
     }
 
-    $currentOS = Get-OperatingSystem
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
             $setupComponent = [UnitySetupComponent]::Windows
             $installerTemplates[$setupComponent] = , "Windows64EditorInstaller/UnitySetup64-$Version.exe";
+
+            $installerTemplates[[UnitySetupComponent]::Documentation] = , "WindowsDocumentationInstaller/UnityDocumentationSetup-$Version.exe";
+            $installerTemplates[[UnitySetupComponent]::StandardAssets] = , "WindowsStandardAssetsInstaller/UnityStandardAssetsSetup-$Version.exe";
         }
         ([OperatingSystem]::Linux) {
             $setupComponent = [UnitySetupComponent]::Linux
@@ -309,9 +327,12 @@ function Find-UnitySetupInstaller {
         }
         ([OperatingSystem]::Mac) {
             $setupComponent = [UnitySetupComponent]::Mac
-            # TODO: $installerTemplates[$setupComponent] = , "???/UnitySetup64-$Version.exe";
+            $installerTemplates[$setupComponent] = , "MacEditorInstaller/Unity-$Version.pkg";
 
-            throw "Find-UnitySetupInstaller has not been implemented on the Mac platform. Contributions welcomed!";
+            # Note: These links appear to be unavailable even on Unity's website for 2018.
+            # StandardAssets appears to work if you select a 2017 version.
+            $installerTemplates[[UnitySetupComponent]::Documentation] = , "MacDocumentationInstaller/DocumentationSetup-$Version.pkg";
+            $installerTemplates[[UnitySetupComponent]::StandardAssets] = , "MacStandardAssetsInstaller/StandardAssets-$Version.pkg";
         }
     }
 
@@ -368,12 +389,25 @@ function Find-UnitySetupInstaller {
                 $endpoint = [uri][System.IO.Path]::Combine($baseUrl, $linkComponents[1], $template);
                 try {
                     $testResult = Invoke-WebRequest $endpoint -Method HEAD -UseBasicParsing
+                    # For packages on macOS the Content-Length and Last-Modified are returned as an array.
+                    if ($testResult.Headers['Content-Length'] -is [System.Array]) {
+                        $installerLength = [int64]$testResult.Headers['Content-Length'][0]
+                    }
+                    else {
+                        $installerLength = [int64]$testResult.Headers['Content-Length']
+                    }
+                    if ($testResult.Headers['Last-Modified'] -is [System.Array]) {
+                        $lastModified = [System.DateTime]$testResult.Headers['Last-Modified'][0]
+                    }
+                    else {
+                        $lastModified = [System.DateTime]$testResult.Headers['Last-Modified']
+                    }
                     $result = New-Object UnitySetupInstaller -Property @{
                         'ComponentType' = $_;
                         'Version' = $Version;
                         'DownloadUrl' = $endpoint;
-                        'Length' = [int64]$testResult.Headers['Content-Length'];
-                        'LastModified' = ([System.DateTime]$testResult.Headers['Last-Modified']);
+                        'Length' = $installerLength;
+                        'LastModified' = $lastModified;
                     }
 
                     break
@@ -419,11 +453,7 @@ function Install-UnitySetupInstance {
         [string]$Destination,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup"),
-
-        [parameter(Mandatory = $false)]
-        [ValidateSet('Open', 'RunAs')]
-        [string]$Verb
+        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".unitysetup")
     )
 
     process {
@@ -461,15 +491,31 @@ function Install-UnitySetupInstance {
         }
 
         if ( $downloadSource.Length -gt 0 ) {
-            for ($i = 0; $i -lt $downloadSource.Length; $i++) {
-                Write-Verbose "Downloading $($downloadSource[$i]) to $($downloadDest[$i])"
-                $destDirectory = [io.path]::GetDirectoryName($downloadDest[$i])
-                if (!(Test-Path $destDirectory -PathType Container)) {
-                    New-Item "$destDirectory" -ItemType Directory | Out-Null
+            [System.Net.WebClient[]]$webClients =  @()
+            try {
+                for ($i = 0; $i -lt $downloadSource.Length; $i++) {
+                    Write-Verbose "Downloading $($downloadSource[$i]) to $($downloadDest[$i])"
+                    $destDirectory = [io.path]::GetDirectoryName($downloadDest[$i])
+                    if (!(Test-Path $destDirectory -PathType Container)) {
+                        New-Item "$destDirectory" -ItemType Directory | Out-Null
+                    }
+                    
+                    $webClient = New-Object System.Net.WebClient
+                    $webClient.DownloadFileAsync($downloadSource[$i], $downloadDest[$i])
+                    $webClients += $webClient
                 }
-            }
 
-            Start-BitsTransfer -Source $downloadSource -Destination $downloadDest
+                # Wait for all the downloads to finish
+                while( $webClients.Where({ $_.IsBusy }, 'First').Count -gt 0 ) {}
+
+                # Clear the list so the finally does no work
+                $webClients = @()
+            }
+            finally {
+                # If the script is stopped, e.g. Ctrl+C, we want to cancel any downloads
+                $webClients | ForEach-Object { $_.CancelAsync() } 
+            }
+            
         }
        
         for ($i = 0; $i -lt $localInstallers.Length; $i++) {
@@ -712,6 +758,14 @@ function Get-UnityProjectInstance {
    What serial should be used by Unity for activation? Implies BatchMode and Quit if they're not supplied by the User.
 .PARAMETER ReturnLicense
    Unity should return the current license it's been activated with. Implies Quit if not supplied by the User.
+.PARAMETER EditorTestsCategories
+   Filter tests by category names.
+.PARAMETER EditorTestsFilter
+   Filter tests by test names.
+.PARAMETER EditorTestsResultFile
+   Where to put the results? Unity states, "If the path is a folder, the command line uses a default file name. If not specified, it places the results in the project’s root folder."
+.PARAMETER RunEditorTests
+   Should Unity run the editor tests? Unity states, "[...]it’s good practice to run it with batchmode argument. quit is not required, because the Editor automatically closes down after the run is finished."
 .PARAMETER BatchMode
    Should the Unity Editor start in batch mode?
 .PARAMETER Quit
@@ -777,6 +831,14 @@ function Start-UnityEditor {
         [switch]$ReturnLicense,
         [parameter(Mandatory = $false)]
         [switch]$ForceFree,
+        [parameter(Mandatory = $false)]
+        [string[]]$EditorTestsCategory,
+        [parameter(Mandatory = $false)]
+        [string[]]$EditorTestsFilter,
+        [parameter(Mandatory = $false)]
+        [string]$EditorTestsResultFile,
+        [parameter(Mandatory = $false)]
+        [switch]$RunEditorTests,
         [parameter(Mandatory = $false)]
         [switch]$BatchMode,
         [parameter(Mandatory = $false)]
@@ -869,6 +931,10 @@ function Start-UnityEditor {
         if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
         if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
+        if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
+        if ( $EditorTestsFilter ) { $sharedArgs += '-editorTestsFilter', ($EditorTestsFilter -join ',') }
+        if ( $EditorTestsResultFile ) { $sharedArgs += '-editorTestsResultFile', $EditorTestsResultFile }
+        if ( $RunEditorTests ) { $sharedArgs += '-runEditorTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
 
         $instanceArgs = @()
@@ -964,12 +1030,16 @@ function Start-UnityEditor {
 
             $process = Start-Process @setProcessArgs
             if ( $Wait ) {
-                if ( $process.ExitCode -ne 0 ) {
-                    if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
-                        Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
-                        Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
-                    }
+                if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
+                    # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
+                    # to make sure that we flag such errors.
+                    Write-UnityErrors $LogFile
+                    
+                    Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
+                    Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
+                }
 
+                if ( $process.ExitCode -ne 0 ) {
                     Write-Error "Unity quit with non-zero exit code: $($process.ExitCode)"
                 }
             }
@@ -977,6 +1047,46 @@ function Start-UnityEditor {
             if ($PassThru) { $process }
         }
     }
+}
+
+# Open the specified Unity log file and write any errors found in the file to the error stream.
+function Write-UnityErrors {
+    param([string] $LogFileName)
+    Write-Verbose "Checking $LogFileName for errors"
+    $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
+    if ( $errors.Count -gt 0 ) {
+        $errors = $errors | Select-Object -uniq # Unity prints out errors as they occur and also in a summary list. We only want to see each unique error once.
+        $errorMessage = $errors -join "`r`n"
+        $errorMessage = "Errors were found in $LogFileName`:`r`n$errorMessage"
+        Write-Error $errorMessage
+    }
+}
+
+function Get-IsUnityError {
+    param([string] $LogLine)
+
+    # Detect Unity License error, for example:
+    # BatchMode: Unity has not been activated with a valid License. Could be a new activation or renewal...
+    if ( $LogLine -match 'Unity has not been activated with a valid License' ) {
+        return $true
+    }
+
+    # Detect that the method specified by -ExecuteMethod doesn't exist, for example:
+    # executeMethod method 'Invoke' in class 'Build' could not be found.
+    if ( $LogLine -match 'executeMethod method .* could not be found' ) {
+        return $true
+    }
+
+    # Detect compilation error, for example:
+    #   Assets/Errors.cs(7,9): error CS0103: The name `NonexistentFunction' does not exist in the current context
+    if ( $LogLine -match '\.cs\(\d+,\d+\): error ' ) {
+        return $true
+    }
+
+    # In the future, additional kinds of errors that can be found in Unity logs could be added here:
+    # ...
+
+    return $false
 }
 
 function ConvertTo-DateTime {

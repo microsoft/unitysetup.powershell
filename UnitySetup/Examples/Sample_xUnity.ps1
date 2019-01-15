@@ -12,7 +12,7 @@ Configuration Sample_xUnity {
         $Ensure = 'Present',
 
         [System.String[]]
-        $Components = @('Windows', 'Mac', 'Linux', 'Metro', 'iOS', 'Android'),
+        $Components = @('Windows', 'Mac', 'Linux', 'UWP', 'iOS', 'Android'),
 
         [PSCredential]
         $UnityCredential,
