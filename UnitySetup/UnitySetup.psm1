@@ -842,9 +842,15 @@ function Install-UnitySetupInstance {
 
         if ( -not $PSBoundParameters.ContainsKey('BasePath') ) {
             $defaultInstallPath = switch ($currentOS) {
-                ([OperatingSystem]::Windows) { 'C:\Program Files\Unity' }
-                ([OperatingSystem]::Linux) { throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
-                ([OperatingSystem]::Mac) { '/Applications/Unity' }
+                ([OperatingSystem]::Windows) {
+                    "C:\Program Files\Unity\Hub\Editor\"
+                }
+                ([OperatingSystem]::Linux) {
+                    throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                }
+                ([OperatingSystem]::Mac) {
+                    "/Applications/Unity/Hub/Editor/"
+                }
             }
         }
         else {
@@ -876,7 +882,7 @@ function Install-UnitySetupInstance {
                 }
             }
             else {
-                $installPath = "$defaultInstallPath-$installVersion"
+                $installPath = [io.path]::Combine($defaultInstallPath, $installVersion)
             }
 
             if ($currentOS -eq [OperatingSystem]::Mac) {
@@ -1405,7 +1411,7 @@ function Start-UnityEditor {
             }
 
             $projectPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($($p.Path))
-            $instanceArgs += , ("-projectPath", $projectPath)
+            $instanceArgs += , ("-projectPath", "`"$projectPath`"")
             $setupInstances += , $setupInstance
         }
 
@@ -1497,7 +1503,7 @@ function Write-UnityErrors {
     Write-Verbose "Checking $LogFileName for errors"
     $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
     if ( $errors.Count -gt 0 ) {
-        $errors = $errors | select -uniq # Unity prints out errors as they occur and also in a summary list. We only want to see each unique error once.
+        $errors = $errors | Select-Object -uniq # Unity prints out errors as they occur and also in a summary list. We only want to see each unique error once.
         $errorMessage = $errors -join "`r`n"
         $errorMessage = "Errors were found in $LogFileName`:`r`n$errorMessage"
         Write-Error $errorMessage
