@@ -374,7 +374,24 @@ function Find-UnitySetupInstaller {
     }
 
     if ($null -eq $prototypeLink) {
-        throw "Could not find archives for Unity version $Version"
+        # Attempt to find Unity version and setup links based off builtin_shaders download.
+        Write-Verbose "Attempting version search with builtin_shaders fallback"
+        foreach ($page in $searchPages) {
+            $webResult = Invoke-WebRequest $page -UseBasicParsing
+            $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object {
+                $_ -match "builtin_shaders-$($Version).zip$"
+            }
+
+            if ($null -ne $prototypeLink) { break }
+        }
+
+        if ($null -eq $prototypeLink) {
+            throw "Could not find archives for Unity version $Version"
+        }
+        else {
+            # Regex needs to be reconfigured to parse builtin_shaders's url link
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/builtin_shaders-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).zip$"
+        }
     }
 
     $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
@@ -959,11 +976,18 @@ function Install-UnitySetupInstance {
 
             # Move the install from the sparse bundle disk to the install directory.
             if ($currentOS -eq [OperatingSystem]::Mac) {
+                # rsync does not recursively create the directory path.
+                if (-not (Test-Path $installPath -PathType Container))
+                {
+                    Write-Verbose "Creating directory $installPath."
+                    New-Item $installPath -ItemType Directory -ErrorAction Stop | Out-Null
+                }
+
                 Write-Verbose "Copying install to $installPath."
                 # Copy the files (-r) and recreate symlinks (-l) to the install directory.
                 # Preserve permissions (-p) and owner (-o).
                 # chmod gives files read permissions.
-                & sudo rsync -rlpo $volumeInstallPath $installPath --chmod=+r --remove-source-files
+                & sudo rsync -rlpo $volumeInstallPath $installPath --chmod="+wr" --remove-source-files
 
                 Write-Verbose "Freeing sparse bundle disk space and unmounting."
                 # Ensure the drive is cleaned up.
