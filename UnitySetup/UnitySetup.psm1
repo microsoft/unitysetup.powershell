@@ -776,6 +776,12 @@ function Get-UnityProjectInstance {
    Where to put the results? Unity states, "If the path is a folder, the command line uses a default file name. If not specified, it places the results in the project’s root folder."
 .PARAMETER RunEditorTests
    Should Unity run the editor tests? Unity states, "[...]it’s good practice to run it with batchmode argument. quit is not required, because the Editor automatically closes down after the run is finished."
+.PARAMETER TestPlatform
+   The platform you want to run the tests on. Note that If unspecified, tests run in editmode by default.
+.PARAMETER TestResults
+   The path indicating where Unity should save the result file. By default, Unity saves it in the Project’s root folder.
+.PARAMETER RunTests
+   Should Unity run tests? Unity states, "[...]it’s good practice to run it with batchmode argument. quit is not required, because the Editor automatically closes down after the run is finished."
 .PARAMETER BatchMode
    Should the Unity Editor start in batch mode?
 .PARAMETER Quit
@@ -849,6 +855,13 @@ function Start-UnityEditor {
         [string]$EditorTestsResultFile,
         [parameter(Mandatory = $false)]
         [switch]$RunEditorTests,
+        [parameter(Mandatory = $false)]
+        [ValidateSet('EditMode', 'PlayMode')]
+        [string]$TestPlatform,
+        [parameter(Mandatory = $false)]
+        [string]$TestResults,
+        [parameter(Mandatory = $false)]
+        [switch]$RunTests,
         [parameter(Mandatory = $false)]
         [switch]$BatchMode,
         [parameter(Mandatory = $false)]
@@ -945,6 +958,9 @@ function Start-UnityEditor {
         if ( $EditorTestsFilter ) { $sharedArgs += '-editorTestsFilter', ($EditorTestsFilter -join ',') }
         if ( $EditorTestsResultFile ) { $sharedArgs += '-editorTestsResultFile', $EditorTestsResultFile }
         if ( $RunEditorTests ) { $sharedArgs += '-runEditorTests' }
+        if ( $TestPlatform ) { $sharedArgs += '-testPlatform', $TestPlatform }
+        if ( $TestResults ) { $sharedArgs += '-testResults', $TestResults }
+        if ( $RunTests ) { $sharedArgs += '-runTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
 
         $instanceArgs = @()
