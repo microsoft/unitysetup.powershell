@@ -754,6 +754,8 @@ function Get-UnityProjectInstance {
    Force operation as though $PWD is not a unity project.
 .PARAMETER ExecuteMethod
    The script method for the Unity Editor to execute.
+.PARAMETER AdditionalArguments
+   Additiong arguments for Unity or your custom method
 .PARAMETER OutputPath
    The output path that the Unity Editor should use.
 .PARAMETER LogFile
@@ -824,6 +826,8 @@ function Start-UnityEditor {
         [switch]$IgnoreProjectContext,
         [parameter(Mandatory = $false)]
         [string]$ExecuteMethod,
+        [parameter(Mandatory = $false)]
+        [string]$AdditionalArguments,
         [parameter(Mandatory = $false)]
         [string[]]$ExportPackage,
         [parameter(Mandatory = $false)]
@@ -962,6 +966,7 @@ function Start-UnityEditor {
         if ( $TestResults ) { $sharedArgs += '-testResults', $TestResults }
         if ( $RunTests ) { $sharedArgs += '-runTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
+        if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
 
         $instanceArgs = @()
         foreach ( $p in $projectInstances ) {
