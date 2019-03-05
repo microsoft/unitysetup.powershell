@@ -73,6 +73,10 @@ Launch many projects at the same time:
 ```powershell
 Get-UnityProjectInstance -Recurse | Start-UnityEditor
 ```
+Invoke methods with arbitrary arguments:
+```powershell
+Start-UnityEditor -ExecuteMethod Build.Invoke -BatchMode -Quit -LogFile .\build.log -Wait -AdditionalArguments "-BuildArg1 -BuildArg2"
+```
 Find the installers for a particular version:
 ```powershell
 Find-UnitySetupInstaller -Version '2017.3.0f3' | Format-Table

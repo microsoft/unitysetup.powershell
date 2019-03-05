@@ -755,7 +755,7 @@ function Get-UnityProjectInstance {
 .PARAMETER ExecuteMethod
    The script method for the Unity Editor to execute.
 .PARAMETER AdditionalArguments
-   Additiong arguments for Unity or your custom method
+   Additional arguments for Unity or your custom method
 .PARAMETER OutputPath
    The output path that the Unity Editor should use.
 .PARAMETER LogFile
@@ -797,7 +797,7 @@ function Get-UnityProjectInstance {
 .EXAMPLE
    Start-UnityEditor -Version 2017.3.0f3
 .EXAMPLE
-   Start-UnityEditor -ExecuteMethod Build.Invoke -BatchMode -Quit -LogFile .\build.log -Wait
+   Start-UnityEditor -ExecuteMethod Build.Invoke -BatchMode -Quit -LogFile .\build.log -Wait -AdditionalArguments "-BuildArg1 -BuildArg2"
 .EXAMPLE
    Get-UnityProjectInstance -Recurse | Start-UnityEditor -BatchMode -Quit
 .EXAMPLE
