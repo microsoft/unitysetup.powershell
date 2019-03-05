@@ -754,6 +754,8 @@ function Get-UnityProjectInstance {
    Force operation as though $PWD is not a unity project.
 .PARAMETER ExecuteMethod
    The script method for the Unity Editor to execute.
+.PARAMETER AdditionalArguments
+   Additional arguments for Unity or your custom method
 .PARAMETER OutputPath
    The output path that the Unity Editor should use.
 .PARAMETER LogFile
@@ -795,7 +797,7 @@ function Get-UnityProjectInstance {
 .EXAMPLE
    Start-UnityEditor -Version 2017.3.0f3
 .EXAMPLE
-   Start-UnityEditor -ExecuteMethod Build.Invoke -BatchMode -Quit -LogFile .\build.log -Wait
+   Start-UnityEditor -ExecuteMethod Build.Invoke -BatchMode -Quit -LogFile .\build.log -Wait -AdditionalArguments "-BuildArg1 -BuildArg2"
 .EXAMPLE
    Get-UnityProjectInstance -Recurse | Start-UnityEditor -BatchMode -Quit
 .EXAMPLE
@@ -824,6 +826,8 @@ function Start-UnityEditor {
         [switch]$IgnoreProjectContext,
         [parameter(Mandatory = $false)]
         [string]$ExecuteMethod,
+        [parameter(Mandatory = $false)]
+        [string]$AdditionalArguments,
         [parameter(Mandatory = $false)]
         [string[]]$ExportPackage,
         [parameter(Mandatory = $false)]
@@ -962,6 +966,7 @@ function Start-UnityEditor {
         if ( $TestResults ) { $sharedArgs += '-testResults', $TestResults }
         if ( $RunTests ) { $sharedArgs += '-runTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
+        if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
 
         $instanceArgs = @()
         foreach ( $p in $projectInstances ) {
