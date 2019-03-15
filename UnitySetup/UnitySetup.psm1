@@ -469,7 +469,7 @@ function Install-UnitySetupInstance {
         foreach ( $i in $Installers) {
             $fileName = [io.Path]::GetFileName($i.DownloadUrl)
             $destPath = [io.Path]::Combine($Cache, "Installers\Unity-$($i.Version)\$fileName")
-
+            $localVersion = $i.Version
             $localInstallers += , $destPath
             if ($Destination) {
                 $localDestinations += , $Destination
@@ -547,6 +547,7 @@ function Install-UnitySetupInstance {
                 }
                 else { 
                     Write-Verbose "$(Get-Date): Succeeded."
+                    [Environment]::SetEnvironmentVariable("UNITY_$($localVersion)", $Destination, [System.EnvironmentVariableTarget]::User)
                 }
             }
         }
