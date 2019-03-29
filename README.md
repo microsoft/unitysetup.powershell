@@ -55,12 +55,12 @@ Find all the Unity projects recursively:
 Get-UnityProjectInstance -Recurse
 
 # Example output:
-# Version    Path
-# -------    ----
-# 2017.2.0f3 C:\Projects\Project1\OneUnity\                 
-# 2017.3.0f3 C:\Projects\Project1\TwoUnity\                 
-# 2017.1.1p1 C:\Projects\Project2\                          
-# 2017.1.2f1 C:\Projects\Project3\App.Unity\                
+# Version    Path                            ProductName
+# -------    ----                            -----------
+# 2017.2.0f3 C:\Projects\Project1\OneUnity\  Contoso
+# 2017.3.0f3 C:\Projects\Project1\TwoUnity\  Northwind
+# 2017.1.1p1 C:\Projects\Project2\           My Cool App
+# 2017.1.2f1 C:\Projects\Project3\App.Unity\ TemplateProject
 ```
 Launch the right Unity editor for a project:
 ```powershell
