@@ -122,6 +122,7 @@ class UnitySetupInstance {
 class UnityProjectInstance {
     [UnityVersion]$Version
     [string]$Path
+    [string]$ProductName
 
     UnityProjectInstance([string]$path) {
         $versionFile = [io.path]::Combine($path, "ProjectSettings\ProjectVersion.txt")
@@ -130,8 +131,15 @@ class UnityProjectInstance {
         $fileVersion = (Get-Content $versionFile -Raw | ConvertFrom-Yaml)['m_EditorVersion'];
         if (!$fileVersion) { throw "Project is missing a version in: $versionFile"}
 
+        $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
+        if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset"}
+
+        $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
+        if (!$prodName) { throw "ProjectSettings is missing productName"}
+
         $this.Path = $path
         $this.Version = $fileVersion
+        $this.ProductName = $prodName
     }
 }
 
