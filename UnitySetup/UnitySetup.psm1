@@ -74,12 +74,12 @@ class UnitySetupInstance {
                 $this.Components = [UnitySetupComponent]::Windows
                 $playbackEnginePath = [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines");
                 @{
+                    [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
+                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
                     [UnitySetupComponent]::UWP = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                     [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
-                    [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
-                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                 }
             }
             ([OperatingSystem]::Linux) {
