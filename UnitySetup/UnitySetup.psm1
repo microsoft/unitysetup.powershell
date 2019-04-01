@@ -98,7 +98,7 @@ class UnitySetupInstance {
                 }
             }
         }
-        
+
         # Common playback engines:
         $componentTests[[UnitySetupComponent]::Linux] = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
         $componentTests[[UnitySetupComponent]::Mac] = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
