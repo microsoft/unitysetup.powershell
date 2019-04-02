@@ -101,7 +101,6 @@ class UnitySetupInstance {
 
         # Common playback engines:
         $componentTests[[UnitySetupComponent]::Linux] = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
-        $componentTests[[UnitySetupComponent]::Mac] = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
         $componentTests[[UnitySetupComponent]::Android] = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
         $componentTests[[UnitySetupComponent]::iOS] = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
         $componentTests[[UnitySetupComponent]::AppleTV] = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
