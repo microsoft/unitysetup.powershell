@@ -319,7 +319,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Facebook = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Linux = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Mac = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
-         "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Mac_IL2CPP = , "$targetSupport/UnitySetup-Mac-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Vuforia = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
