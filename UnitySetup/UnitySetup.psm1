@@ -80,6 +80,7 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::UWP = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                     [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
+                    [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                     [UnitySetupComponent]::Mac = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
                 }
             }
@@ -96,12 +97,12 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
                     #[UnitySetupComponent]::Mac_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "???");
                     [UnitySetupComponent]::Windows = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                 }
             }
         }
 
         # Common playback engines:
-        $componentTests[[UnitySetupComponent]::Linux] = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
         $componentTests[[UnitySetupComponent]::Android] = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
         $componentTests[[UnitySetupComponent]::iOS] = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
         $componentTests[[UnitySetupComponent]::AppleTV] = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
