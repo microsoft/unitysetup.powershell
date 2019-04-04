@@ -95,7 +95,7 @@ class UnitySetupInstance {
                 @{
                     [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
-                    #[UnitySetupComponent]::Mac_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "???");
+                    #[UnitySetupComponent]::Mac_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
                     [UnitySetupComponent]::Windows = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
                     [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                 }
