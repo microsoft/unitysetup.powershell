@@ -1492,24 +1492,11 @@ function Start-UnityEditor {
             $unityArgs = $sharedArgs | ForEach-Object { $_ }
             if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
 
-            $setProcessArgs = @{
-                'FilePath' = $editor;
-                'PassThru' = $true;
-                'ErrorAction' = 'Stop';
-                'RedirectStandardOutput' = New-TemporaryFile;
-                'RedirectStandardError' = New-TemporaryFile;
-            }
-
-            if ($Wait) { $setProcessArgs['Wait'] = $true }
-
-            Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
-            Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
-
             $actionString = "$editor $unityArgs"
-            if( $Credential ) { $actionString += " -password (hidden)"}
-            if( $Serial ) { $actionString += " -serial (hidden)"}
+            if ( $Credential ) { $actionString += " -password (hidden)"}
+            if ( $Serial ) { $actionString += " -serial (hidden)"}
 
-            if (-not $PSCmdlet.ShouldProcess($actionString, "Start-Process")) {
+            if (-not $PSCmdlet.ShouldProcess($actionString, "System.Diagnostics.Process.Start()")) {
                 continue
             }
 
@@ -1517,12 +1504,22 @@ function Start-UnityEditor {
             if ( $Credential ) { $unityArgs += '-password', $Credential.GetNetworkCredential().Password }
             if ( $Serial ) { $unityArgs += '-serial', [System.Net.NetworkCredential]::new($null, $Serial).Password }
 
-            if ($unityArgs -and $unityArgs.Length -gt 0) {
-                $setProcessArgs['ArgumentList'] = $unityArgs
-            }
-
-            $process = Start-Process @setProcessArgs
+            # We've experienced issues with Start-Process -Wait and redirecting 
+            # output so we're using the Process class directly now.
+            $process = New-Object System.Diagnostics.Process
+            $process.StartInfo.Filename = $editor
+            $process.StartInfo.Arguments = $unityArgs
+            $process.StartInfo.RedirectStandardOutput = $true
+            $process.StartInfo.RedirectStandardError = $true
+            $process.StartInfo.UseShellExecute = $false
+            $process.StartInfo.CreateNoWindow = $true
+            $process.StartInfo.WorkingDirectory = $PWD
+            $process.StartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden 
+            $process.Start() | Out-Null
+            
             if ( $Wait ) {
+                $process.WaitForExit()
+
                 if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                     # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
                     # to make sure that we flag such errors.
