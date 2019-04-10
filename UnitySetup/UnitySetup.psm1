@@ -73,14 +73,14 @@ class UnitySetupInstance {
                 $this.Components = [UnitySetupComponent]::Windows
                 $playbackEnginePath = [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines");
                 @{
-                    [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
+                    [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
-                    [UnitySetupComponent]::UWP = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                    [UnitySetupComponent]::UWP            = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                     [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
-                    [UnitySetupComponent]::UWP_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
-                    [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
-                    [UnitySetupComponent]::Mac = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
+                    [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
                 }
             }
             ([OperatingSystem]::Linux) {
@@ -92,10 +92,10 @@ class UnitySetupInstance {
                 $this.Components = [UnitySetupComponent]::Mac
                 $playbackEnginePath = [io.path]::Combine("$Path", "PlaybackEngines");
                 @{
-                    [UnitySetupComponent]::Documentation = , [io.path]::Combine("$Path", "Documentation");
+                    [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
-                    [UnitySetupComponent]::Windows = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
-                    [UnitySetupComponent]::Linux = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                 }
             }
         }
@@ -309,18 +309,18 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::UWP = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
-         "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::UWP_IL2CPP = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Android = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::iOS = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::AppleTV = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Facebook = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Linux = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Mac = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
+        [UnitySetupComponent]::UWP            = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
+        "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::UWP_IL2CPP     = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Android        = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::iOS            = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::AppleTV        = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Facebook       = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Linux          = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac            = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
         "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Vuforia = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::WebGL = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
     }
 
@@ -434,10 +434,10 @@ function Find-UnitySetupInstaller {
                     }
                     $result = New-Object UnitySetupInstaller -Property @{
                         'ComponentType' = $_;
-                        'Version' = $Version;
-                        'DownloadUrl' = $endpoint;
-                        'Length' = $installerLength;
-                        'LastModified' = $lastModified;
+                        'Version'       = $Version;
+                        'DownloadUrl'   = $endpoint;
+                        'Length'        = $installerLength;
+                        'LastModified'  = $lastModified;
                     }
 
                     break
@@ -540,13 +540,13 @@ function Select-UnitySetupInstaller {
 }
 
 filter Format-Bytes {
-	return "{0:N2} {1}" -f $(
-        if ($_ -lt 1kb)     { $_, 'Bytes' }
-        elseif ($_ -lt 1mb) { ($_/1kb), 'KB' }
-        elseif ($_ -lt 1gb) { ($_/1mb), 'MB' }
-        elseif ($_ -lt 1tb) { ($_/1gb), 'GB' }
-        elseif ($_ -lt 1pb) { ($_/1tb), 'TB' }
-        else                { ($_/1pb), 'PB' }
+    return "{0:N2} {1}" -f $(
+        if ($_ -lt 1kb) { $_, 'Bytes' }
+        elseif ($_ -lt 1mb) { ($_ / 1kb), 'KB' }
+        elseif ($_ -lt 1gb) { ($_ / 1mb), 'MB' }
+        elseif ($_ -lt 1tb) { ($_ / 1gb), 'GB' }
+        elseif ($_ -lt 1pb) { ($_ / 1tb), 'TB' }
+        else { ($_ / 1pb), 'PB' }
     )
 }
 
@@ -564,13 +564,13 @@ function Format-BitsPerSecond {
     }
     # Convert from bytes to bits
     $Bits = ($Bytes * 8) / $Seconds
-	return "{0:N2} {1}" -f $(
-        if ($Bits -lt 1kb)     { $Bits, 'Bps' }
-        elseif ($Bits -lt 1mb) { ($Bits/1kb), 'Kbps' }
-        elseif ($Bits -lt 1gb) { ($Bits/1mb), 'Mbps' }
-        elseif ($Bits -lt 1tb) { ($Bits/1gb), 'Gbps' }
-        elseif ($Bits -lt 1pb) { ($Bits/1tb), 'Tbps' }
-        else                   { ($Bits/1pb), 'Pbps' }
+    return "{0:N2} {1}" -f $(
+        if ($Bits -lt 1kb) { $Bits, 'Bps' }
+        elseif ($Bits -lt 1mb) { ($Bits / 1kb), 'Kbps' }
+        elseif ($Bits -lt 1gb) { ($Bits / 1mb), 'Mbps' }
+        elseif ($Bits -lt 1tb) { ($Bits / 1gb), 'Gbps' }
+        elseif ($Bits -lt 1pb) { ($Bits / 1tb), 'Tbps' }
+        else { ($Bits / 1pb), 'Pbps' }
     )
 }
 
@@ -638,7 +638,7 @@ function Request-UnitySetupInstaller {
 
                         $resource = New-Object UnitySetupResource -Property @{
                             'ComponentType' = $_.ComponentType
-                            'Path' = $destination
+                            'Path'          = $destination
                         }
                         $downloads += , $resource
                         return
@@ -655,15 +655,15 @@ function Request-UnitySetupInstaller {
                 ++$downloadIndex
                 $global:downloadData[$installerFileName] = New-Object PSObject -Property @{
                     installerFileName = $installerFileName
-                    startTime = Get-Date
-                    totalBytes = $_.Length
-                    receivedBytes = 0
-                    isDownloaded = $false
-                    destination = $destination
-                    lastModified = $_.LastModified
-                    componentType = $_.ComponentType
-                    webClient = $webClient
-                    downloadIndex = $downloadIndex
+                    startTime         = Get-Date
+                    totalBytes        = $_.Length
+                    receivedBytes     = 0
+                    isDownloaded      = $false
+                    destination       = $destination
+                    lastModified      = $_.LastModified
+                    componentType     = $_.ComponentType
+                    webClient         = $webClient
+                    downloadIndex     = $downloadIndex
                 }
 
                 # Register to events for showing progress of file download.
@@ -674,8 +674,7 @@ function Request-UnitySetupInstaller {
                     $global:downloadData[$event.MessageData].isDownloaded = $true
                 } | Out-Null
 
-                try
-                {
+                try {
                     Write-Verbose "Downloading $($_.DownloadUrl) to $destination"
                     $webClient.DownloadFileAsync($_.DownloadUrl, $destination)
                 }
@@ -720,7 +719,7 @@ function Request-UnitySetupInstaller {
             
                         $resource = New-Object UnitySetupResource -Property @{
                             'ComponentType' = $data.componentType
-                            'Path' = $data.destination
+                            'Path'          = $data.destination
                         }
                         $downloads += , $resource
                         return
@@ -789,10 +788,10 @@ function Install-UnitySetupPackage {
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
             $startProcessArgs = @{
-                'FilePath' = $Package.Path;
+                'FilePath'     = $Package.Path;
                 'ArgumentList' = @("/S", "/D=$Destination");
-                'PassThru' = $true;
-                'Wait' = $true;
+                'PassThru'     = $true;
+                'Wait'         = $true;
             }
         }
         ([OperatingSystem]::Linux) {
@@ -802,10 +801,10 @@ function Install-UnitySetupPackage {
             # Note that $Destination has to be a disk path.
             # sudo installer -package $Package.Path -target /
             $startProcessArgs = @{
-                'FilePath' = 'sudo';
+                'FilePath'     = 'sudo';
                 'ArgumentList' = @("installer", "-package", $Package.Path, "-target", $Destination);
-                'PassThru' = $true;
-                'Wait' = $true;
+                'PassThru'     = $true;
+                'Wait'         = $true;
             }
         }
     }
@@ -985,8 +984,7 @@ function Install-UnitySetupInstance {
             # Move the install from the sparse bundle disk to the install directory.
             if ($currentOS -eq [OperatingSystem]::Mac) {
                 # rsync does not recursively create the directory path.
-                if (-not (Test-Path $installPath -PathType Container))
-                {
+                if (-not (Test-Path $installPath -PathType Container)) {
                     Write-Verbose "Creating directory $installPath."
                     New-Item $installPath -ItemType Directory -ErrorAction Stop | Out-Null
                 }
@@ -1039,10 +1037,10 @@ function Uninstall-UnitySetupInstance {
             }
 
             $startProcessArgs = @{
-                'FilePath' = $uninstaller;
-                'PassThru' = $true;
-                'Wait' = $true;
-                'ErrorAction' = 'Stop';
+                'FilePath'     = $uninstaller;
+                'PassThru'     = $true;
+                'Wait'         = $true;
+                'ErrorAction'  = 'Stop';
                 'ArgumentList' = @("/S");
             }
 
@@ -1186,10 +1184,10 @@ function Get-UnityProjectInstance {
     )
 
     $args = @{
-        'Path' = $BasePath;
-        'Filter' = 'ProjectSettings';
+        'Path'        = $BasePath;
+        'Filter'      = 'ProjectSettings';
         'ErrorAction' = 'Ignore';
-        'Directory' = $true;
+        'Directory'   = $true;
     }
 
     if ( $Recurse ) {
@@ -1500,24 +1498,11 @@ function Start-UnityEditor {
             $unityArgs = $sharedArgs | ForEach-Object { $_ }
             if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
 
-            $setProcessArgs = @{
-                'FilePath' = $editor;
-                'PassThru' = $true;
-                'ErrorAction' = 'Stop';
-                'RedirectStandardOutput' = New-TemporaryFile;
-                'RedirectStandardError' = New-TemporaryFile;
-            }
-
-            if ($Wait) { $setProcessArgs['Wait'] = $true }
-
-            Write-Verbose "Redirecting standard output to $($setProcessArgs['RedirectStandardOutput'])"
-            Write-Verbose "Redirecting standard error to $($setProcessArgs['RedirectStandardError'])"
-
             $actionString = "$editor $unityArgs"
-            if( $Credential ) { $actionString += " -password (hidden)"}
-            if( $Serial ) { $actionString += " -serial (hidden)"}
+            if ( $Credential ) { $actionString += " -password (hidden)"}
+            if ( $Serial ) { $actionString += " -serial (hidden)"}
 
-            if (-not $PSCmdlet.ShouldProcess($actionString, "Start-Process")) {
+            if (-not $PSCmdlet.ShouldProcess($actionString, "System.Diagnostics.Process.Start()")) {
                 continue
             }
 
@@ -1525,12 +1510,22 @@ function Start-UnityEditor {
             if ( $Credential ) { $unityArgs += '-password', $Credential.GetNetworkCredential().Password }
             if ( $Serial ) { $unityArgs += '-serial', [System.Net.NetworkCredential]::new($null, $Serial).Password }
 
-            if ($unityArgs -and $unityArgs.Length -gt 0) {
-                $setProcessArgs['ArgumentList'] = $unityArgs
-            }
-
-            $process = Start-Process @setProcessArgs
+            # We've experienced issues with Start-Process -Wait and redirecting 
+            # output so we're using the Process class directly now.
+            $process = New-Object System.Diagnostics.Process
+            $process.StartInfo.Filename = $editor
+            $process.StartInfo.Arguments = $unityArgs
+            $process.StartInfo.RedirectStandardOutput = $true
+            $process.StartInfo.RedirectStandardError = $true
+            $process.StartInfo.UseShellExecute = $false
+            $process.StartInfo.CreateNoWindow = $true
+            $process.StartInfo.WorkingDirectory = $PWD
+            $process.StartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden 
+            $process.Start() | Out-Null
+            
             if ( $Wait ) {
+                $process.WaitForExit()
+
                 if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                     # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
                     # to make sure that we flag such errors.
@@ -1593,7 +1588,7 @@ function Get-IsUnityError {
 function ConvertTo-DateTime {
     param([string] $Text)
 
-    if( -not $text -or $text.Length -eq 0 ) { [DateTime]::MaxValue }
+    if ( -not $text -or $text.Length -eq 0 ) { [DateTime]::MaxValue }
     else { [DateTime]$Text }
 }
 
@@ -1605,10 +1600,9 @@ function ConvertTo-DateTime {
 .EXAMPLE
    Get-UnityLicense
 #>
-function Get-UnityLicense
-{
+function Get-UnityLicense {
     [CmdletBinding()]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "", Justification="Used to convert discovered plaintext serials into secure strings.")]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "", Justification = "Used to convert discovered plaintext serials into secure strings.")]
     param([SecureString]$Serial)
 
     $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf" -ErrorAction 'SilentlyContinue'
@@ -1619,18 +1613,18 @@ function Get-UnityLicense
 
         # The first four bytes look like a count so skip that to pull out the serial string
         $licenseSerial = [String]::new($devBytes[4..($devBytes.Length - 1)])
-        if( $Serial -and [System.Net.NetworkCredential]::new($null, $Serial).Password -ne $licenseSerial ) { continue; }
+        if ( $Serial -and [System.Net.NetworkCredential]::new($null, $Serial).Password -ne $licenseSerial ) { continue; }
         
         $license = $doc.root.License
         [PSCustomObject]@{
             'LicenseVersion' = $license.LicenseVersion.Value
-            'Serial' = ConvertTo-SecureString $licenseSerial -AsPlainText -Force
-            'UnityVersion' = [UnityVersion]$license.ClientProvidedVersion.Value
-            'DisplaySerial' = $license.SerialMasked.Value
+            'Serial'         = ConvertTo-SecureString $licenseSerial -AsPlainText -Force
+            'UnityVersion'   = [UnityVersion]$license.ClientProvidedVersion.Value
+            'DisplaySerial'  = $license.SerialMasked.Value
             'ActivationDate' = ConvertTo-DateTime $license.InitialActivationDate.Value
-            'StartDate' = ConvertTo-DateTime $license.StartDate.Value
-            'StopDate' = ConvertTo-DateTime $license.StopDate.Value
-            'UpdateDate' = ConvertTo-DateTime $license.UpdateDate.Value
+            'StartDate'      = ConvertTo-DateTime $license.StartDate.Value
+            'StopDate'       = ConvertTo-DateTime $license.StopDate.Value
+            'UpdateDate'     = ConvertTo-DateTime $license.UpdateDate.Value
         }
     }
 }
