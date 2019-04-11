@@ -19,7 +19,8 @@ enum UnitySetupComponent {
     Facebook = (1 -shl 11)
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
-    All = (1 -shl 14) - 1
+    Mac_IL2CPP = (1 -shl 14)
+    All = (1 -shl 15) - 1
 }
 
 [Flags()]
@@ -94,6 +95,7 @@ class UnitySetupInstance {
                 @{
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
                     [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
                     [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                 }
@@ -319,6 +321,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Linux          = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Mac            = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
         "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac_IL2CPP     = , "$targetSupport/UnitySetup-Mac-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
