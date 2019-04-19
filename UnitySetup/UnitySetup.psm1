@@ -360,10 +360,8 @@ function Find-UnitySetupInstaller {
     }
 
     # Every release type has a different pattern for finding installers
-    $searchPages = @()
+    $searchPages = @( "https://unity3d.com/get-unity/download/archive", "https://unity3d.com/unity/beta/unity$Version" )
     switch ($Version.Release) {
-        'f' { $searchPages += "https://unity3d.com/get-unity/download/archive" }
-        'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
         'p' {
             $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
             $searchPages += $patchPage
