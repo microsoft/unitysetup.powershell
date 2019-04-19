@@ -162,7 +162,7 @@ class UnityVersion : System.IComparable {
     UnityVersion([string] $version) {
         $parts = $version.Split('-')
 
-        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
+        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)" | Out-Null
         if ( $Matches.Count -ne 6 ) { throw "Invalid unity version: $version" }
         $this.Major = [int]($Matches[1]);
         $this.Minor = [int]($Matches[2]);
@@ -290,7 +290,7 @@ function Find-UnitySetupInstaller {
     $currentOS = Get-OperatingSystem
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
-            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).exe$"
             $targetSupport = "TargetSupportInstaller"
             $installerExtension = "exe"
         }
@@ -298,7 +298,7 @@ function Find-UnitySetupInstaller {
             throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
         }
         ([OperatingSystem]::Mac) {
-            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/MacEditorInstaller\/Unity-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).pkg$"
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/MacEditorInstaller\/Unity-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).pkg$"
             $targetSupport = "MacEditorTargetInstaller"
             $installerExtension = "pkg"
         }
@@ -399,7 +399,7 @@ function Find-UnitySetupInstaller {
         }
         else {
             # Regex needs to be reconfigured to parse builtin_shaders's url link
-            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/builtin_shaders-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).zip$"
+            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/builtin_shaders-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).zip$"
         }
     }
 
