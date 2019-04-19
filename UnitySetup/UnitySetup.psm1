@@ -77,8 +77,8 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
-                    [UnitySetupComponent]::UWP            = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
-                    [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
+                    [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                                                              [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                     [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
@@ -103,12 +103,12 @@ class UnitySetupInstance {
         }
 
         # Common playback engines:
-        $componentTests[[UnitySetupComponent]::Android] = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
-        $componentTests[[UnitySetupComponent]::iOS] = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
-        $componentTests[[UnitySetupComponent]::AppleTV] = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
+        $componentTests[[UnitySetupComponent]::Android]  = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
+        $componentTests[[UnitySetupComponent]::iOS]      = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
+        $componentTests[[UnitySetupComponent]::AppleTV]  = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
         $componentTests[[UnitySetupComponent]::Facebook] = , [io.path]::Combine("$playbackEnginePath", "Facebook");
-        $componentTests[[UnitySetupComponent]::Vuforia] = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
-        $componentTests[[UnitySetupComponent]::WebGL] = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
+        $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
+        $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -311,16 +311,16 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::UWP            = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::UWP_IL2CPP     = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Android        = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::iOS            = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::AppleTV        = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Facebook       = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Linux          = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Mac            = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac            =   "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Mac_IL2CPP     = , "$targetSupport/UnitySetup-Mac-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
@@ -720,14 +720,14 @@ function Request-UnitySetupInstaller {
 
                         Unregister-Event -SourceIdentifier "$installerFileName-Completed" -Force
                         Unregister-Event -SourceIdentifier "$installerFileName-Changed" -Force
-        
+
                         $data.webClient.Dispose()
                         $data.webClient = $null
 
                         # Re-writes the last modified time for ensuring downloads are cached properly.
                         $downloadedFile = Get-Item $data.destination
                         $downloadedFile.LastWriteTime = $data.lastModified
-            
+
                         $resource = New-Object UnitySetupResource -Property @{
                             'ComponentType' = $data.componentType
                             'Path'          = $data.destination
@@ -739,16 +739,16 @@ function Request-UnitySetupInstaller {
                     $elapsedTime = (Get-Date) - $data.startTime
 
                     $progress = [int](($data.receivedBytes / [double]$data.totalBytes) * 100)
-    
+
                     $averageSpeed = $data.receivedBytes / $elapsedTime.TotalSeconds
                     $secondsRemaining = ($data.totalBytes - $data.receivedBytes) / $averageSpeed
-    
+
                     if ([double]::IsInfinity($secondsRemaining)) {
                         $averageSpeed = 0
                         # -1 for Write-Progress prevents seconds remaining from showing.
                         $secondsRemaining = -1
                     }
-    
+
                     $downloadSpeed = Format-BitsPerSecond -Bytes $data.receivedBytes -Seconds $elapsedTime.TotalSeconds
 
                     Write-Progress -Activity "Downloading $installerFileName | $downloadSpeed" `
@@ -819,14 +819,14 @@ function Install-UnitySetupPackage {
             }
         }
     }
-    
+
     Write-Verbose "$(Get-Date): Installing $($Package.ComponentType) to $Destination."
     $process = Start-Process @startProcessArgs
     if ( $process ) {
         if ( $process.ExitCode -ne 0) {
             Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
         }
-        else { 
+        else {
             Write-Verbose "$(Get-Date): Succeeded."
         }
     }
@@ -930,7 +930,7 @@ function Install-UnitySetupInstance {
                     $installPath += [io.path]::DirectorySeparatorChar
                 }
 
-                # Creating sparse bundle to host installing Unity in other locations 
+                # Creating sparse bundle to host installing Unity in other locations
                 $unitySetupBundlePath = [io.path]::Combine($Cache, "UnitySetup.sparsebundle")
                 if (-not (Test-Path $unitySetupBundlePath)) {
                     Write-Verbose "Creating new sparse bundle disk image for installation."
@@ -1423,7 +1423,7 @@ function Start-UnityEditor {
             if ( -not $PSBoundParameters.ContainsKey('BatchMode') ) { $BatchMode = $true }
             if ( -not $PSBoundParameters.ContainsKey('Quit') ) { $Quit = $true }
         }
-        if ( $AcceptAPIUpdate ) { 
+        if ( $AcceptAPIUpdate ) {
             $sharedArgs += '-accept-apiupdate'
             if ( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
         }
@@ -1486,7 +1486,7 @@ function Start-UnityEditor {
                 ([OperatingSystem]::Windows) {
                     $editor = Get-ChildItem "$($setupInstance.Path)" -Filter 'Unity.exe' -Recurse |
                         Select-Object -First 1 -ExpandProperty FullName
-    
+
                     if ([string]::IsNullOrEmpty($editor)) {
                         Write-Error "Could not find Unity.exe under setup instance path: $($setupInstance.Path)"
                         continue
@@ -1497,7 +1497,7 @@ function Start-UnityEditor {
                 }
                 ([OperatingSystem]::Mac) {
                     $editor = [io.path]::Combine("$($setupInstance.Path)", "Unity.app/Contents/MacOS/Unity")
-    
+
                     if ([string]::IsNullOrEmpty($editor)) {
                         Write-Error "Could not find Unity app under setup instance path: $($setupInstance.Path)"
                         continue
@@ -1521,7 +1521,7 @@ function Start-UnityEditor {
             if ( $Credential ) { $unityArgs += '-password', $Credential.GetNetworkCredential().Password }
             if ( $Serial ) { $unityArgs += '-serial', [System.Net.NetworkCredential]::new($null, $Serial).Password }
 
-            # We've experienced issues with Start-Process -Wait and redirecting 
+            # We've experienced issues with Start-Process -Wait and redirecting
             # output so we're using the Process class directly now.
             $process = New-Object System.Diagnostics.Process
             $process.StartInfo.Filename = $editor
@@ -1531,9 +1531,9 @@ function Start-UnityEditor {
             $process.StartInfo.UseShellExecute = $false
             $process.StartInfo.CreateNoWindow = $true
             $process.StartInfo.WorkingDirectory = $PWD
-            $process.StartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden 
+            $process.StartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
             $process.Start() | Out-Null
-            
+
             if ( $Wait ) {
                 $process.WaitForExit()
 
@@ -1541,7 +1541,7 @@ function Start-UnityEditor {
                     # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
                     # to make sure that we flag such errors.
                     Write-UnityErrors $LogFile
-                    
+
                     Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
                     Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
                 }
@@ -1625,7 +1625,7 @@ function Get-UnityLicense {
         # The first four bytes look like a count so skip that to pull out the serial string
         $licenseSerial = [String]::new($devBytes[4..($devBytes.Length - 1)])
         if ( $Serial -and [System.Net.NetworkCredential]::new($null, $Serial).Password -ne $licenseSerial ) { continue; }
-        
+
         $license = $doc.root.License
         [PSCustomObject]@{
             'LicenseVersion' = $license.LicenseVersion.Value
@@ -1649,11 +1649,11 @@ function Get-UnityLicense {
 
     $alias = Get-Alias -Name $_.Name -ErrorAction 'SilentlyContinue'
     if ( -not $alias ) {
-        Write-Verbose "Creating new alias $($_.Name) for $($_.Value)" 
-        New-Alias @_ 
+        Write-Verbose "Creating new alias $($_.Name) for $($_.Value)"
+        New-Alias @_
     }
     elseif ( $alias.ModuleName -eq 'UnitySetup' ) {
-        Write-Verbose "Setting alias $($_.Name) to $($_.Value)" 
+        Write-Verbose "Setting alias $($_.Name) to $($_.Value)"
         Set-Alias @_
     }
     else {
