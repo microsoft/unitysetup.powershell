@@ -327,7 +327,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Lumin = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
     }
 
     switch ($currentOS) {
