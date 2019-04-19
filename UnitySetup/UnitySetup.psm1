@@ -51,22 +51,23 @@ class UnitySetupInstance {
     UnitySetupInstance([string]$path) {
 
         $currentOS = Get-OperatingSystem
-        $ivyPath = switch ($currentOS) {
-            ([OperatingSystem]::Windows) { 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml' }
+        $executable = switch ($currentOS) {
+            ([OperatingSystem]::Windows) { 'Editor\Unity.exe' }
             ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
-            ([OperatingSystem]::Mac) { 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml' }
+            ([OperatingSystem]::Mac) { 'Unity.app/Contents/MacOS/Unity/Unity.exe' } # TODO Validate path
         }
 
-        $ivyPath = [io.path]::Combine("$path", $ivyPath);
-        if (!(Test-Path $ivyPath)) { throw "Path is not a Unity setup: $path"}
-        [xml]$xmlDoc = Get-Content $ivyPath
+        $executable = [io.path]::Combine("$path", $executable);
+        if (!(Test-Path $executable)) { throw "Path is not a Unity setup: $path"}
 
-        if ( !($xmlDoc.'ivy-module'.info.unityVersion)) {
-            throw "Unity setup ivy is missing version: $ivyPath"
+        $version = switch($currentOS) {
+            ([OperatingSystem]::Windows) { Split-Path (Split-Path -Path $executable -Parent | Split-Path -Parent) -Leaf }
+            ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
+            ([OperatingSystem]::Mac) { ??? }
         }
 
         $this.Path = $path
-        $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
+        $this.Version = $version
 
         $playbackEnginePath = $null
         $componentTests = switch ($currentOS) {
@@ -970,7 +971,7 @@ function Install-UnitySetupInstance {
 
             $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
             if ($null -ne $editorInstaller) {
-                Write-Verbose "Installing $($editorInstaller.ComponentType)"
+                Write-Verbose "Installing $($editorInstaller.ComponentType) Editor"
                 Install-UnitySetupPackage -Package $editorInstaller -Destination $packageDestination
             }
 
