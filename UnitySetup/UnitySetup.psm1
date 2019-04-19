@@ -360,14 +360,24 @@ function Find-UnitySetupInstaller {
     }
 
     # Every release type has a different pattern for finding installers
-    $searchPages = @( "https://unity3d.com/get-unity/download/archive", "https://unity3d.com/unity/beta/unity$Version" )
+    $searchPages = @()
     switch ($Version.Release) {
+        'a' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
+        'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
+        'f' {
+                $searchPages += "https://unity3d.com/get-unity/download/archive"
+
+                # Just in case it's a release candidate search the beta as well.
+                if($Version.Revision -eq '0') {
+                    $searchPages += "https://unity3d.com/unity/beta/unity$Version"
+                }
+            }
         'p' {
             $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
             $searchPages += $patchPage
 
-            $webResult = Invoke-WebRequest $patchPage -UseBasicParsing 
-            $searchPages += $webResult.Links | Where-Object { 
+            $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
+            $searchPages += $webResult.Links | Where-Object {
                 $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1
             } | ForEach-Object { "https://unity3d.com$($_.href)" }
         }
