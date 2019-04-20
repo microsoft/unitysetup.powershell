@@ -1092,7 +1092,6 @@ function Get-UnitySetupInstance {
             if (-not $BasePath) {
                 $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
             }
-            $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
         }
         ([OperatingSystem]::Linux) {
             throw "Get-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
@@ -1101,12 +1100,21 @@ function Get-UnitySetupInstance {
             if (-not $BasePath) {
                 $BasePath = @('/Applications/Unity*', '/Applications/Unity/Hub/Editor/*')
             }
-            $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
         }
     }
 
     foreach ( $folder in $BasePath ) {
-        $path = [io.path]::Combine("$folder", $ivyPath);
+
+        if ( Test-Path "$folder\modules.json" ) {
+            $path = $folder
+        }
+        else {
+            $ivy = Get-ChildItem -Path $folder -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
+
+            if ( Test-Path $ivy.FullName ) {
+                $path = $ivy.FullName
+            }
+        }
 
         Get-ChildItem  $path -Recurse -ErrorAction Ignore |
             ForEach-Object {
