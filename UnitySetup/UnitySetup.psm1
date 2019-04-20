@@ -49,21 +49,31 @@ class UnitySetupInstance {
     [string]$Path
 
     UnitySetupInstance([string]$path) {
-
         $currentOS = Get-OperatingSystem
-        $executable = switch ($currentOS) {
-            ([OperatingSystem]::Windows) { 'Editor\Unity.exe' }
-            ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
-            ([OperatingSystem]::Mac) { 'Unity.app/Contents/MacOS/Unity/Unity.exe' } # TODO Validate path
+
+        # First we'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
+        $ivy = Get-ChildItem -Path $path -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
+        $version = $null
+
+        if ( Test-Path $ivy.FullName ){
+            [xml]$xmlDoc = Get-Content $ivy.FullName
+            $version =  $xmlDoc.'ivy-module'.info.unityVersion
+        }
+        else {
+            # No ivy files found, so search the new modules.json for the version
+            $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
+
+            foreach ( $module in $modules ) {
+                $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
+                if( $Matches[0] -ne $null ){
+                    $version = $Matches[0]
+                    break
+                }
+            }
         }
 
-        $executable = [io.path]::Combine("$path", $executable);
-        if (!(Test-Path $executable)) { throw "Path is not a Unity setup: $path"}
-
-        $version = switch($currentOS) {
-            ([OperatingSystem]::Windows) { Split-Path (Split-Path -Path $executable -Parent | Split-Path -Parent) -Leaf }
-            ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
-            ([OperatingSystem]::Mac) { ??? }
+        if ( $version -eq $null ) {
+            throw "Failed to find a valid installation at $path!";
         }
 
         $this.Path = $path
