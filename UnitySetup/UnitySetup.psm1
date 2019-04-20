@@ -312,8 +312,8 @@ function Find-UnitySetupInstaller {
 
     $installerTemplates = @{
         [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
-        										  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
-        										  "$targetSupport/UnitySetup-Universal-Windows-Platform-Support-for-Editor-$Version.$installerExtension";
+                                                  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Universal-Windows-Platform-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::UWP_IL2CPP     = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Android        = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::iOS            = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
@@ -364,14 +364,13 @@ function Find-UnitySetupInstaller {
     $searchPages = @()
     switch ($Version.Release) {
         'a' { $searchPages += "https://unity3d.com/alpha/$($Version.Major).$($Version.Minor)" }
-        'b' { 
+        'b' {
             $searchPages += "https://unity3d.com/unity/beta/unity$Version",
             "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)"
         }
         'f' {
             $searchPages += "https://unity3d.com/get-unity/download/archive",
             "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
-            
 
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
