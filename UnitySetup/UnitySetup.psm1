@@ -52,15 +52,7 @@ class UnitySetupInstance {
         $version = $null
         $currentOS = Get-OperatingSystem
 
-        # First we'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
-        $ivy = Get-ChildItem -Path $path -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
-
-        if ( Test-Path $ivy.FullName ) {
-            [xml]$xmlDoc = Get-Content $ivy.FullName
-            $version = [UnityVersion]$xmlDoc.'ivy-module'.info.unityVersion
-        }
-        else {
-            # No ivy files found, so search the new modules.json for the version
+        if ( Test-Path "$path\modules.json" ) {
             $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
 
             foreach ( $module in $modules ) {
@@ -70,6 +62,15 @@ class UnitySetupInstance {
                     $version = [UnityVersion]$Matches[0]
                     break
                 }
+            }
+        }
+        else {
+            # We'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
+            $ivy = Get-ChildItem -Path $path -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
+
+            if ( Test-Path $ivy.FullName ) {
+                [xml]$xmlDoc = Get-Content $ivy.FullName
+                $version = [UnityVersion]$xmlDoc.'ivy-module'.info.unityVersion
             }
         }
 
