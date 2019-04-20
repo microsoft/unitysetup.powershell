@@ -374,8 +374,8 @@ function Find-UnitySetupInstaller {
 
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
-                $searchPages += "https://unity3d.com/unity/beta/unity$Version"
-                $searchPages += "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)"
+                $searchPages += "https://unity3d.com/unity/beta/unity$Version",
+                "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)"
             }
         }
         'p' {
