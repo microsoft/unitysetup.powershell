@@ -57,7 +57,7 @@ class UnitySetupInstance {
 
         if ( Test-Path $ivy.FullName ) {
             [xml]$xmlDoc = Get-Content $ivy.FullName
-            $version =  $xmlDoc.'ivy-module'.info.unityVersion
+            $version = [UnityVersion]$xmlDoc.'ivy-module'.info.unityVersion
         }
         else {
             # No ivy files found, so search the new modules.json for the version
@@ -66,8 +66,8 @@ class UnitySetupInstance {
             foreach ( $module in $modules ) {
                 $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
 
-                if ( $Matches[0] -ne $null ) {
-                    $version = $Matches[0]
+                if ( $Matches -ne $null ) {
+                    $version = [UnityVersion]$Matches[0]
                     break
                 }
             }
