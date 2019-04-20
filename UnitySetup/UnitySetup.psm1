@@ -1103,24 +1103,15 @@ function Get-UnitySetupInstance {
         }
     }
 
-    foreach ( $folder in $BasePath ) {
+    $searchPaths = Get-ChildItem $BasePath | Get-ChildItem | ForEach-Object { $_.Directory.FullName }
+    $searchPaths = $searchPaths | select -uniq
+    $setupInstances = [UnitySetupInstance[]]@()
 
-        if ( Test-Path "$folder\modules.json" ) {
-            $path = $folder
-        }
-        else {
-            $ivy = Get-ChildItem -Path $folder -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
-
-            if ( Test-Path $ivy.FullName ) {
-                $path = $ivy.FullName
-            }
-        }
-
-        Get-ChildItem  $path -Recurse -ErrorAction Ignore |
-            ForEach-Object {
-            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\..\" | Convert-Path))
-        }
+    foreach ( $path in $searchPaths ) {
+        $setupInstances += , [UnitySetupInstance]::new($path)
     }
+
+    return $setupInstances
 }
 
 <#
