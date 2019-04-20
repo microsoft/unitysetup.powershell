@@ -55,7 +55,7 @@ class UnitySetupInstance {
         # First we'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
         $ivy = Get-ChildItem -Path $path -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
 
-        if ( Test-Path $ivy.FullName ){
+        if ( Test-Path $ivy.FullName ) {
             [xml]$xmlDoc = Get-Content $ivy.FullName
             $version =  $xmlDoc.'ivy-module'.info.unityVersion
         }
