@@ -49,11 +49,11 @@ class UnitySetupInstance {
     [string]$Path
 
     UnitySetupInstance([string]$path) {
+        $version = $null
         $currentOS = Get-OperatingSystem
 
         # First we'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
         $ivy = Get-ChildItem -Path $path -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
-        $version = $null
 
         if ( Test-Path $ivy.FullName ){
             [xml]$xmlDoc = Get-Content $ivy.FullName
@@ -65,7 +65,8 @@ class UnitySetupInstance {
 
             foreach ( $module in $modules ) {
                 $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
-                if( $Matches[0] -ne $null ){
+
+                if ( $Matches[0] -ne $null ) {
                     $version = $Matches[0]
                     break
                 }
