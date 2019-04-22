@@ -49,7 +49,6 @@ class UnitySetupInstance {
     [string]$Path
 
     UnitySetupInstance([string]$path) {
-        $version = $null
         $currentOS = Get-OperatingSystem
 
         if ( Test-Path "$path\modules.json" ) {
@@ -59,7 +58,7 @@ class UnitySetupInstance {
                 $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
 
                 if ( $Matches -ne $null ) {
-                    $version = [UnityVersion]$Matches[0]
+                    $this.Version = [UnityVersion]$Matches[0]
                     break
                 }
             }
@@ -68,18 +67,17 @@ class UnitySetupInstance {
             # We'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
             $ivy = Get-ChildItem -Path $path -Filter ivy.xml -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
 
-            if ( Test-Path $ivy.FullName ) {
+            if ( $null -ne $ivy ) {
                 [xml]$xmlDoc = Get-Content $ivy.FullName
-                $version = [UnityVersion]$xmlDoc.'ivy-module'.info.unityVersion
+                $this.Version = [UnityVersion]$xmlDoc.'ivy-module'.info.unityVersion
             }
         }
 
         if ( $version -eq $null ) {
-            throw "Failed to find a valid installation at $path!";
+            throw "Failed to find a valid version identifier for installation at $path!";
         }
 
         $this.Path = $path
-        $this.Version = $version
 
         $playbackEnginePath = $null
         $componentTests = switch ($currentOS) {
@@ -1104,7 +1102,7 @@ function Get-UnitySetupInstance {
     }
 
     $searchPaths = Get-ChildItem $BasePath | Get-ChildItem | ForEach-Object { $_.Directory.FullName }
-    $searchPaths = $searchPaths | select -uniq
+    $searchPaths = $searchPaths | Select-Object -uniq
     $setupInstances = [UnitySetupInstance[]]@()
 
     foreach ( $path in $searchPaths ) {
