@@ -55,10 +55,10 @@ class UnitySetupInstance {
             $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
 
             foreach ( $module in $modules ) {
-                $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
+                $match = $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
 
-                if ( $Matches -ne $null ) {
-                    $this.Version = [UnityVersion]$Matches[0]
+                if ( $null -ne $match ) {
+                    $this.Version = [UnityVersion]$match
                     break
                 }
             }
