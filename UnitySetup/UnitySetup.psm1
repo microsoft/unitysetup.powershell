@@ -73,7 +73,7 @@ class UnitySetupInstance {
             }
         }
 
-        if ( $version -eq $null ) {
+        if ( -not $this.Version ) {
             throw "Failed to find a valid version identifier for installation at $path!";
         }
 
