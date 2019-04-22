@@ -366,16 +366,18 @@ function Find-UnitySetupInstaller {
         'a' { $searchPages += "https://unity3d.com/alpha/$($Version.Major).$($Version.Minor)" }
         'b' {
             $searchPages += "https://unity3d.com/unity/beta/unity$Version",
-            "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)"
+            "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)",
+            "https://unity3d.com/unity/beta/$Version"
         }
         'f' {
             $searchPages += "https://unity3d.com/get-unity/download/archive",
             "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
-
+            
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
                 $searchPages += "https://unity3d.com/unity/beta/unity$Version",
-                "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)"
+                "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)",
+                "https://unity3d.com/unity/beta/$Version"
             }
         }
         'p' {
