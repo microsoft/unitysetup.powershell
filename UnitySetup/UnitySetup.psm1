@@ -1101,8 +1101,7 @@ function Get-UnitySetupInstance {
         }
     }
 
-    $searchPaths = Get-ChildItem $BasePath | Get-ChildItem | ForEach-Object { $_.Directory.FullName }
-    $searchPaths = $searchPaths | Select-Object -uniq
+    $searchPaths = Get-ChildItem $BasePath -Directory
     $setupInstances = [UnitySetupInstance[]]@()
 
     foreach ( $path in $searchPaths ) {
