@@ -55,7 +55,7 @@ class UnitySetupInstance {
             $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
 
             foreach ( $module in $modules ) {
-                $match = $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
+                $match = $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" | Out-Null
 
                 if ( $null -ne $match ) {
                     $this.Version = [UnityVersion]$match
@@ -73,7 +73,7 @@ class UnitySetupInstance {
             }
         }
 
-        if ( -not $this.Version ) {
+        if ( $this.Version -ne $null ) {
             throw "Failed to find a valid version identifier for installation at $path!";
         }
 
