@@ -52,15 +52,20 @@ class UnitySetupInstance {
         $currentOS = Get-OperatingSystem
         $foundVersion = $false
 
+        Write-Verbose "Attempting to get Unity Setup Instance at $path"
+
         if ( Test-Path "$path\modules.json" ) {
+
             $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
 
             foreach ( $module in $modules ) {
-                $match = $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" | Out-Null
+                Write-Verbose "Found module $($module.id)"
+                Write-Verbose "Download Url $($module.DownloadUrl)"
 
-                if ( $null -ne $match ) {
-                    $this.Version = [UnityVersion]$match
+                if ( $module.DownloadUrl -match "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) {
+                    $this.Version = [UnityVersion]$Matches[0]
                     $foundVersion = $true
+                    Write-Verbose "Found $($this.Version)"
                     break
                 }
             }
@@ -1108,8 +1113,9 @@ function Get-UnitySetupInstance {
     $setupInstances = [UnitySetupInstance[]]@()
 
     foreach ( $path in $searchPaths ) {
-        if( $path -like '*Unity Hub*' ) { continue }
-        $setupInstances += , [UnitySetupInstance]::new($path)
+        if( $path -match "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)") {
+            $setupInstances += , [UnitySetupInstance]::new($path)
+        }
     }
 
     return $setupInstances
