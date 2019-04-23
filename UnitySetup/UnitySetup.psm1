@@ -50,6 +50,7 @@ class UnitySetupInstance {
 
     UnitySetupInstance([string]$path) {
         $currentOS = Get-OperatingSystem
+        $foundVersion = $false
 
         if ( Test-Path "$path\modules.json" ) {
             $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
@@ -59,6 +60,7 @@ class UnitySetupInstance {
 
                 if ( $null -ne $match ) {
                     $this.Version = [UnityVersion]$match
+                    $foundVersion = $true
                     break
                 }
             }
@@ -70,10 +72,11 @@ class UnitySetupInstance {
             if ( $null -ne $ivy ) {
                 [xml]$xmlDoc = Get-Content $ivy.FullName
                 $this.Version = [UnityVersion]$xmlDoc.'ivy-module'.info.unityVersion
+                $foundVersion = $true
             }
         }
 
-        if ( $this.Version -ne $null ) {
+        if ( $foundVersion -eq $false ) {
             throw "Failed to find a valid version identifier for installation at $path!";
         }
 
@@ -1105,6 +1108,7 @@ function Get-UnitySetupInstance {
     $setupInstances = [UnitySetupInstance[]]@()
 
     foreach ( $path in $searchPaths ) {
+        if( $path -like '*Unity Hub*' ) { continue }
         $setupInstances += , [UnitySetupInstance]::new($path)
     }
 
