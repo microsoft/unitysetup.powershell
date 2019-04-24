@@ -298,8 +298,8 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::UWP            = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::UWP_IL2CPP     = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Android        = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::iOS            = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
