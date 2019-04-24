@@ -64,8 +64,8 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
-                    [UnitySetupComponent]::UWP            = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
-                    [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
+                    [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                                                              [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
                     [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
@@ -90,12 +90,12 @@ class UnitySetupInstance {
         }
 
         # Common playback engines:
-        $componentTests[[UnitySetupComponent]::Android] = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
-        $componentTests[[UnitySetupComponent]::iOS] = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
-        $componentTests[[UnitySetupComponent]::AppleTV] = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
+        $componentTests[[UnitySetupComponent]::Android]  = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
+        $componentTests[[UnitySetupComponent]::iOS]      = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
+        $componentTests[[UnitySetupComponent]::AppleTV]  = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
         $componentTests[[UnitySetupComponent]::Facebook] = , [io.path]::Combine("$playbackEnginePath", "Facebook");
-        $componentTests[[UnitySetupComponent]::Vuforia] = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
-        $componentTests[[UnitySetupComponent]::WebGL] = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
+        $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
+        $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -306,8 +306,8 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::AppleTV        = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Facebook       = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Linux          = , "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Mac            = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac            =   "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Mac_IL2CPP     = , "$targetSupport/UnitySetup-Mac-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
@@ -1075,8 +1075,8 @@ function Get-UnitySetupInstance {
         }
     }
 
-    Get-ChildItem $BasePath -Directory | Where-Object { 
-        Test-Path (Join-Path $_.FullName 'Editor\Unity.exe') -PathType Leaf 
+    Get-ChildItem $BasePath -Directory | Where-Object {
+        Test-Path (Join-Path $_.FullName 'Editor\Unity.exe') -PathType Leaf
     } | ForEach-Object {
         $path = $_.FullName
         try {
@@ -1126,7 +1126,7 @@ function Get-UnitySetupInstanceVersion {
             return [UnityVersion]$Matches[0]
         }
     }
-    
+
     if ( Test-Path "$path\Editor" -PathType Container ) {
         # We'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
 
@@ -1136,12 +1136,12 @@ function Get-UnitySetupInstanceVersion {
             if ( $null -eq $ivy ) { continue; }
 
             Write-Verbose "`tLooking for version in $($ivy.FullName)"
-            
+
             [xml]$xmlDoc = Get-Content $ivy.FullName
 
             [string]$version = $xmlDoc.'ivy-module'.info.unityVersion
             if ( -not $version ) { continue; }
-            
+
             Write-Verbose "`tFound version!"
             return [UnityVersion]$version
         }
