@@ -49,24 +49,11 @@ class UnitySetupInstance {
     [string]$Path
 
     UnitySetupInstance([string]$path) {
-
         $currentOS = Get-OperatingSystem
-        $ivyPath = switch ($currentOS) {
-            ([OperatingSystem]::Windows) { 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml' }
-            ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
-            ([OperatingSystem]::Mac) { 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml' }
-        }
-
-        $ivyPath = [io.path]::Combine("$path", $ivyPath);
-        if (!(Test-Path $ivyPath)) { throw "Path is not a Unity setup: $path"}
-        [xml]$xmlDoc = Get-Content $ivyPath
-
-        if ( !($xmlDoc.'ivy-module'.info.unityVersion)) {
-            throw "Unity setup ivy is missing version: $ivyPath"
-        }
 
         $this.Path = $path
-        $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
+        $this.Version = Get-UnitySetupInstanceVersion -Path $path
+        if ( -not $this.Version ) { throw "Unable to find version for $path" }
 
         $playbackEnginePath = $null
         $componentTests = switch ($currentOS) {
@@ -897,8 +884,6 @@ function Install-UnitySetupInstance {
             $defaultInstallPath = $BasePath
         }
 
-        $unitySetupInstances = Get-UnitySetupInstance -BasePath $BasePath
-
         $versionInstallers = @{}
     }
     process {
@@ -983,7 +968,7 @@ function Install-UnitySetupInstance {
 
             $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
             if ($null -ne $editorInstaller) {
-                Write-Verbose "Installing $($editorInstaller.ComponentType)"
+                Write-Verbose "Installing $($editorInstaller.ComponentType) Editor"
                 Install-UnitySetupPackage -Package $editorInstaller -Destination $packageDestination
             }
 
@@ -1092,7 +1077,6 @@ function Get-UnitySetupInstance {
             if (-not $BasePath) {
                 $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
             }
-            $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
         }
         ([OperatingSystem]::Linux) {
             throw "Get-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
@@ -1101,16 +1085,78 @@ function Get-UnitySetupInstance {
             if (-not $BasePath) {
                 $BasePath = @('/Applications/Unity*', '/Applications/Unity/Hub/Editor/*')
             }
-            $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
         }
     }
 
-    foreach ( $folder in $BasePath ) {
-        $path = [io.path]::Combine("$folder", $ivyPath);
+    Get-ChildItem $BasePath -Directory | Where-Object {
+        Test-Path (Join-Path $_.FullName 'Editor\Unity.exe') -PathType Leaf
+    } | ForEach-Object {
+        $path = $_.FullName
+        try {
+            Write-Verbose "Creating UnitySetupInstance for $path"
+            [UnitySetupInstance]::new($path)
+        }
+        catch {
+            Write-Warning "$_"
+        }
+    }
+}
 
-        Get-ChildItem  $path -Recurse -ErrorAction Ignore |
-            ForEach-Object {
-            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\..\" | Convert-Path))
+<#
+.Synopsis
+   Gets the UnityVersion for a UnitySetupInstance at Path
+.DESCRIPTION
+   Given a set of unity setup instances, this will select the best one matching your requirements
+.PARAMETER Path
+   Path to a UnitySetupInstance
+.OUTPUTS
+   UnityVersion
+   Returns the UnityVersion for the UnitySetupInstance at Path, or nothing if there isn't one
+.EXAMPLE
+   Get-UnitySetupInstanceVersion -Path 'C:\Program Files\Unity'
+#>
+function Get-UnitySetupInstanceVersion {
+    [CmdletBinding()]
+    param(
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript( {Test-Path $_ -PathType Container})]
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Path
+    )
+
+    Write-Verbose "Attempting to find UnityVersion in $path"
+
+    if ( Test-Path "$path\modules.json" -PathType Leaf ) {
+
+        Write-Verbose "Searching $path\modules.json for module versions"
+        $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
+
+        foreach ( $module in $modules ) {
+            Write-Verbose "`tTesting DownloadUrl $($module.DownloadUrl)"
+            if ( $module.DownloadUrl -notmatch "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) { continue; }
+
+            Write-Verbose "`tFound version!"
+            return [UnityVersion]$Matches[0]
+        }
+    }
+
+    if ( Test-Path "$path\Editor" -PathType Container ) {
+        # We'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
+
+        Write-Verbose "Looking for ivy.xml files under $path\Editor\"
+        $ivyFiles = Get-ChildItem -Path "$path\Editor\" -Filter 'ivy.xml' -Recurse -ErrorAction SilentlyContinue -Force -File
+        foreach ( $ivy in $ivyFiles) {
+            if ( $null -eq $ivy ) { continue; }
+
+            Write-Verbose "`tLooking for version in $($ivy.FullName)"
+
+            [xml]$xmlDoc = Get-Content $ivy.FullName
+
+            [string]$version = $xmlDoc.'ivy-module'.info.unityVersion
+            if ( -not $version ) { continue; }
+
+            Write-Verbose "`tFound version!"
+            return [UnityVersion]$version
         }
     }
 }
