@@ -50,24 +50,11 @@ class UnitySetupInstance {
     [string]$Path
 
     UnitySetupInstance([string]$path) {
-
         $currentOS = Get-OperatingSystem
-        $ivyPath = switch ($currentOS) {
-            ([OperatingSystem]::Windows) { 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml' }
-            ([OperatingSystem]::Linux) { throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!"; }
-            ([OperatingSystem]::Mac) { 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml' }
-        }
-
-        $ivyPath = [io.path]::Combine("$path", $ivyPath);
-        if (!(Test-Path $ivyPath)) { throw "Path is not a Unity setup: $path"}
-        [xml]$xmlDoc = Get-Content $ivyPath
-
-        if ( !($xmlDoc.'ivy-module'.info.unityVersion)) {
-            throw "Unity setup ivy is missing version: $ivyPath"
-        }
 
         $this.Path = $path
-        $this.Version = $xmlDoc.'ivy-module'.info.unityVersion
+        $this.Version = Get-UnitySetupInstanceVersion -Path $path
+        if ( -not $this.Version ) { throw "Unable to find version for $path" }
 
         $playbackEnginePath = $null
         $componentTests = switch ($currentOS) {
@@ -164,7 +151,7 @@ class UnityVersion : System.IComparable {
     UnityVersion([string] $version) {
         $parts = $version.Split('-')
 
-        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpb])(\d+)" | Out-Null
+        $parts[0] -match "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)" | Out-Null
         if ( $Matches.Count -ne 6 ) { throw "Invalid unity version: $version" }
         $this.Major = [int]($Matches[1]);
         $this.Minor = [int]($Matches[2]);
@@ -292,7 +279,6 @@ function Find-UnitySetupInstaller {
     $currentOS = Get-OperatingSystem
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
-            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/Windows64EditorInstaller\/UnitySetup64-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).exe$"
             $targetSupport = "TargetSupportInstaller"
             $installerExtension = "exe"
         }
@@ -300,11 +286,12 @@ function Find-UnitySetupInstaller {
             throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
         }
         ([OperatingSystem]::Mac) {
-            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/MacEditorInstaller\/Unity-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).pkg$"
             $targetSupport = "MacEditorTargetInstaller"
             $installerExtension = "pkg"
         }
     }
+
+    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/(.+)\/(.+)-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).$installerExtension$"
 
     $knownBaseUrls = @(
         "https://download.unity3d.com/download_unity",
@@ -314,7 +301,8 @@ function Find-UnitySetupInstaller {
 
     $installerTemplates = @{
         [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
-                                                  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension";
+                                                  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Universal-Windows-Platform-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::UWP_IL2CPP     = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Android        = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::iOS            = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
@@ -365,8 +353,23 @@ function Find-UnitySetupInstaller {
     # Every release type has a different pattern for finding installers
     $searchPages = @()
     switch ($Version.Release) {
-        'f' { $searchPages += "https://unity3d.com/get-unity/download/archive" }
-        'b' { $searchPages += "https://unity3d.com/unity/beta/unity$Version" }
+        'a' { $searchPages += "https://unity3d.com/alpha/$($Version.Major).$($Version.Minor)" }
+        'b' {
+            $searchPages += "https://unity3d.com/unity/beta/unity$Version",
+            "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)",
+            "https://unity3d.com/unity/beta/$Version"
+        }
+        'f' {
+            $searchPages += "https://unity3d.com/get-unity/download/archive",
+            "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
+            
+            # Just in case it's a release candidate search the beta as well.
+            if ($Version.Revision -eq '0') {
+                $searchPages += "https://unity3d.com/unity/beta/unity$Version",
+                "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)",
+                "https://unity3d.com/unity/beta/$Version"
+            }
+        }
         'p' {
             $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
             $searchPages += $patchPage
@@ -379,33 +382,30 @@ function Find-UnitySetupInstaller {
     }
 
     foreach ($page in $searchPages) {
-        $webResult = Invoke-WebRequest $page -UseBasicParsing
-        $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object {
-            $_ -match "$($installerTemplates[$setupComponent])$"
-        }
-
-        if ($null -ne $prototypeLink) { break }
-    }
-
-    if ($null -eq $prototypeLink) {
-        # Attempt to find Unity version and setup links based off builtin_shaders download.
-        Write-Verbose "Attempting version search with builtin_shaders fallback"
-        foreach ($page in $searchPages) {
+        try {
             $webResult = Invoke-WebRequest $page -UseBasicParsing
             $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object {
-                $_ -match "builtin_shaders-$($Version).zip$"
-            }
+                $link = $_
+
+                foreach ( $installer in $installerTemplates.Keys ) {
+                    foreach ( $template in $installerTemplates[$installer] ) {
+                        if ( $link -like "*$template*" ) { return $true }
+                    }
+                }
+
+                return $false
+
+            } | Select-Object -First 1
 
             if ($null -ne $prototypeLink) { break }
         }
+        catch {
+            Write-Verbose "$page failed: $($_.Exception.Message)"
+        }
+    }
 
-        if ($null -eq $prototypeLink) {
-            throw "Could not find archives for Unity version $Version"
-        }
-        else {
-            # Regex needs to be reconfigured to parse builtin_shaders's url link
-            $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/builtin_shaders-(\d+)\.(\d+)\.(\d+)([fpb])(\d+).zip$"
-        }
+    if ($null -eq $prototypeLink) {
+        throw "Could not find archives for Unity version $Version"
     }
 
     $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
@@ -449,7 +449,7 @@ function Find-UnitySetupInstaller {
                     break
                 }
                 catch {
-                    Write-Verbose "$endpoint failed: $_"
+                    Write-Verbose "$endpoint failed: $($_.Exception.Message)"
                 }
             }
 
@@ -887,8 +887,6 @@ function Install-UnitySetupInstance {
             $defaultInstallPath = $BasePath
         }
 
-        $unitySetupInstances = Get-UnitySetupInstance -BasePath $BasePath
-
         $versionInstallers = @{}
     }
     process {
@@ -973,7 +971,7 @@ function Install-UnitySetupInstance {
 
             $editorInstaller = $installerPaths | Where-Object { $_.ComponentType -band $editorComponent }
             if ($null -ne $editorInstaller) {
-                Write-Verbose "Installing $($editorInstaller.ComponentType)"
+                Write-Verbose "Installing $($editorInstaller.ComponentType) Editor"
                 Install-UnitySetupPackage -Package $editorInstaller -Destination $packageDestination
             }
 
@@ -1082,7 +1080,6 @@ function Get-UnitySetupInstance {
             if (-not $BasePath) {
                 $BasePath = @('C:\Program Files*\Unity*', 'C:\Program Files\Unity\Hub\Editor\*')
             }
-            $ivyPath = 'Editor\Data\UnityExtensions\Unity\Networking\ivy.xml'
         }
         ([OperatingSystem]::Linux) {
             throw "Get-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
@@ -1091,16 +1088,78 @@ function Get-UnitySetupInstance {
             if (-not $BasePath) {
                 $BasePath = @('/Applications/Unity*', '/Applications/Unity/Hub/Editor/*')
             }
-            $ivyPath = 'Unity.app/Contents/UnityExtensions/Unity/Networking/ivy.xml'
         }
     }
 
-    foreach ( $folder in $BasePath ) {
-        $path = [io.path]::Combine("$folder", $ivyPath);
+    Get-ChildItem $BasePath -Directory | Where-Object {
+        Test-Path (Join-Path $_.FullName 'Editor\Unity.exe') -PathType Leaf
+    } | ForEach-Object {
+        $path = $_.FullName
+        try {
+            Write-Verbose "Creating UnitySetupInstance for $path"
+            [UnitySetupInstance]::new($path)
+        }
+        catch {
+            Write-Warning "$_"
+        }
+    }
+}
 
-        Get-ChildItem  $path -Recurse -ErrorAction Ignore |
-            ForEach-Object {
-            [UnitySetupInstance]::new((Join-Path $_.Directory "..\..\..\..\..\" | Convert-Path))
+<#
+.Synopsis
+   Gets the UnityVersion for a UnitySetupInstance at Path
+.DESCRIPTION
+   Given a set of unity setup instances, this will select the best one matching your requirements
+.PARAMETER Path
+   Path to a UnitySetupInstance
+.OUTPUTS
+   UnityVersion
+   Returns the UnityVersion for the UnitySetupInstance at Path, or nothing if there isn't one
+.EXAMPLE
+   Get-UnitySetupInstanceVersion -Path 'C:\Program Files\Unity'
+#>
+function Get-UnitySetupInstanceVersion {
+    [CmdletBinding()]
+    param(
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript( {Test-Path $_ -PathType Container})]
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Path
+    )
+
+    Write-Verbose "Attempting to find UnityVersion in $path"
+
+    if ( Test-Path "$path\modules.json" -PathType Leaf ) {
+
+        Write-Verbose "Searching $path\modules.json for module versions"
+        $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
+
+        foreach ( $module in $modules ) {
+            Write-Verbose "`tTesting DownloadUrl $($module.DownloadUrl)"
+            if ( $module.DownloadUrl -notmatch "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) { continue; }
+
+            Write-Verbose "`tFound version!"
+            return [UnityVersion]$Matches[0]
+        }
+    }
+
+    if ( Test-Path "$path\Editor" -PathType Container ) {
+        # We'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
+
+        Write-Verbose "Looking for ivy.xml files under $path\Editor\"
+        $ivyFiles = Get-ChildItem -Path "$path\Editor\" -Filter 'ivy.xml' -Recurse -ErrorAction SilentlyContinue -Force -File
+        foreach ( $ivy in $ivyFiles) {
+            if ( $null -eq $ivy ) { continue; }
+
+            Write-Verbose "`tLooking for version in $($ivy.FullName)"
+
+            [xml]$xmlDoc = Get-Content $ivy.FullName
+
+            [string]$version = $xmlDoc.'ivy-module'.info.unityVersion
+            if ( -not $version ) { continue; }
+
+            Write-Verbose "`tFound version!"
+            return [UnityVersion]$version
         }
     }
 }
