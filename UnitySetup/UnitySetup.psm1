@@ -234,6 +234,56 @@ function Get-OperatingSystem {
 
 <#
 .Synopsis
+   Get the Unity Editor application
+.PARAMETER Path
+   Path of a UnitySetupInstance
+.EXAMPLE
+   Get-UnityEditor -Path $unitySetupInstance.Path
+#>
+function Get-UnityEditor {
+    [CmdletBinding()]
+    param(
+        [ValidateScript( {Test-Path $_ -PathType Container} )]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true, Position = 0, ParameterSetName = "Path")]
+        [string[]]$Path = $PWD,
+
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = "Instance")]
+        [ValidateNotNull()]
+        [UnitySetupInstance[]]$Instance
+    )
+
+    process {
+
+        if ( $PSCmdlet.ParameterSetName -eq "Instance" ) {
+            $Path = $Instance.Path
+        }
+
+        $currentOS = Get-OperatingSystem
+        foreach ($p in $Path) {
+            switch ($currentOS) {
+                ([OperatingSystem]::Windows) {
+                    $editor = Get-ChildItem "$p" -Filter 'Unity.exe' -Recurse |
+                        Select-Object -First 1 -ExpandProperty FullName
+
+                    Write-Output $editor
+                }
+                ([OperatingSystem]::Linux) {
+                    throw "Get-UnityEditor has not been implemented on the Linux platform. Contributions welcomed!";
+                }
+                ([OperatingSystem]::Mac) {
+                    $editor = Join-Path "$p" "Unity.app/Contents/MacOS/Unity"
+
+                    if (Test-Path $editor) {
+                        Write-Output (Resolve-Path $editor).Path
+                    }
+                }
+            }
+        }
+    }
+}
+
+<#
+.Synopsis
    Help to create UnitySetupComponent
 .PARAMETER Components
    What components would you like included?
@@ -1088,9 +1138,10 @@ function Get-UnitySetupInstance {
         }
     }
 
-    Get-ChildItem $BasePath -Directory | Where-Object {
-        Test-Path (Join-Path $_.FullName 'Editor\Unity.exe') -PathType Leaf
-    } | ForEach-Object {
+    
+    $BasePath | Where-Object { Test-Path $_ -PathType Container } | 
+        Get-ChildItem -Directory | Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
+        ForEach-Object {
         $path = $_.FullName
         try {
             Write-Verbose "Creating UnitySetupInstance for $path"
@@ -1528,32 +1579,14 @@ function Start-UnityEditor {
             $setupInstances += , $setupInstance
         }
 
-        $currentOS = Get-OperatingSystem
 
         for ($i = 0; $i -lt $setupInstances.Length; $i++) {
             $setupInstance = $setupInstances[$i]
 
-            switch ($currentOS) {
-                ([OperatingSystem]::Windows) {
-                    $editor = Get-ChildItem "$($setupInstance.Path)" -Filter 'Unity.exe' -Recurse |
-                        Select-Object -First 1 -ExpandProperty FullName
-
-                    if ([string]::IsNullOrEmpty($editor)) {
-                        Write-Error "Could not find Unity.exe under setup instance path: $($setupInstance.Path)"
-                        continue
-                    }
-                }
-                ([OperatingSystem]::Linux) {
-                    throw "Start-UnityEditor has not been implemented on the Linux platform. Contributions welcomed!";
-                }
-                ([OperatingSystem]::Mac) {
-                    $editor = [io.path]::Combine("$($setupInstance.Path)", "Unity.app/Contents/MacOS/Unity")
-
-                    if ([string]::IsNullOrEmpty($editor)) {
-                        Write-Error "Could not find Unity app under setup instance path: $($setupInstance.Path)"
-                        continue
-                    }
-                }
+            $editor = Get-UnityEditor "$($setupInstance.Path)"
+            if ( -not $editor ) {
+                Write-Error "Could not find Unity Editor under setup instance path: $($setupInstance.Path)"
+                continue
             }
 
             # clone the shared args list
@@ -1695,6 +1728,7 @@ function Get-UnityLicense {
     @{ 'Name' = 'gusi'; 'Value' = 'Get-UnitySetupInstance' },
     @{ 'Name' = 'gupi'; 'Value' = 'Get-UnityProjectInstance' },
     @{ 'Name' = 'susi'; 'Value' = 'Select-UnitySetupInstance' },
+    @{ 'Name' = 'gue'; 'Value' = 'Get-UnityEditor' }
     @{ 'Name' = 'sue'; 'Value' = 'Start-UnityEditor' }
 ) | ForEach-Object {
 
