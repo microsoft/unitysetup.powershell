@@ -20,6 +20,7 @@ enum UnitySetupComponent {
     Vuforia = (1 -shl 12)
     WebGL = (1 -shl 13)
     Mac_IL2CPP = (1 -shl 14)
+    Lumin = (1 -shl 15)
     All = (1 -shl 15) - 1
 }
 
@@ -90,6 +91,7 @@ class UnitySetupInstance {
         }
 
         # Common playback engines:
+        $componentTests[[UnitySetupComponent]::Lumin]    = , [io.path]::Combine("$playbackEnginePath", "LuminSupport");
         $componentTests[[UnitySetupComponent]::Android]  = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
         $componentTests[[UnitySetupComponent]::iOS]      = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
         $componentTests[[UnitySetupComponent]::AppleTV]  = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
@@ -313,6 +315,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
     }
 
     switch ($currentOS) {
@@ -1369,7 +1372,7 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [string]$LogFile,
         [parameter(Mandatory = $false)]
-        [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch')]
+        [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch', 'Lumin')]
         [string]$BuildTarget,
         [parameter(Mandatory = $false)]
         [switch]$AcceptAPIUpdate,
