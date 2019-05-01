@@ -634,7 +634,7 @@ function Format-BitsPerSecond {
 .Synopsis
    Download specified Unity installers.
 .DESCRIPTION
-   Filters a list of `UnitySetupInstaller` down to a specific version and/or specific components.
+   Downloads the given installers into the $Cache directory. 
 .PARAMETER Installers
    List of installers that needs to be downloaded.
 .PARAMETER Cache
