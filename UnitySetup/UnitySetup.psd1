@@ -84,6 +84,7 @@
         'Install-UnitySetupInstance',
         'Select-UnitySetupInstance',
         'Uninstall-UnitySetupInstance',
+        'Get-UnityEditor',
         'Start-UnityEditor',
         'ConvertTo-UnitySetupComponent',
         'Get-UnityLicense'
@@ -100,6 +101,7 @@
         'gusi',
         'gupi',
         'susi',
+        'gue',
         'sue'
     )
 
