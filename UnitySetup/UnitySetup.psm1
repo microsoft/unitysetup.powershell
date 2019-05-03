@@ -264,10 +264,11 @@ function Get-UnityEditor {
         foreach ($p in $Path) {
             switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
-                    $editor = Get-ChildItem "$p" -Filter 'Unity.exe' -Recurse |
-                        Select-Object -First 1 -ExpandProperty FullName
-
-                    Write-Output $editor
+                    $editor = Join-Path "$p" 'Editor\Unity.exe'
+                    
+                     if (Test-Path $editor) {
+                        Write-Output (Resolve-Path $editor).Path
+                    }
                 }
                 ([OperatingSystem]::Linux) {
                     throw "Get-UnityEditor has not been implemented on the Linux platform. Contributions welcomed!";
