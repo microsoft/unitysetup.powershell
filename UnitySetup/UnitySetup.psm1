@@ -21,7 +21,7 @@ enum UnitySetupComponent {
     WebGL = (1 -shl 13)
     Mac_IL2CPP = (1 -shl 14)
     Lumin = (1 -shl 15)
-    All = (1 -shl 15) - 1
+    All = (1 -shl 16) - 1
 }
 
 [Flags()]
