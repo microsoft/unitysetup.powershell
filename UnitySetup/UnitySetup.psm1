@@ -1641,6 +1641,12 @@ function Get-IsUnityError {
         return $true
     }
 
+    # Detect IOException error, for example:
+    #   IOException: Failed to Copy File / Directory from 'Assets/AppIcons/StoreLogo.scale-200.png' to 'Temp\StagingArea\Assets\StoreLogo.scale-200.png'.
+    if ( $LogLine -match 'IOException: Failed to Copy' ) {
+        return $true
+    }
+
     # In the future, additional kinds of errors that can be found in Unity logs could be added here:
     # ...
 
