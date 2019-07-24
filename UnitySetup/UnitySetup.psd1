@@ -14,7 +14,7 @@
     RootModule        = 'UnitySetup'
 
     # Version number of this module.
-    ModuleVersion     = '5.0'
+    ModuleVersion     = '5.1'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -76,11 +76,15 @@
 
     FunctionsToExport = @(
         'Find-UnitySetupInstaller',
+        'Select-UnitySetupInstaller',
+        'Test-UnitySetupInstance',
         'Get-UnityProjectInstance',
         'Get-UnitySetupInstance',
+        'Request-UnitySetupInstaller',
         'Install-UnitySetupInstance',
         'Select-UnitySetupInstance',
         'Uninstall-UnitySetupInstance',
+        'Get-UnityEditor',
         'Start-UnityEditor',
         'ConvertTo-UnitySetupComponent',
         'Get-UnityLicense'
@@ -97,6 +101,7 @@
         'gusi',
         'gupi',
         'susi',
+        'gue',
         'sue'
     )
 
