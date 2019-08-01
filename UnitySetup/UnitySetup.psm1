@@ -266,7 +266,7 @@ function Get-UnityEditor {
                 ([OperatingSystem]::Windows) {
                     $editor = Join-Path "$p" 'Editor\Unity.exe'
                     
-                     if (Test-Path $editor) {
+                    if (Test-Path $editor) {
                         Write-Output (Resolve-Path $editor).Path
                     }
                 }
@@ -783,16 +783,12 @@ function Request-UnitySetupInstaller {
                     }
 
                     $elapsedTime = (Get-Date) - $data.startTime
-
                     $progress = [int](($data.receivedBytes / [double]$data.totalBytes) * 100)
+                    $secondsRemaining = -1 # -1 for Write-Progress prevents seconds remaining from showing.
 
-                    $averageSpeed = $data.receivedBytes / $elapsedTime.TotalSeconds
-                    $secondsRemaining = ($data.totalBytes - $data.receivedBytes) / $averageSpeed
-
-                    if ([double]::IsInfinity($secondsRemaining)) {
-                        $averageSpeed = 0
-                        # -1 for Write-Progress prevents seconds remaining from showing.
-                        $secondsRemaining = -1
+                    if ($data.receivedBytes -gt 0 -and $elapsedTime.TotalSeconds -gt 0) {
+                        $averageSpeed = $data.receivedBytes / $elapsedTime.TotalSeconds
+                        $secondsRemaining = ($data.totalBytes - $data.receivedBytes) / $averageSpeed
                     }
 
                     $downloadSpeed = Format-BitsPerSecond -Bytes $data.receivedBytes -Seconds $elapsedTime.TotalSeconds
