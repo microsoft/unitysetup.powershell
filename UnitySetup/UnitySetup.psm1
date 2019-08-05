@@ -903,12 +903,15 @@ function Install-UnitySetupInstance {
         [UnitySetupInstaller[]] $Installers,
 
         [parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$BasePath,
 
         [parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$Destination,
 
         [parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
         [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
     )
     begin {
@@ -918,7 +921,7 @@ function Install-UnitySetupInstance {
         }
 
         if ( -not $PSBoundParameters.ContainsKey('BasePath') ) {
-            $defaultInstallPath = switch ($currentOS) {
+            $BasePath = switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
                     "C:\Program Files\Unity\Hub\Editor\"
                 }
@@ -930,10 +933,6 @@ function Install-UnitySetupInstance {
                 }
             }
         }
-        else {
-            $defaultInstallPath = $BasePath
-        }
-
         $versionInstallers = @{}
     }
     process {
@@ -948,16 +947,16 @@ function Install-UnitySetupInstance {
             $installerInstances = $versionInstallers[$installVersion]
 
             if ( $PSBoundParameters.ContainsKey('Destination') ) {
-                # Slight API change here. If BasePath is also provided treat Destination as a relative path.
+                # If BasePath is also provided treat Destination as a relative path.
                 if ( $PSBoundParameters.ContainsKey('BasePath') ) {
-                    $installPath = $Destination
+                    $installPath = [io.path]::Combine($BasePath, $Destination)
                 }
                 else {
-                    $installPath = [io.path]::Combine($BasePath, $Destination)
+                    $installPath = $Destination
                 }
             }
             else {
-                $installPath = [io.path]::Combine($defaultInstallPath, $installVersion)
+                $installPath = [io.path]::Combine($BasePath, $installVersion)
             }
 
             if ($currentOS -eq [OperatingSystem]::Mac) {
