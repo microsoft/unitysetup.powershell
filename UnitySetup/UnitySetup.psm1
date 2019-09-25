@@ -1177,6 +1177,7 @@ function Get-UnitySetupInstanceVersion {
 
     Write-Verbose "Attempting to find UnityVersion in $path"
 
+    # Try to look in the modules.json file for installer paths that contain version info
     if ( Test-Path "$path\modules.json" -PathType Leaf ) {
 
         Write-Verbose "Searching $path\modules.json for module versions"
@@ -1191,9 +1192,10 @@ function Get-UnitySetupInstanceVersion {
         }
     }
 
+    # No version found, start digging deeper
     if ( Test-Path "$path\Editor" -PathType Container ) {
-        # We'll attempt to search for the version using the ivy.xml definitions for legacy editor compatibility.
-
+        
+        # Search for the version using the ivy.xml definitions for legacy editor compatibility.
         Write-Verbose "Looking for ivy.xml files under $path\Editor\"
         $ivyFiles = Get-ChildItem -Path "$path\Editor\" -Filter 'ivy.xml' -Recurse -ErrorAction SilentlyContinue -Force -File
         foreach ( $ivy in $ivyFiles) {
@@ -1203,11 +1205,22 @@ function Get-UnitySetupInstanceVersion {
 
             [xml]$xmlDoc = Get-Content $ivy.FullName
 
-            [string]$version = $xmlDoc.'ivy-module'.info.unityVersion
-            if ( -not $version ) { continue; }
+            [string]$ivyVersion = $xmlDoc.'ivy-module'.info.unityVersion
+            if ( -not $ivyVersion ) { continue; }
 
             Write-Verbose "`tFound version!"
-            return [UnityVersion]$version
+            return [UnityVersion]$ivyVersion
+        }
+
+        # Search through any header files which might define the unity version
+        Write-Verbose "Looking for .h files with UNITY_VERSION defined under $path\Editor\ "
+        $headerMatchInfo = Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File | 
+            Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" | 
+            Select-Object -First 1
+
+        if ( $headerMatchInfo.Matches.Groups.Count -gt 1 ) {
+            Write-Verbose "`tFound version!"
+            return [UnityVersion]($headerMatchInfo.Matches.Groups[1].Value)
         }
     }
 }
