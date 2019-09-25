@@ -117,16 +117,16 @@ class UnityProjectInstance {
 
     UnityProjectInstance([string]$path) {
         $versionFile = [io.path]::Combine($path, "ProjectSettings\ProjectVersion.txt")
-        if (!(Test-Path $versionFile)) { throw "Path is not a Unity project: $path"}
+        if (!(Test-Path $versionFile)) { throw "Path is not a Unity project: $path" }
 
         $fileVersion = (Get-Content $versionFile -Raw | ConvertFrom-Yaml)['m_EditorVersion'];
-        if (!$fileVersion) { throw "Project is missing a version in: $versionFile"}
+        if (!$fileVersion) { throw "Project is missing a version in: $versionFile" }
 
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
-        if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset"}
+        if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
         $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
-        if (!$prodName) { throw "ProjectSettings is missing productName"}
+        if (!$prodName) { throw "ProjectSettings is missing productName" }
 
         $this.Path = $path
         $this.Version = $fileVersion
@@ -144,7 +144,7 @@ class UnityVersion : System.IComparable {
 
     [string] ToString() {
         $result = "$($this.Major).$($this.Minor).$($this.Revision)$($this.Release)$($this.Build)"
-        if ( $this.Suffix ) { $result += "-$($this.Suffix)"}
+        if ( $this.Suffix ) { $result += "-$($this.Suffix)" }
         return $result
     }
 
@@ -166,7 +166,7 @@ class UnityVersion : System.IComparable {
 
     [int] CompareTo([object]$obj) {
         if ($null -eq $obj) { return 1 }
-        if ($obj -isnot [UnityVersion]) { throw "Object is not a UnityVersion"}
+        if ($obj -isnot [UnityVersion]) { throw "Object is not a UnityVersion" }
 
         return [UnityVersion]::Compare($this, $obj)
     }
@@ -245,7 +245,7 @@ function Get-OperatingSystem {
 function Get-UnityEditor {
     [CmdletBinding()]
     param(
-        [ValidateScript( {Test-Path $_ -PathType Container} )]
+        [ValidateScript( { Test-Path $_ -PathType Container } )]
         [Parameter(Mandatory = $false, ValueFromPipeline = $true, Position = 0, ParameterSetName = "Path")]
         [string[]]$Path = $PWD,
 
@@ -426,27 +426,30 @@ function Find-UnitySetupInstaller {
             $searchPages += $patchPage
 
             $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
-            $searchPages += $webResult.Links | Where-Object {
-                $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1
-            } | ForEach-Object { "https://unity3d.com$($_.href)" }
+            $searchPages += $webResult.Links | 
+                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } | 
+                ForEach-Object { "https://unity3d.com$($_.href)" }
         }
     }
 
     foreach ($page in $searchPages) {
         try {
             $webResult = Invoke-WebRequest $page -UseBasicParsing
-            $prototypeLink = $webResult.Links | Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | Where-Object {
-                $link = $_
+            $prototypeLink = $webResult.Links | 
+                Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | 
+                Where-Object {
+                    $link = $_
 
-                foreach ( $installer in $installerTemplates.Keys ) {
-                    foreach ( $template in $installerTemplates[$installer] ) {
-                        if ( $link -like "*$template*" ) { return $true }
+                    foreach ( $installer in $installerTemplates.Keys ) {
+                        foreach ( $template in $installerTemplates[$installer] ) {
+                            if ( $link -like "*$template*" ) { return $true }
+                        }
                     }
-                }
 
-                return $false
+                    return $false
 
-            } | Select-Object -First 1
+                } | 
+                Select-Object -First 1
 
             if ($null -ne $prototypeLink) { break }
         }
@@ -465,10 +468,10 @@ function Find-UnitySetupInstaller {
         $knownBaseUrls = $linkComponents[0], $knownBaseUrls
     }
     else {
-        $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = {[math]::Abs(($_.CompareTo($linkComponents[0])))}; Ascending = $true}
+        $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = { [math]::Abs(($_.CompareTo($linkComponents[0]))) }; Ascending = $true }
     }
 
-    $installerTemplates.Keys |  Where-Object { $Components -band $_ } | ForEach-Object {
+    $installerTemplates.Keys | Where-Object { $Components -band $_ } | ForEach-Object {
         $templates = $installerTemplates.Item($_);
         $result = $null
         foreach ($template in $templates ) {
@@ -679,7 +682,7 @@ function Request-UnitySetupInstaller {
         $downloads = @()
 
         try {
-            $global:downloadData = [ordered]@{}
+            $global:downloadData = [ordered]@{ }
             $downloadIndex = 1
 
             $allInstallers | ForEach-Object {
@@ -934,7 +937,7 @@ function Install-UnitySetupInstance {
             $defaultInstallPath = $BasePath
         }
 
-        $versionInstallers = @{}
+        $versionInstallers = @{ }
     }
     process {
         # Sort each installer received from the pipe into versions
@@ -1170,7 +1173,7 @@ function Get-UnitySetupInstanceVersion {
     [CmdletBinding()]
     param(
         [ValidateNotNullOrEmpty()]
-        [ValidateScript( {Test-Path $_ -PathType Container})]
+        [ValidateScript( { Test-Path $_ -PathType Container })]
         [Parameter(Mandatory = $true, Position = 0)]
         [string]$Path
     )
@@ -1322,11 +1325,11 @@ function Get-UnityProjectInstance {
 
     Get-ChildItem @args |
         ForEach-Object {
-        $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
-        if ( Test-Path $path ) {
-            [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+            $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
+            if ( Test-Path $path ) {
+                [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+            }
         }
-    }
 }
 
 <#
@@ -1607,8 +1610,8 @@ function Start-UnityEditor {
             if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
 
             $actionString = "$editor $unityArgs"
-            if ( $Credential ) { $actionString += " -password (hidden)"}
-            if ( $Serial ) { $actionString += " -serial (hidden)"}
+            if ( $Credential ) { $actionString += " -password (hidden)" }
+            if ( $Serial ) { $actionString += " -serial (hidden)" }
 
             if (-not $PSCmdlet.ShouldProcess($actionString, "System.Diagnostics.Process.Start()")) {
                 continue
