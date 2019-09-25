@@ -1141,19 +1141,18 @@ function Get-UnitySetupInstance {
         }
     }
 
-    
-    $BasePath | Where-Object { Test-Path $_ -PathType Container } | 
-        Get-ChildItem -Directory | Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
+    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore | 
+        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
         ForEach-Object {
-        $path = $_.FullName
-        try {
-            Write-Verbose "Creating UnitySetupInstance for $path"
-            [UnitySetupInstance]::new($path)
+            $path = $_.FullName
+            try {
+                Write-Verbose "Creating UnitySetupInstance for $path"
+                [UnitySetupInstance]::new($path)
+            }
+            catch {
+                Write-Warning "$_"
+            }
         }
-        catch {
-            Write-Warning "$_"
-        }
-    }
 }
 
 <#
