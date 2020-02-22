@@ -1334,6 +1334,137 @@ function Get-UnityProjectInstance {
 
 <#
 .Synopsis
+   Tests the meta file integrity of the Unity Project Instance(s).
+.DESCRIPTION
+   Tests if every item under assets has an associated .meta file and every .meta file an associated item.
+.PARAMETER Project
+   Unity Project Instance(s) to test the meta file integrity of.
+.PARAMETER PassThru
+   Output the meta file integrity issues rather than $true (no issues) or $false (at least one issue).
+.EXAMPLE
+   Test-UnityProjectInstanceMetaFileIntegrity
+.EXAMPLE
+   Test-UnityProjectInstanceMetaFileIntegrity -PassThru
+.EXAMPLE
+   Test-UnityProjectInstanceMetaFileIntegrity .\MyUnityProject
+.EXAMPLE
+   Test-UnityProjectInstanceMetaFileIntegrity -Project .\MyUnityProject
+.EXAMPLE
+   Get-UnityProjectInstance -Recurse | Test-UnityProjectInstanceMetaFileIntegrity
+.EXAMPLE
+   Get-UnityProjectInstance -Recurse | Test-UnityProjectInstanceMetaFileIntegrity -PassThru
+#>
+function Test-UnityProjectInstanceMetaFileIntegrity {
+    [CmdletBinding(DefaultParameterSetName = "Context")]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = "Projects")]
+        [ValidateNotNullOrEmpty()]
+        [UnityProjectInstance[]] $Project,
+        [switch] $PassThru
+    )
+
+    process {
+
+        switch ( $PSCmdlet.ParameterSetName) {
+            'Context' {
+                $currentFolderProject = Get-UnityProjectInstance $PWD.Path
+                if ($null -ne $currentFolderProject) {
+                    $Project = @($currentFolderProject)
+                }
+            }
+        }
+
+        foreach ( $p in $Project) {
+
+            $testResult = $true
+
+            Write-Verbose "Getting meta file integrity for project at $($p.path)"
+            $assetDir = Join-Path $p.Path "Assets"
+
+            # get all the directories under assets
+            [System.IO.DirectoryInfo[]]$dirs = Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude '.*'
+
+            Write-Verbose "Testing asset directories for missing meta files..."
+            foreach ($dir in $dirs) {
+                $testPath = "$($dir.FullName).meta";
+                if (Test-Path -PathType Leaf -Path $testPath) { continue }
+
+                if ($PassThru) {
+                    [PSCustomObject]@{
+                        'Item'  = $dir
+                        'Issue' = "Directory is missing associated meta file."
+                    }
+                }
+                else {
+                    $testResult = $false;
+                    break;
+                }
+            }
+
+            if (-not $testResult) { $false; continue; }
+
+            # get all the non-meta files under assets
+            [System.IO.FileInfo[]]$files = Get-ChildItem -Path "$assetDir/*" -Exclude '.*', '*.meta' -File
+            foreach ($dir in $dirs) {
+                $files += Get-ChildItem -Path "$($dir.FullName)/*" -Exclude '.*', '*.meta' -File
+            }
+
+            Write-Verbose "Testing asset files for missing meta files..."
+            foreach ( $file in $files ) {
+                $testPath = "$($file.FullName).meta";
+                if (Test-Path -PathType Leaf -Path $testPath) { continue }
+
+                if ($PassThru) {
+                    [PSCustomObject]@{
+                        'Item'  = $file
+                        'Issue' = "File is missing associated meta file."
+                    }
+                }
+                else {
+                    $testResult = $false;
+                    break;
+                }
+            }
+
+            if (-not $testResult) { $false; continue; }
+
+            $metaFileSearchArgs = @{
+                'Exclude' = '.*'
+                'Include' = '*.meta'
+                'File'    = $true
+                'Force'   = $true # Ensure we include hidden meta files
+            }
+
+            # get all the meta files under assets
+            [System.IO.FileInfo[]]$metaFiles = Get-ChildItem -Path "$assetDir/*" @metaFileSearchArgs
+            foreach ($dir in $dirs) {
+                $metaFiles += Get-ChildItem -Path "$($dir.FullName)/*" @metaFileSearchArgs
+            }
+
+            Write-Verbose "Testing meta files for missing assets..."
+            foreach ($metaFile in $metaFiles) {
+                $testPath = $metaFile.FullName.SubString(0, $metaFile.FullName.Length - $metaFile.Extension.Length);
+                if (Test-Path -Path $testPath) { continue }
+
+                if ($PassThru) {
+                    [PSCustomObject]@{
+                        'Item'  = $metaFile
+                        'Issue' = "Meta file is missing associated item."
+                    }
+                }
+                else {
+                    $testResult = $false;
+                    break;
+                }
+            }
+
+            if (-not $PassThru) { $testResult; }
+        }
+    }
+}
+
+<#
+.Synopsis
    Starts the Unity Editor
 .DESCRIPTION
    If Project, Instance, and Latest are unspecified, tests if the current folder is a
