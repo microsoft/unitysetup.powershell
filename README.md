@@ -95,6 +95,7 @@ Test-UnityProjectInstanceMetaFileIntegrity .\MyUnityProject -PassThru
 # C:\MyUnityProject\Assets\SomeFolder                               Directory is missing associated meta file.
 # C:\MyUnityProject\Assets\SomeFolder\SomeShader.shader             File is missing associated meta file.
 # C:\MyUnityProject\Assets\SomeFolder\SomeOtherShader.shader.meta   Meta file is missing associated item.
+# C:\MyUnityProject\Assets\SomeFolder\SomeNewShader.shader.meta     Meta file guid collision with C:\MyUnityProject\Assets\SomeFolder\SomeOtherShader.shader.meta
 ```
 
 Find the installers for a particular version:

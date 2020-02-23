@@ -1336,7 +1336,9 @@ function Get-UnityProjectInstance {
 .Synopsis
    Tests the meta file integrity of the Unity Project Instance(s).
 .DESCRIPTION
-   Tests if every item under assets has an associated .meta file and every .meta file an associated item.
+   Tests if every item under assets has an associated .meta file 
+   and every .meta file an associated item
+   and that none of the meta file guids collide.
 .PARAMETER Project
    Unity Project Instance(s) to test the meta file integrity of.
 .PARAMETER PassThru
@@ -1450,6 +1452,29 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
                     [PSCustomObject]@{
                         'Item'  = $metaFile
                         'Issue' = "Meta file is missing associated item."
+                    }
+                }
+                else {
+                    $testResult = $false;
+                    break;
+                }
+            }
+
+            if (-not $testResult) { $false; continue; }
+
+            Write-Verbose "Testing meta files for guid collisions..."
+            $metaGuids = @{ }
+            foreach ($metaFile in $metaFiles) {
+                $metaContent = Get-Content $metaFile.FullName -Raw | ConvertFrom-Yaml
+                if ($null -eq $metaGuids[$metaContent.guid]) {
+                    $metaGuids[$metaContent.guid] = $metaFile;
+                    continue 
+                }
+
+                if ($PassThru) {
+                    [PSCustomObject]@{
+                        'Item'  = $metaFile
+                        'Issue' = "Meta file guid collision with $($metaGuids[$metaContent.guid])"
                     }
                 }
                 else {
