@@ -79,6 +79,7 @@
         'Select-UnitySetupInstaller',
         'Test-UnitySetupInstance',
         'Get-UnityProjectInstance',
+        'Test-UnityProjectInstanceMetaFileIntegrity',
         'Get-UnitySetupInstance',
         'Request-UnitySetupInstaller',
         'Install-UnitySetupInstance',

@@ -42,14 +42,12 @@ Get-UnitySetupInstance
 # 2017.2.0f3              Windows, UWP, UWP_IL2CPP, Vuforia C:\Program Files\Unity.2017.2.0f3\
 # 2017.3.0f3         Windows, UWP, UWP_IL2CPP, Mac, Vuforia C:\Program Files\Unity.2017.3.0f3\
 ```
-
 Select the Unity installs that you want:
 ```powershell
 Get-UnitySetupInstance | Select-UnitySetupInstance -Latest
 Get-UnitySetupInstance | Select-UnitySetupInstance -Version '2017.1.1f1'
 Get-UnitySetupInstance | Select-UnitySetupInstance -Project '.\MyUnityProject'
 ```
-
 Find all the Unity projects recursively:
 ```powershell
 Get-UnityProjectInstance -Recurse
@@ -77,6 +75,29 @@ Invoke methods with arbitrary arguments:
 ```powershell
 Start-UnityEditor -ExecuteMethod Build.Invoke -BatchMode -Quit -LogFile .\build.log -Wait -AdditionalArguments "-BuildArg1 -BuildArg2"
 ```
+Test the meta file integrity of Unity Projects:
+```powershell
+Test-UnityProjectInstanceMetaFileIntegrity # Test project in current folder
+Test-UnityProjectInstanceMetaFileIntegrity .\MyUnityProject
+Test-UnityProjectInstanceMetaFileIntegrity -Project .\MyUnityProject
+Get-UnityProjectInstance -Recurse | Test-UnityProjectInstanceMetaFileIntegrity
+
+# Example output:
+# True
+```
+Get meta file integrity issues for Unity Projects:
+```powershell
+Test-UnityProjectInstanceMetaFileIntegrity .\MyUnityProject -PassThru
+
+# Example output:
+# Item                                                              Issue
+# ----                                                              -----
+# C:\MyUnityProject\Assets\SomeFolder                               Directory is missing associated meta file.
+# C:\MyUnityProject\Assets\SomeFolder\SomeShader.shader             File is missing associated meta file.
+# C:\MyUnityProject\Assets\SomeFolder\SomeOtherShader.shader.meta   Meta file is missing associated item.
+# C:\MyUnityProject\Assets\SomeFolder\SomeNewShader.shader.meta     Meta file guid collision with C:\MyUnityProject\Assets\SomeFolder\SomeOtherShader.shader.meta
+```
+
 Find the installers for a particular version:
 ```powershell
 Find-UnitySetupInstaller -Version '2017.3.0f3' | Format-Table
