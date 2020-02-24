@@ -1387,7 +1387,16 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             [System.IO.DirectoryInfo[]]$dirs = Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude '.*'
 
             Write-Verbose "Testing asset directories for missing meta files..."
+            [float]$progressCounter = 0
             foreach ($dir in $dirs) {
+
+                $progress = @{
+                    'Activity'        = "Testing directories for missing meta files"
+                    'Status'          = $dir
+                    'PercentComplete' = (((++$progressCounter) / $dirs.Length) * 100)
+                }
+                Write-Progress @progress
+
                 $testPath = "$($dir.FullName).meta";
                 if (Test-Path -PathType Leaf -Path $testPath) { continue }
 
@@ -1412,7 +1421,16 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             }
 
             Write-Verbose "Testing asset files for missing meta files..."
+            $progressCounter = 0
             foreach ( $file in $files ) {
+
+                $progress = @{
+                    'Activity'        = "Testing files for missing meta files"
+                    'Status'          = $file
+                    'PercentComplete' = (((++$progressCounter) / $files.Length) * 100)
+                }
+                Write-Progress @progress
+
                 $testPath = "$($file.FullName).meta";
                 if (Test-Path -PathType Leaf -Path $testPath) { continue }
 
@@ -1444,7 +1462,16 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             }
 
             Write-Verbose "Testing meta files for missing assets..."
+            $progressCounter = 0
             foreach ($metaFile in $metaFiles) {
+
+                $progress = @{
+                    'Activity'        = "Testing meta files for missing assets"
+                    'Status'          = $metaFile
+                    'PercentComplete' = (((++$progressCounter) / $metaFiles.Length) * 100)
+                }
+                Write-Progress @progress
+
                 $testPath = $metaFile.FullName.SubString(0, $metaFile.FullName.Length - $metaFile.Extension.Length);
                 if (Test-Path -Path $testPath) { continue }
 
@@ -1464,22 +1491,42 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
 
             Write-Verbose "Testing meta files for guid collisions..."
             $metaGuids = @{ }
+            $progressCounter = 0
             foreach ($metaFile in $metaFiles) {
-                $metaContent = Get-Content $metaFile.FullName -Raw | ConvertFrom-Yaml
-                if ($null -eq $metaGuids[$metaContent.guid]) {
-                    $metaGuids[$metaContent.guid] = $metaFile;
-                    continue 
-                }
 
-                if ($PassThru) {
-                    [PSCustomObject]@{
-                        'Item'  = $metaFile
-                        'Issue' = "Meta file guid collision with $($metaGuids[$metaContent.guid])"
+                $progress = @{
+                    'Activity'        = "Testing meta files for guid collisions"
+                    'Status'          = $metaFile
+                    'PercentComplete' = (((++$progressCounter) / $metaFiles.Length) * 100)
+                }
+                Write-Progress @progress
+
+                try {
+                    $guidResult = Get-Content $metaFile.FullName | Select-String -Pattern '^guid:\s*([a-z,A-Z,\d]+)\s*$'
+                    if ($guidResult.Matches.Groups.Length -lt 2) {
+                        Write-Warning "Could not find guid in meta file - $metaFile"
+                        continue;
+                    }
+
+                    $guid = $guidResult.Matches.Groups[1].Value
+                    if ($null -eq $metaGuids[$guid]) {
+                        $metaGuids[$guid] = $metaFile;
+                        continue
+                    }
+
+                    if ($PassThru) {
+                        [PSCustomObject]@{
+                            'Item'  = $metaFile
+                            'Issue' = "Meta file guid collision with $($metaGuids[$guid])"
+                        }
+                    }
+                    else {
+                        $testResult = $false;
+                        break;
                     }
                 }
-                else {
-                    $testResult = $false;
-                    break;
+                catch {
+                    Write-Error "Exception testing guid of $metaFile - $_"
                 }
             }
 
