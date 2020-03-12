@@ -290,15 +290,38 @@ function Get-UnityEditor {
    Help to create UnitySetupComponent
 .PARAMETER Components
    What components would you like included?
+.PARAMETER Version
+   Allows for conversion that can take into account version restrictions
+   E.g. 2019.x only supports UWP_IL2CPP
 .EXAMPLE
    ConvertTo-UnitySetupComponent Windows,UWP
+.EXAMPLE
+   ConvertTo-UnitySetupComponent Windows,UWP -Version 2019.3.4f1
 #>
 function ConvertTo-UnitySetupComponent {
     [CmdletBinding()]
     param(
         [parameter(Mandatory = $true, Position = 0)]
-        [UnitySetupComponent] $Component
+        [UnitySetupComponent] $Component,
+        [parameter(Mandatory = $false)]
+        [UnityVersion] $Version
     )
+    
+    if ($Version) {
+        if ($Version.Major -ge 2019) {
+            if ($Component -band [UnitySetupComponent]::UWP) {
+                if ( $Component -band [UnitySetupComponent]::UWP_IL2CPP) {
+                    Write-Verbose "2019.x only supports IL2CPP for UWP - removing $([UnitySetupComponent]::UWP)"
+                }
+                else {
+                    Write-Verbose "2019.x only supports IL2CPP for UWP - swapping to $([UnitySetupComponent]::UWP_IL2CPP)"
+                    $Component += [UnitySetupComponent]::UWP_IL2CPP;
+                }
+
+                $Component -= [UnitySetupComponent]::UWP;
+            }
+        }
+    }
 
     $Component
 }
@@ -326,6 +349,8 @@ function Find-UnitySetupInstaller {
         [parameter(Mandatory = $false)]
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All
     )
+
+    $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
     $currentOS = Get-OperatingSystem
     switch ($currentOS) {
@@ -368,6 +393,12 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
+    }
+
+    # In 2019.x there is only IL2CPP UWP so change the search for UWP_IL2CPP
+    if ( $Version.Major -ge 2019 ) {
+        $installerTemplates[[UnitySetupComponent]::UWP_IL2CPP] = @(
+            "$targetSupport/UnitySetup-Universal-Windows-Platform-Support-for-Editor-$Version.$installerExtension");
     }
 
     switch ($currentOS) {
@@ -589,10 +620,11 @@ function Select-UnitySetupInstaller {
         }
 
         # Keep only the matching component(s).
-        $Installers = $Installers | Where-Object { $Components -band $_.ComponentType } | ForEach-Object { $_ }
-
-        if ($Installers.Length -ne 0) {
-            $selectedInstallers += $Installers
+        foreach ($installer in $Installers) {
+            $versionComponents = ConvertTo-UnitySetupComponent $Components -Version $installer.Version
+            if ( $versionComponents -band $_.ComponentType ) {
+                $selectedInstallers += $installer
+            }
         }
     }
     end {

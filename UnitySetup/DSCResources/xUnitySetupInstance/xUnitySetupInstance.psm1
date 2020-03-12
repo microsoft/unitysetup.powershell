@@ -23,7 +23,7 @@ function Get-TargetResource {
     $setupInstances = Get-UnitySetupInstance | Where-Object { $splitVersions -contains $_.Version }
     $result = @{
         "Versions" = $setupInstances | Select-Object -ExpandProperty Version | Sort-Object -Unique
-        "Ensure"   = if ($setupInstances.Count -gt 0) { 'Present'} else { 'Absent' }
+        "Ensure"   = if ($setupInstances.Count -gt 0) { 'Present' } else { 'Absent' }
     }
 
     Write-Verbose "Found versions: $($result['Versions'])"
@@ -81,7 +81,7 @@ function Set-TargetResource {
             foreach ($version in $splitVersions) {
                 $findArgs = @{ 
                     'Version'    = $version
-                    'Components' = ConvertTo-UnitySetupComponent $Components 
+                    'Components' = ConvertTo-UnitySetupComponent $Components -Version $version
                 }
 
                 $installArgs = @{ 'Cache' = "$env:TEMP\.unitysetup" }
@@ -158,9 +158,9 @@ function Test-TargetResource {
     $result = $true
     switch ( $Ensure ) {
         'Present' {
-            $setupComponents = ConvertTo-UnitySetupComponent $Components
             foreach ($version in $splitVersions) {
                 Write-Verbose "Starting test for $version"
+                $setupComponents = ConvertTo-UnitySetupComponent $Components -Version $version
                 $setupInstances = Get-UnitySetupInstance | Select-UnitySetupInstance -Version $version
                 Write-Verbose "Found $($setupInstances.Count) instance(s) of $version"
 
