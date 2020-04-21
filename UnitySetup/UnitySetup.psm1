@@ -1874,7 +1874,7 @@ function Start-UnityEditor {
                     New-Item -Path $LogFile -ItemType File -Force
                     $ljob = Start-Job -ScriptBlock { param($log) Get-Content "$log" -Wait } -ArgumentList $LogFile
 
-                    while ( -not $process.HasExited -or $ljob.HasMoreData )
+                    while ( -not $process.HasExited -and $ljob.HasMoreData )
                     {
                         Receive-Job $ljob
                         Start-Sleep -Milliseconds 100
