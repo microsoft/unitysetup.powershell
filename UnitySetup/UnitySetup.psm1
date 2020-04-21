@@ -1780,10 +1780,15 @@ function Start-UnityEditor {
             $sharedArgs += '-accept-apiupdate'
             if ( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
         }
+        if ( $LogFile ) {
+            $sharedArgs += "-logFile", $LogFile 
+        }
+        else {
+            $sharedArgs += "-logFile"
+        }
         if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
         if ( $ExecuteMethod ) { $sharedArgs += "-executeMethod", $ExecuteMethod }
         if ( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
-        if ( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
         if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if ( $BatchMode ) { $sharedArgs += "-batchmode" }
         if ( $Quit ) { $sharedArgs += "-quit" }
