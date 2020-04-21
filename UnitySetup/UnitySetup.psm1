@@ -1870,7 +1870,23 @@ function Start-UnityEditor {
             $process.Start() | Out-Null
 
             if ( $Wait ) {
-                $process.WaitForExit()
+                if( $LogFile ) {
+                    New-Item -Path $LogFile -ItemType File -Force
+                    $ljob = Start-Job -ScriptBlock { param($log) Get-Content "$log" -Wait } -ArgumentList $LogFile
+
+                    while ( -not $process.HasExited -and $ljob.HasMoreData )
+                    {
+                        Receive-Job $ljob
+                        Start-Sleep -Milliseconds 100
+                    }
+
+                    Receive-Job $ljob
+                    Stop-Job $ljob
+                    Remove-Job $ljob
+                }
+                else {
+                    $process.WaitForExit()
+                }
 
                 if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                     # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
@@ -1886,7 +1902,7 @@ function Start-UnityEditor {
                 }
             }
 
-            if ($PassThru) { $process }
+            if ( $PassThru ) { $process }
         }
     }
 }
