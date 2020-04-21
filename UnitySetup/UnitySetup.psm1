@@ -1877,7 +1877,6 @@ function Start-UnityEditor {
                     while ( -not $process.HasExited -and $ljob.HasMoreData )
                     {
                         Receive-Job $ljob
-                        Start-Sleep -Milliseconds 100
                     }
 
                     Receive-Job $ljob
