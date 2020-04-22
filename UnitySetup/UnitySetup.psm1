@@ -1878,7 +1878,7 @@ function Start-UnityEditor {
                             Start-Sleep -Milliseconds 100
                         }
 
-                            Get-Content "$log" -Wait
+                        Get-Content "$log" -Wait
                     } -ArgumentList $LogFile
 
                     while ( -not $process.HasExited )
