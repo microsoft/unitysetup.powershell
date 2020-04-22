@@ -1879,7 +1879,9 @@ function Start-UnityEditor {
                         Receive-Job $ljob
                     }
 
-                    Receive-Job $ljob -Wait -AutoRemove
+                    Receive-Job $ljob
+                    Stop-Job $ljob
+                    Remove-Job $ljob
                 }
                 else {
                     $process.WaitForExit()
