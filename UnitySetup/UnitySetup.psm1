@@ -1871,11 +1871,15 @@ function Start-UnityEditor {
 
             if ( $Wait ) {
                 if( $LogFile ) {
-                    while ( -not (Test-Path $LogFile -Type Leaf) ) {
-                        Start-Sleep -Milliseconds 100
-                    }
+                    $ljob = Start-Job -ScriptBlock {
+                        param($log)
 
-                    $ljob = Start-Job -ScriptBlock { param($log) Get-Content "$log" -Wait } -ArgumentList $LogFile
+                        while ( -not (Test-Path $log -Type Leaf) ) {
+                            Start-Sleep -Milliseconds 100
+                        }
+
+                            Get-Content "$log" -Wait
+                    } -ArgumentList $LogFile
 
                     while ( -not $process.HasExited )
                     {
