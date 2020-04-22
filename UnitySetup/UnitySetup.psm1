@@ -265,7 +265,7 @@ function Get-UnityEditor {
             switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
                     $editor = Join-Path "$p" 'Editor\Unity.exe'
-                    
+
                     if (Test-Path $editor) {
                         Write-Output (Resolve-Path $editor).Path
                     }
@@ -306,7 +306,7 @@ function ConvertTo-UnitySetupComponent {
         [parameter(Mandatory = $false)]
         [UnityVersion] $Version
     )
-    
+
     if ($Version) {
         if ($Version.Major -ge 2019) {
             if ($Component -band [UnitySetupComponent]::UWP) {
@@ -445,7 +445,7 @@ function Find-UnitySetupInstaller {
         'f' {
             $searchPages += "https://unity3d.com/get-unity/download/archive",
             "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
-            
+
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
                 $searchPages += "https://unity3d.com/unity/beta/unity$Version",
@@ -458,8 +458,8 @@ function Find-UnitySetupInstaller {
             $searchPages += $patchPage
 
             $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
-            $searchPages += $webResult.Links | 
-                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } | 
+            $searchPages += $webResult.Links |
+                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } |
                 ForEach-Object { "https://unity3d.com$($_.href)" }
         }
     }
@@ -467,8 +467,8 @@ function Find-UnitySetupInstaller {
     foreach ($page in $searchPages) {
         try {
             $webResult = Invoke-WebRequest $page -UseBasicParsing
-            $prototypeLink = $webResult.Links | 
-                Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | 
+            $prototypeLink = $webResult.Links |
+                Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
                 Where-Object {
                     $link = $_
 
@@ -480,7 +480,7 @@ function Find-UnitySetupInstaller {
 
                     return $false
 
-                } | 
+                } |
                 Select-Object -First 1
 
             if ($null -ne $prototypeLink) { break }
@@ -671,7 +671,7 @@ function Format-BitsPerSecond {
 .Synopsis
    Download specified Unity installers.
 .DESCRIPTION
-   Downloads the given installers into the $Cache directory. 
+   Downloads the given installers into the $Cache directory.
 .PARAMETER Installers
    List of installers that needs to be downloaded.
 .PARAMETER Cache
@@ -1174,8 +1174,8 @@ function Get-UnitySetupInstance {
         }
     }
 
-    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore | 
-        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
+    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore |
+        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } |
         ForEach-Object {
             $path = $_.FullName
             try {
@@ -1229,7 +1229,7 @@ function Get-UnitySetupInstanceVersion {
 
     # No version found, start digging deeper
     if ( Test-Path "$path\Editor" -PathType Container ) {
-        
+
         # Search for the version using the ivy.xml definitions for legacy editor compatibility.
         Write-Verbose "Looking for ivy.xml files under $path\Editor\"
         $ivyFiles = Get-ChildItem -Path "$path\Editor\" -Filter 'ivy.xml' -Recurse -ErrorAction SilentlyContinue -Force -File
@@ -1249,8 +1249,8 @@ function Get-UnitySetupInstanceVersion {
 
         # Search through any header files which might define the unity version
         Write-Verbose "Looking for .h files with UNITY_VERSION defined under $path\Editor\ "
-        $headerMatchInfo = Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File | 
-            Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" | 
+        $headerMatchInfo = Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File |
+            Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" |
             Select-Object -First 1
 
         if ( $headerMatchInfo.Matches.Groups.Count -gt 1 ) {
@@ -1368,7 +1368,7 @@ function Get-UnityProjectInstance {
 .Synopsis
    Tests the meta file integrity of the Unity Project Instance(s).
 .DESCRIPTION
-   Tests if every item under assets has an associated .meta file 
+   Tests if every item under assets has an associated .meta file
    and every .meta file an associated item
    and that none of the meta file guids collide.
 .PARAMETER Project
