@@ -1871,7 +1871,10 @@ function Start-UnityEditor {
 
             if ( $Wait ) {
                 if( $LogFile ) {
-                    New-Item -Path $LogFile -ItemType File -Force
+                    while ( -not (Test-Path $LogFile -Type Leaf) ) {
+                        Start-Sleep -Milliseconds 100
+                    }
+
                     $ljob = Start-Job -ScriptBlock { param($log) Get-Content "$log" -Wait } -ArgumentList $LogFile
 
                     while ( -not $process.HasExited )
