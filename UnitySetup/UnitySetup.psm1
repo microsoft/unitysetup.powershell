@@ -1884,13 +1884,13 @@ function Start-UnityEditor {
                     while ( -not $process.HasExited )
                     {
                         do {
-                            $logOutput = Receive-Job
+                            $logOutput = Receive-Job $ljob
                             $logOutput | Write-Host
                         } until($logOutput.Length == 0)
                     }
 
                     do {
-                        $logOutput = Receive-Job
+                        $logOutput = Receive-Job $ljob
                         $logOutput | Write-Host
                     } until($logOutput.Length == 0)
 
