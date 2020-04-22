@@ -1874,14 +1874,12 @@ function Start-UnityEditor {
                     New-Item -Path $LogFile -ItemType File -Force
                     $ljob = Start-Job -ScriptBlock { param($log) Get-Content "$log" -Wait } -ArgumentList $LogFile
 
-                    while ( -not $process.HasExited -and $ljob.HasMoreData )
+                    while ( -not $process.HasExited )
                     {
                         Receive-Job $ljob
                     }
 
-                    Receive-Job $ljob
-                    Stop-Job $ljob
-                    Remove-Job $ljob
+                    Receive-Job $ljob -Wait -AutoRemove
                 }
                 else {
                     $process.WaitForExit()
