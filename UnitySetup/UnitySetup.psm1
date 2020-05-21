@@ -1296,11 +1296,17 @@ function Select-UnitySetupInstance {
         [UnitySetupInstance[]] $Instances
     )
 
+    begin {
+        if ( $Path ) {
+            $pathInfo = Resolve-Path $Path -ErrorAction Ignore
+        }
+    }
+
     process {
-        if ( $PSBoundParameters.ContainsKey('Path') ) {
-            $Path = $Path.TrimEnd([io.path]::DirectorySeparatorChar)
+        if ( $pathInfo ) {
             $Instances = $Instances | Where-Object {
-                $Path -eq (Get-Item $_.Path).FullName.TrimEnd([io.path]::DirectorySeparatorChar)
+                $instancePathInfo = Resolve-Path $_.Path -ErrorAction Ignore
+                return $pathInfo.Path -eq $instancePathInfo.Path
             }
         }
 
