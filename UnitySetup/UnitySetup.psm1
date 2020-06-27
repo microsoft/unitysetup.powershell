@@ -1005,6 +1005,12 @@ function Install-UnitySetupInstance {
                 if (-not $installPath.EndsWith([io.path]::DirectorySeparatorChar)) {
                     $installPath += [io.path]::DirectorySeparatorChar
                 }
+                
+                # Make sure the folder .unitysetup exist before create sparsebundle
+                if (-not (Test-Path $Cache -PathType Container)) {
+                    Write-Verbose "Creating directory $Cache."
+                    New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
+                }
 
                 # Creating sparse bundle to host installing Unity in other locations
                 $unitySetupBundlePath = [io.path]::Combine($Cache, "UnitySetup.sparsebundle")
