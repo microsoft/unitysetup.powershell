@@ -1786,15 +1786,15 @@ function Start-UnityEditor {
             $sharedArgs += '-accept-apiupdate'
             if ( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
         }
-        if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
+        if ( $CreateProject ) { $sharedArgs += "-createProject", "`"$CreateProject`"" }
         if ( $ExecuteMethod ) { $sharedArgs += "-executeMethod", $ExecuteMethod }
-        if ( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
-        if ( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
+        if ( $OutputPath ) { $sharedArgs += "-buildOutput", "`"$OutputPath`"" }
+        if ( $LogFile ) { $sharedArgs += "-logFile", "`"$LogFile`"" }
         if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if ( $BatchMode ) { $sharedArgs += "-batchmode" }
         if ( $Quit ) { $sharedArgs += "-quit" }
-        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
-        if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
+        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "`"$ExportPackage`"" }
+        if ( $ImportPackage ) { $sharedArgs += "-importPackage", "`"$ImportPackage`"" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
         if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
         if ( $EditorTestsFilter ) { $sharedArgs += '-editorTestsFilter', ($EditorTestsFilter -join ',') }
