@@ -125,8 +125,19 @@ class UnityProjectInstance {
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
-        if (!$prodName) { throw "ProjectSettings is missing productName" }
+        try { 
+            $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
+            if (!$prodName) { throw "ProjectSettings is missing productName" }
+        }
+        catch {
+            $msg = "Could not read $projectSettingsFile, in the Unity project try setting Editor Settings > Asset Serialiazation Mode to 'Force Text'."
+            $msg += "`nAn Exception was caught!"
+            $msg += "`nException Type: $($_.Exception.GetType().FullName)"
+            $msg += "`nException Message: $($_.Exception.Message)"
+            Write-Warning -Message $msg
+            
+            $prodName = $null
+        }
 
         $this.Path = $path
         $this.Version = $fileVersion
