@@ -125,8 +125,18 @@ class UnityProjectInstance {
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
-        if (!$prodName) { throw "ProjectSettings is missing productName" }
+        try { 
+            $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
+            if (!$prodName) { throw "ProjectSettings is missing productName" }
+        }
+        catch {
+            Write-Warning -Message "An Exception was caught!"
+            Write-Warning -Message "Exception Type: $($_.Exception.GetType().FullName)"
+            Write-Warning -Message "Exception Message: $($_.Exception.Message)"
+        }
+        finally{
+            $prodName = ""
+        }
 
         $this.Path = $path
         $this.Version = $fileVersion
