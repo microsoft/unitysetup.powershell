@@ -130,9 +130,11 @@ class UnityProjectInstance {
             if (!$prodName) { throw "ProjectSettings is missing productName" }
         }
         catch {
-            Write-Warning -Message "An Exception was caught!"
-            Write-Warning -Message "Exception Type: $($_.Exception.GetType().FullName)"
-            Write-Warning -Message "Exception Message: $($_.Exception.Message)"
+            Write-Warning -Message "Could not read $projectSettingsFile, in the Unity project try setting Editor Settings > Asset Serialiazation Mode to 'Force Text'.
+            An Exception was caught!
+            Exception Type: $($_.Exception.GetType().FullName)
+            Exception Message: $($_.Exception.Message)"
+            
             $prodName = $null
         }
 
