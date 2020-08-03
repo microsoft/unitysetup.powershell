@@ -133,9 +133,7 @@ class UnityProjectInstance {
             Write-Warning -Message "An Exception was caught!"
             Write-Warning -Message "Exception Type: $($_.Exception.GetType().FullName)"
             Write-Warning -Message "Exception Message: $($_.Exception.Message)"
-        }
-        finally{
-            $prodName = ""
+            $prodName = $null
         }
 
         $this.Path = $path
