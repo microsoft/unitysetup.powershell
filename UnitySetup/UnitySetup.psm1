@@ -1788,7 +1788,7 @@ function Start-UnityEditor {
             }
         }
 
-        $sharedArgs = @()
+        [string[]]$sharedArgs = @()
         if ( $ReturnLicense ) {
             if ( -not $PSBoundParameters.ContainsKey('BatchMode') ) { $BatchMode = $true }
             if ( -not $PSBoundParameters.ContainsKey('Quit') ) { $Quit = $true }
@@ -1823,7 +1823,7 @@ function Start-UnityEditor {
         if ( $ForceFree) { $sharedArgs += '-force-free' }
         if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
 
-        $instanceArgs = @()
+        [string[][]]$instanceArgs = @()
         foreach ( $p in $projectInstances ) {
 
             if ( $Latest ) {
@@ -1864,7 +1864,7 @@ function Start-UnityEditor {
             }
 
             # clone the shared args list
-            $unityArgs = $sharedArgs | ForEach-Object { $_ }
+            [string[]]$unityArgs = $sharedArgs | ForEach-Object { $_ }
             if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
 
             $actionString = "$editor $unityArgs"
