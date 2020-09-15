@@ -1810,7 +1810,7 @@ function Start-UnityEditor {
         if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if ( $BatchMode ) { $sharedArgs += "-batchmode" }
         if ( $Quit ) { $sharedArgs += "-quit" }
-        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "`"$ExportPackage`"" }
+        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", ($ExportPackage | ForEach-Object { "`"$_`"" }) }
         if ( $ImportPackage ) { $sharedArgs += "-importPackage", "`"$ImportPackage`"" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
         if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
