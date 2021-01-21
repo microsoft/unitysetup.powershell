@@ -658,7 +658,7 @@ function Format-BitsPerSecond {
     [CmdletBinding()]
     param(
         [parameter(Mandatory = $true)]
-        [int] $Bytes,
+        [int64] $Bytes,
 
         [parameter(Mandatory = $true)]
         [int] $Seconds
@@ -760,8 +760,8 @@ function Request-UnitySetupInstaller {
                 $global:downloadData[$installerFileName] = New-Object PSObject -Property @{
                     installerFileName = $installerFileName
                     startTime         = Get-Date
-                    totalBytes        = $_.Length
-                    receivedBytes     = 0
+                    totalBytes        = [int64]$_.Length
+                    receivedBytes     = [int64]0
                     isDownloaded      = $false
                     destination       = $destination
                     lastModified      = $_.LastModified
