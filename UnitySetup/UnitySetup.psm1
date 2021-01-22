@@ -125,8 +125,19 @@ class UnityProjectInstance {
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
-        if (!$prodName) { throw "ProjectSettings is missing productName" }
+        try { 
+            $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
+            if (!$prodName) { throw "ProjectSettings is missing productName" }
+        }
+        catch {
+            $msg = "Could not read $projectSettingsFile, in the Unity project try setting Editor Settings > Asset Serialiazation Mode to 'Force Text'."
+            $msg += "`nAn Exception was caught!"
+            $msg += "`nException Type: $($_.Exception.GetType().FullName)"
+            $msg += "`nException Message: $($_.Exception.Message)"
+            Write-Warning -Message $msg
+            
+            $prodName = $null
+        }
 
         $this.Path = $path
         $this.Version = $fileVersion
@@ -647,7 +658,7 @@ function Format-BitsPerSecond {
     [CmdletBinding()]
     param(
         [parameter(Mandatory = $true)]
-        [int] $Bytes,
+        [int64] $Bytes,
 
         [parameter(Mandatory = $true)]
         [int] $Seconds
@@ -749,8 +760,8 @@ function Request-UnitySetupInstaller {
                 $global:downloadData[$installerFileName] = New-Object PSObject -Property @{
                     installerFileName = $installerFileName
                     startTime         = Get-Date
-                    totalBytes        = $_.Length
-                    receivedBytes     = 0
+                    totalBytes        = [int64]$_.Length
+                    receivedBytes     = [int64]0
                     isDownloaded      = $false
                     destination       = $destination
                     lastModified      = $_.LastModified
@@ -1004,6 +1015,12 @@ function Install-UnitySetupInstance {
                 # is required in some commands to treat as directory.
                 if (-not $installPath.EndsWith([io.path]::DirectorySeparatorChar)) {
                     $installPath += [io.path]::DirectorySeparatorChar
+                }
+                
+                # Make sure the folder .unitysetup exist before create sparsebundle
+                if (-not (Test-Path $Cache -PathType Container)) {
+                    Write-Verbose "Creating directory $Cache."
+                    New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
                 }
 
                 # Creating sparse bundle to host installing Unity in other locations
@@ -1771,7 +1788,7 @@ function Start-UnityEditor {
             }
         }
 
-        $sharedArgs = @()
+        [string[]]$sharedArgs = @()
         if ( $ReturnLicense ) {
             if ( -not $PSBoundParameters.ContainsKey('BatchMode') ) { $BatchMode = $true }
             if ( -not $PSBoundParameters.ContainsKey('Quit') ) { $Quit = $true }
@@ -1786,15 +1803,15 @@ function Start-UnityEditor {
             $sharedArgs += '-accept-apiupdate'
             if ( -not $PSBoundParameters.ContainsKey('BatchMode')) { $BatchMode = $true }
         }
-        if ( $CreateProject ) { $sharedArgs += "-createProject", $CreateProject }
+        if ( $CreateProject ) { $sharedArgs += "-createProject", "`"$CreateProject`"" }
         if ( $ExecuteMethod ) { $sharedArgs += "-executeMethod", $ExecuteMethod }
-        if ( $OutputPath ) { $sharedArgs += "-buildOutput", $OutputPath }
-        if ( $LogFile ) { $sharedArgs += "-logFile", $LogFile }
+        if ( $OutputPath ) { $sharedArgs += "-buildOutput", "`"$OutputPath`"" }
+        if ( $LogFile ) { $sharedArgs += "-logFile", "`"$LogFile`"" }
         if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if ( $BatchMode ) { $sharedArgs += "-batchmode" }
         if ( $Quit ) { $sharedArgs += "-quit" }
-        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "$ExportPackage" }
-        if ( $ImportPackage ) { $sharedArgs += "-importPackage", "$ImportPackage" }
+        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "`"$ExportPackage`"" }
+        if ( $ImportPackage ) { $sharedArgs += "-importPackage", "`"$ImportPackage`"" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
         if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
         if ( $EditorTestsFilter ) { $sharedArgs += '-editorTestsFilter', ($EditorTestsFilter -join ',') }
@@ -1806,7 +1823,7 @@ function Start-UnityEditor {
         if ( $ForceFree) { $sharedArgs += '-force-free' }
         if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
 
-        $instanceArgs = @()
+        [string[][]]$instanceArgs = @()
         foreach ( $p in $projectInstances ) {
 
             if ( $Latest ) {
@@ -1847,7 +1864,7 @@ function Start-UnityEditor {
             }
 
             # clone the shared args list
-            $unityArgs = $sharedArgs | ForEach-Object { $_ }
+            [string[]]$unityArgs = $sharedArgs | ForEach-Object { $_ }
             if ( $instanceArgs[$i] ) { $unityArgs += $instanceArgs[$i] }
 
             $actionString = "$editor $unityArgs"
