@@ -21,7 +21,8 @@ enum UnitySetupComponent {
     WebGL = (1 -shl 13)
     Mac_IL2CPP = (1 -shl 14)
     Lumin = (1 -shl 15)
-    All = (1 -shl 16) - 1
+    Linux_IL2CPP = (1 -shl 16)
+    All = (1 -shl 17) - 1
 }
 
 [Flags()]
@@ -68,7 +69,8 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                                                               [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
                     [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
                 }
             }
@@ -85,7 +87,8 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
                     [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
                     [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
                 }
             }
         }
@@ -404,6 +407,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Linux_IL2CPP   = , "$targetSupport/UnitySetup-Linux-IL2CPP-Support-for-Editor-$Version.$installerExtension";
     }
 
     # In 2019.x there is only IL2CPP UWP so change the search for UWP_IL2CPP
