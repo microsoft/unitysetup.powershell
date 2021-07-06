@@ -1265,10 +1265,24 @@ function Get-UnitySetupInstanceVersion {
         }
 
         # Search through any header files which might define the unity version
-        Write-Verbose "Looking for .h files with UNITY_VERSION defined under $path\Editor\ "
-        $headerMatchInfo = Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File | 
-            Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" | 
-            Select-Object -First 1
+        [string[]]$knownHeaders = @(
+            "$path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Source\WindowsPlayer\WindowsPlayer\UnityConfigureVersion.gen.h"
+        )
+        foreach ($header in $knownHeaders) {
+            Write-Verbose "Looking for UNITY_VERSION defined in $header"
+            if (Test-Path -PathType Leaf -Path $header) {
+                $headerMatchInfo = Select-String -Path $header -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`""
+            }
+        }
+
+        if ($null -eq $headerMatchInfo) {
+            Write-Verbose "Looking for .h files with UNITY_VERSION defined under $path\Editor\ "
+            $headerMatchInfo = do {
+                Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File | 
+                    Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" |
+                    ForEach-Object { $_; break; } # Stop the pipeline after the first result
+            } while ($false);
+        }
 
         if ( $headerMatchInfo.Matches.Groups.Count -gt 1 ) {
             Write-Verbose "`tFound version!"
