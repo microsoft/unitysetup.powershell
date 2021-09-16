@@ -344,6 +344,8 @@ function ConvertTo-UnitySetupComponent {
    Finds UnitySetup component installers for a specified version by querying Unity's website.
 .PARAMETER Version
    What version of Unity are you looking for?
+.PARAMETER Hash
+   Manually specify the build hash, to select a private build.
 .PARAMETER Components
    What components would you like to search for? Defaults to All
 .EXAMPLE
@@ -358,7 +360,10 @@ function Find-UnitySetupInstaller {
         [UnityVersion] $Version,
 
         [parameter(Mandatory = $false)]
-        [UnitySetupComponent] $Components = [UnitySetupComponent]::All
+        [UnitySetupComponent] $Components = [UnitySetupComponent]::All,
+
+        [parameter(Mandatory = $false)]
+        [string] $Hash = ""
     )
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
@@ -512,6 +517,10 @@ function Find-UnitySetupInstaller {
     }
     else {
         $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = { [math]::Abs(($_.CompareTo($linkComponents[0]))) }; Ascending = $true }
+    }
+
+    if ($Hash -ne "") {
+        $linkComponents[1] = $Hash
     }
 
     $installerTemplates.Keys | Where-Object { $Components -band $_ } | ForEach-Object {
