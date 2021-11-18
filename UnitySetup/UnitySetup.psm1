@@ -65,7 +65,8 @@ class UnitySetupInstance {
                 @{
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
-                    [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
+                    [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp"),
+                                                              [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");;
                     [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                                                               [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
@@ -1278,28 +1279,33 @@ function Get-UnitySetupInstanceVersion {
         }
 
         # Search through any header files which might define the unity version
-        [string[]]$knownHeaders = @(
-            "$path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Source\WindowsPlayer\WindowsPlayer\UnityConfigureVersion.gen.h"
+        [string[]]$knownFiles = @(
+            "$path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Source\WindowsPlayer\WindowsPlayer\UnityConfigureVersion.gen.h",
+            "$path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Source\WindowsPlayer\WindowsPlayer\UnityConfiguration.gen.cpp"
         )
-        foreach ($header in $knownHeaders) {
-            Write-Verbose "Looking for UNITY_VERSION defined in $header"
-            if (Test-Path -PathType Leaf -Path $header) {
-                $headerMatchInfo = Select-String -Path $header -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`""
+        foreach ($file in $knownFiles) {
+            Write-Verbose "Looking for UNITY_VERSION defined in $file"
+            if (Test-Path -PathType Leaf -Path $file) {
+                $fileMatchInfo = Select-String -Path $file -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`""
+                if($null -ne $fileMatchInfo)
+                {
+                    break;
+                }
             }
         }
 
-        if ($null -eq $headerMatchInfo) {
-            Write-Verbose "Looking for .h files with UNITY_VERSION defined under $path\Editor\ "
-            $headerMatchInfo = do {
-                Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File | 
-                    Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" |
+        if ($null -eq $fileMatchInfo) {
+            Write-Verbose "Looking for source files with UNITY_VERSION defined under $path\Editor\ "
+            $fileMatchInfo = do {
+                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File | 
+                    Select-String -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`"" |
                     ForEach-Object { $_; break; } # Stop the pipeline after the first result
             } while ($false);
         }
 
-        if ( $headerMatchInfo.Matches.Groups.Count -gt 1 ) {
+        if ( $fileMatchInfo.Matches.Groups.Count -gt 1 ) {
             Write-Verbose "`tFound version!"
-            return [UnityVersion]($headerMatchInfo.Matches.Groups[1].Value)
+            return [UnityVersion]($fileMatchInfo.Matches.Groups[1].Value)
         }
     }
 }
