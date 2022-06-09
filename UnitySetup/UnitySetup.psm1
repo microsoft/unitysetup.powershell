@@ -1761,7 +1761,15 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [switch]$Wait,
         [parameter(Mandatory = $false)]
-        [switch]$PassThru
+        [switch]$PassThru,
+        [parameter(Mandatory = $false)]
+        [string]$CacheServerEndpoint,
+        [parameter(Mandatory = $false)]
+        [string]$CacheServerNamespacePrefix,
+        [parameter(Mandatory = $false)]
+        [switch]$CacheServerDisableDownload,
+        [parameter(Mandatory = $false)]
+        [switch]$CacheServerDisableUpload
     )
     process {
         switch -wildcard ( $PSCmdlet.ParameterSetName ) {
@@ -1855,6 +1863,14 @@ function Start-UnityEditor {
         if ( $RunTests ) { $sharedArgs += '-runTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
         if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
+        if ( $CacheServerEndpoint) {
+            $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint  
+            $sharedArgs += "-adb2"
+            $sharedArgs += "-enableCacheServer"           
+            if ( $CacheServerNamespacePrefix) { $sharedArgs += "-cacheServerNamespacePrefix", $CacheServerNamespacePrefix}
+            $sharedArgs += "-cacheServerEnableDownload", $(If ($CacheServerDisableDownload) {"false"} Else {"true"})
+            $sharedArgs += "-cacheServerEnableUpload", $(If ($CacheServerDisableUpload) {"false"} Else {"true"})
+        }
 
         [string[][]]$instanceArgs = @()
         foreach ( $p in $projectInstances ) {
