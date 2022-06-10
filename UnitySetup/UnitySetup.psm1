@@ -1678,6 +1678,14 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
    Should the Unity Editor quit after it's done?
 .PARAMETER Wait
    Should the command wait for the Unity Editor to exit?
+.PARAMETER CacheServerEndpoint
+    If included, the editor will attempt to use a Unity Accelerator hosted in the provided IP. The endpoint should be in the format of [IP]:[Port]. If the default Accelerator port is used, at the time of writing this, the port should be ommited.
+.PARAMETER CacheServerNamespacePrefix
+    Set the namespace prefix. Used to group data together on the cache server. 
+.PARAMETER CacheServerDisableDownload
+    Disable downloading from the cache server. If ommited, the default value is true (download enabled)
+.PARAMETER CacheServerDisableUpload
+    Disable uploading to the cache server. If ommited, the default value is true (upload enabled)
 .EXAMPLE
    Start-UnityEditor
 .EXAMPLE
