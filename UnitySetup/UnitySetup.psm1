@@ -21,7 +21,8 @@ enum UnitySetupComponent {
     WebGL = (1 -shl 13)
     Mac_IL2CPP = (1 -shl 14)
     Lumin = (1 -shl 15)
-    All = (1 -shl 16) - 1
+    Linux_IL2CPP = (1 -shl 16)
+    All = (1 -shl 17) - 1
 }
 
 [Flags()]
@@ -64,11 +65,13 @@ class UnitySetupInstance {
                 @{
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
-                    [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp");
+                    [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp"),
+                                                              [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");;
                     [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                                                               [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
                     [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
                 }
             }
@@ -85,7 +88,8 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
                     [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
                     [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
                 }
             }
         }
@@ -344,6 +348,8 @@ function ConvertTo-UnitySetupComponent {
    Finds UnitySetup component installers for a specified version by querying Unity's website.
 .PARAMETER Version
    What version of Unity are you looking for?
+.PARAMETER Hash
+   Manually specify the build hash, to select a private build.
 .PARAMETER Components
    What components would you like to search for? Defaults to All
 .EXAMPLE
@@ -358,7 +364,10 @@ function Find-UnitySetupInstaller {
         [UnityVersion] $Version,
 
         [parameter(Mandatory = $false)]
-        [UnitySetupComponent] $Components = [UnitySetupComponent]::All
+        [UnitySetupComponent] $Components = [UnitySetupComponent]::All,
+
+        [parameter(Mandatory = $false)]
+        [string] $Hash = ""
     )
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
@@ -404,6 +413,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Linux_IL2CPP   = , "$targetSupport/UnitySetup-Linux-IL2CPP-Support-for-Editor-$Version.$installerExtension";
     }
 
     # In 2019.x there is only IL2CPP UWP so change the search for UWP_IL2CPP
@@ -512,6 +522,10 @@ function Find-UnitySetupInstaller {
     }
     else {
         $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = { [math]::Abs(($_.CompareTo($linkComponents[0]))) }; Ascending = $true }
+    }
+
+    if ($Hash -ne "") {
+        $linkComponents[1] = $Hash
     }
 
     $installerTemplates.Keys | Where-Object { $Components -band $_ } | ForEach-Object {
@@ -1265,14 +1279,33 @@ function Get-UnitySetupInstanceVersion {
         }
 
         # Search through any header files which might define the unity version
-        Write-Verbose "Looking for .h files with UNITY_VERSION defined under $path\Editor\ "
-        $headerMatchInfo = Get-ChildItem -Path "$path\Editor\*.h" -Recurse -ErrorAction Ignore -Force -File | 
-            Select-String -Pattern "UNITY_VERSION\s`"(\d+\.\d+\.\d+[fpba]\d+)`"" | 
-            Select-Object -First 1
+        [string[]]$knownFiles = @(
+            "$path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Source\WindowsPlayer\WindowsPlayer\UnityConfigureVersion.gen.h",
+            "$path\Editor\Data\PlaybackEngines\windowsstandalonesupport\Source\WindowsPlayer\WindowsPlayer\UnityConfiguration.gen.cpp"
+        )
+        foreach ($file in $knownFiles) {
+            Write-Verbose "Looking for UNITY_VERSION defined in $file"
+            if (Test-Path -PathType Leaf -Path $file) {
+                $fileMatchInfo = Select-String -Path $file -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`""
+                if($null -ne $fileMatchInfo)
+                {
+                    break;
+                }
+            }
+        }
 
-        if ( $headerMatchInfo.Matches.Groups.Count -gt 1 ) {
+        if ($null -eq $fileMatchInfo) {
+            Write-Verbose "Looking for source files with UNITY_VERSION defined under $path\Editor\ "
+            $fileMatchInfo = do {
+                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File | 
+                    Select-String -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`"" |
+                    ForEach-Object { $_; break; } # Stop the pipeline after the first result
+            } while ($false);
+        }
+
+        if ( $fileMatchInfo.Matches.Groups.Count -gt 1 ) {
             Write-Verbose "`tFound version!"
-            return [UnityVersion]($headerMatchInfo.Matches.Groups[1].Value)
+            return [UnityVersion]($fileMatchInfo.Matches.Groups[1].Value)
         }
     }
 }
@@ -1645,6 +1678,14 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
    Should the Unity Editor quit after it's done?
 .PARAMETER Wait
    Should the command wait for the Unity Editor to exit?
+.PARAMETER CacheServerEndpoint
+    If included, the editor will attempt to use a Unity Accelerator hosted in the provided IP. The endpoint should be in the format of [IP]:[Port]. If the default Accelerator port is used, at the time of writing this, the port should be ommited.
+.PARAMETER CacheServerNamespacePrefix
+    Set the namespace prefix. Used to group data together on the cache server. 
+.PARAMETER CacheServerDisableDownload
+    Disable downloading from the cache server. If ommited, the default value is true (download enabled)
+.PARAMETER CacheServerDisableUpload
+    Disable uploading to the cache server. If ommited, the default value is true (upload enabled)
 .EXAMPLE
    Start-UnityEditor
 .EXAMPLE
@@ -1728,7 +1769,15 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [switch]$Wait,
         [parameter(Mandatory = $false)]
-        [switch]$PassThru
+        [switch]$PassThru,
+        [parameter(Mandatory = $false)]
+        [string]$CacheServerEndpoint,
+        [parameter(Mandatory = $false)]
+        [string]$CacheServerNamespacePrefix,
+        [parameter(Mandatory = $false)]
+        [switch]$CacheServerDisableDownload,
+        [parameter(Mandatory = $false)]
+        [switch]$CacheServerDisableUpload
     )
     process {
         switch -wildcard ( $PSCmdlet.ParameterSetName ) {
@@ -1810,7 +1859,7 @@ function Start-UnityEditor {
         if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
         if ( $BatchMode ) { $sharedArgs += "-batchmode" }
         if ( $Quit ) { $sharedArgs += "-quit" }
-        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", "`"$ExportPackage`"" }
+        if ( $ExportPackage ) { $sharedArgs += "-exportPackage", ($ExportPackage | ForEach-Object { "`"$_`"" }) }
         if ( $ImportPackage ) { $sharedArgs += "-importPackage", "`"$ImportPackage`"" }
         if ( $Credential ) { $sharedArgs += '-username', $Credential.UserName }
         if ( $EditorTestsCategory ) { $sharedArgs += '-editorTestsCategories', ($EditorTestsCategory -join ',') }
@@ -1822,6 +1871,14 @@ function Start-UnityEditor {
         if ( $RunTests ) { $sharedArgs += '-runTests' }
         if ( $ForceFree) { $sharedArgs += '-force-free' }
         if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
+        if ( $CacheServerEndpoint) {
+            $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint  
+            $sharedArgs += "-adb2"
+            $sharedArgs += "-enableCacheServer"           
+            if ( $CacheServerNamespacePrefix) { $sharedArgs += "-cacheServerNamespacePrefix", $CacheServerNamespacePrefix}
+            $sharedArgs += "-cacheServerEnableDownload", $(If ($CacheServerDisableDownload) {"false"} Else {"true"})
+            $sharedArgs += "-cacheServerEnableUpload", $(If ($CacheServerDisableUpload) {"false"} Else {"true"})
+        }
 
         [string[][]]$instanceArgs = @()
         foreach ( $p in $projectInstances ) {

@@ -67,6 +67,14 @@ Start-UnityEditor -Project .\MyUnityProject
 Start-UnityEditor -Project .\MyUnityProject -Latest
 Start-UnityEditor -Project .\MyUnityProject -Version '2017.3.0f3'
 ```
+
+Using the [Unity Accelerator](https://docs.unity3d.com/2019.3/Documentation/Manual/UnityAccelerator.html):
+```powershell
+Start-UnityEditor -Project .\MyUnityProject -CacheServerEndpoint 192.168.0.23 
+Start-UnityEditor -Project .\MyUnityProject -CacheServerEndpoint 192.168.0.23:2523 -CacheServerNamespacePrefix "dev"
+Start-UnityEditor -Project .\MyUnityProject -CacheServerEndpoint 192.168.0.23 -CacheServerNamespacePrefix "dev" -CacheServerDisableDownload
+Start-UnityEditor -Project .\MyUnityProject -CacheServerEndpoint 192.168.0.23 -CacheServerDisableUpload
+```
 Launch many projects at the same time:
 ```powershell
 Get-UnityProjectInstance -Recurse | Start-UnityEditor
