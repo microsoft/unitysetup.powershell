@@ -1245,16 +1245,20 @@ function Get-UnitySetupInstanceVersion {
 
     # Try to look in the modules.json file for installer paths that contain version info
     if ( Test-Path "$path\modules.json" -PathType Leaf ) {
+        try {
+            Write-Verbose "Searching $path\modules.json for module versions"
+            $table = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json -AsHashtable
 
-        Write-Verbose "Searching $path\modules.json for module versions"
-        $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
+            foreach ( $url in $table.downloadUrl ) {
+                Write-Debug "`tTesting DownloadUrl $url"
+                if ( $url -notmatch "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) { continue; }
 
-        foreach ( $module in $modules ) {
-            Write-Verbose "`tTesting DownloadUrl $($module.DownloadUrl)"
-            if ( $module.DownloadUrl -notmatch "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) { continue; }
-
-            Write-Verbose "`tFound version!"
-            return [UnityVersion]$Matches[0]
+                Write-Verbose "`tFound version!"
+                return [UnityVersion]$Matches[0]
+            }
+        }
+        catch {
+            Write-Verbose "Error parsing $path\modules.json:`n`t$_"
         }
     }
 
