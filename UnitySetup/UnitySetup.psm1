@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+﻿# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
@@ -1033,17 +1033,14 @@ function Install-UnitySetupInstance {
     )
     begin {
         $currentOS = Get-OperatingSystem
-        if ($currentOS -eq [OperatingSystem]::Linux) {
-            throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
-        }
-
+        
         if ( -not $PSBoundParameters.ContainsKey('BasePath') ) {
             $defaultInstallPath = switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
                     "C:\Program Files\Unity\Hub\Editor\"
                 }
                 ([OperatingSystem]::Linux) {
-                    throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                    "~/Unity/Hub/Editor/"
                 }
                 ([OperatingSystem]::Mac) {
                     "/Applications/Unity/Hub/Editor/"
