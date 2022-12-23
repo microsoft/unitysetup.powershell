@@ -1,4 +1,4 @@
-﻿# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
@@ -77,8 +77,15 @@ class UnitySetupInstance {
             }
             ([OperatingSystem]::Linux) {
                 $this.Components = [UnitySetupComponent]::Linux
-
-                throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                $playbackEnginePath = [io.path]::Combine("$Path", "Data/PlaybackEngines");
+                @{
+                    [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Documentation");
+                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
+                    [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
+                }
             }
             ([OperatingSystem]::Mac) {
                 $this.Components = [UnitySetupComponent]::Mac
@@ -286,7 +293,11 @@ function Get-UnityEditor {
                     }
                 }
                 ([OperatingSystem]::Linux) {
-                    throw "Get-UnityEditor has not been implemented on the Linux platform. Contributions welcomed!";
+                    $editor = Join-Path "$p" 'Editor/Unity'
+
+                    if (Test-Path $editor) {
+                        Write-Output (Resolve-Path $editor).Path
+                    }
                 }
                 ([OperatingSystem]::Mac) {
                     $editor = Join-Path "$p" "Unity.app/Contents/MacOS/Unity"
@@ -1196,7 +1207,9 @@ function Get-UnitySetupInstance {
             }
         }
         ([OperatingSystem]::Linux) {
-            throw "Get-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+            if (-not $BasePath) {
+                $BasePath = @('~/Unity/Hub/Editor/*')
+            }
         }
         ([OperatingSystem]::Mac) {
             if (-not $BasePath) {
