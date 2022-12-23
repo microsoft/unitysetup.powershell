@@ -1,4 +1,4 @@
-﻿# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
@@ -22,7 +22,10 @@ enum UnitySetupComponent {
     Mac_IL2CPP = (1 -shl 14)
     Lumin = (1 -shl 15)
     Linux_IL2CPP = (1 -shl 16)
-    All = (1 -shl 17) - 1
+    Windows_Server = (1 -shl 17)
+    Linux_Server = (1 -shl 18)
+    Mac_Server = (1 -shl 19)
+    All = (1 -shl 20) - 1
 }
 
 [Flags()]
@@ -390,7 +393,9 @@ function Find-UnitySetupInstaller {
             $installerExtension = "exe"
         }
         ([OperatingSystem]::Linux) {
-            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+            # This is default, but it seems some packages are used from Mac
+            $targetSupport = "LinuxEditorTargetInstaller"
+            $installerExtension = ""
         }
         ([OperatingSystem]::Mac) {
             $targetSupport = "MacEditorTargetInstaller"
@@ -398,7 +403,9 @@ function Find-UnitySetupInstaller {
         }
     }
 
-    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/(.+)\/(.+)-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).$installerExtension$"
+    $hashRegEx = "([a-z0-9]+)"
+    $versionRegEx = "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)"
+    $unitySetupRegEx = "^(.+)\/$hashRegEx\/(.+)\/(.+)-$versionRegEx.$installerExtension$"
 
     $knownBaseUrls = @(
         "https://download.unity3d.com/download_unity",
@@ -406,6 +413,7 @@ function Find-UnitySetupInstaller {
         "https://beta.unity3d.com/download"
     )
 
+    # For Linux this hashtable will be rewritten later
     $installerTemplates = @{
         [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
                                                   "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
@@ -443,9 +451,7 @@ function Find-UnitySetupInstaller {
         }
         ([OperatingSystem]::Linux) {
             $setupComponent = [UnitySetupComponent]::Linux
-            # TODO: $installerTemplates[$setupComponent] = , "???/UnitySetup64-$Version.exe";
-
-            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+            $installerTemplates[$setupComponent] = , "UnitySetup-$Version";
         }
         ([OperatingSystem]::Mac) {
             $setupComponent = [UnitySetupComponent]::Mac
@@ -526,10 +532,52 @@ function Find-UnitySetupInstaller {
         throw "Could not find archives for Unity version $Version"
     }
 
-    $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
+    if ($currentOS -ne [OperatingSystem]::Linux) {
+        $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
+    }
+    else {
+        # For Linux we should get list of available components with their target
+        Import-Module PsIni -MinimumVersion '3.1.3' -ErrorAction Stop
+
+        $linkComponents = $prototypeLink -split "/$hashRegEx/" -ne ""
+
+        $iniFileName = "unity-$Version-linux.ini"
+        $baseUrl = $linkComponents[0] + "/" + $linkComponents[1]
+        $iniLink = "$baseUrl/$iniFileName"
+
+        $linuxIni = Invoke-WebRequest $iniLink -UseBasicParsing
+
+        # PsIni can read only from files and from stdin
+        $localCachedIni = "/tmp/$iniFileName"
+                
+        Set-Content -Path $localCachedIni -Value $linuxIni
+
+        $iniContent = Get-IniContent $localCachedIni
+
+        # fill from scratch accessible targets using retrieved .ini
+        $installerTemplates = @{}
+
+        foreach ($section in $iniContent.GetEnumerator()) {
+            $sectionName = $section.Name.Replace('-', "_")
+            $url = $iniContent[$section.Name].url
+
+            Write-Verbose "Retrieved $url for $sectionName"
+
+            switch ($sectionName) {
+                "Unity" { $component = [UnitySetupComponent]::Linux }
+                "Windows_Mono" { $component = [UnitySetupComponent]::Windows }
+                "Mac_Mono" { $component = [UnitySetupComponent]::Mac }
+                Default { $component = $sectionName }
+            }
+
+            $installerTemplates[$component] = $url
+        }
+    }
+
+    Write-Verbose "components: $linkComponents"
 
     if ($knownBaseUrls -notcontains $linkComponents[0]) {
-        $knownBaseUrls = $linkComponents[0], $knownBaseUrls
+        $knownBaseUrls = @($linkComponents[0]) + $knownBaseUrls
     }
     else {
         $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = { [math]::Abs(($_.CompareTo($linkComponents[0]))) }; Ascending = $true }
