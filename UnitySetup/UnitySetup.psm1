@@ -80,14 +80,15 @@ class UnitySetupInstance {
             }
             ([OperatingSystem]::Linux) {
                 $this.Components = [UnitySetupComponent]::Linux
-                $playbackEnginePath = [io.path]::Combine("$Path", "Data/PlaybackEngines");
+                $playbackEnginePath = [io.path]::Combine("$Path", "Editor/Data/PlaybackEngines");
                 @{
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
-                    [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
+                    [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macos_x64_player_development_mono");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macos_x64_player_development_il2cpp");
                     [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
-                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_player_development_il2cpp");
+                    [UnitySetupComponent]::Linux_Server   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_server_development_mono");
                 }
             }
             ([OperatingSystem]::Mac) {
@@ -113,6 +114,7 @@ class UnitySetupInstance {
         $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
         $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
 
+        Write-Verbose "path: $Path"
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
                 if ( Test-Path -PathType Container -Path $test ) {
