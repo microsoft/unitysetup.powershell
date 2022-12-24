@@ -389,10 +389,6 @@ function Find-UnitySetupInstaller {
 
         [parameter(Mandatory = $false)]
         [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
-
-        # ,
-        # [parameter(Mandatory = $false)]
-        # [switch]$Verbose = $false
     )
 
     # Note that this has to happen before calculating the full path since
@@ -584,16 +580,20 @@ function Find-UnitySetupInstaller {
 
         Write-Verbose "Saving installer to $localCachedInstaller"
 
-        Invoke-WebRequest $installerUrl -UseBasicParsing | Set-Content -Path $localCachedInstaller
+        Invoke-WebRequest $installerUrl -OutFile $localCachedInstaller
+
+        chmod +x $localCachedInstaller
 
         # Configuration file for installer
         $iniFileName = "unity-$Version-linux.ini"
         $iniUrl = "$baseUrl/$iniFileName"
 
         # PsIni can read only from files and from stdin
-        $localCachedIni = "$Cache/$iniFileName"
+        $localCachedIni = "$cachedInstallerBasePath/$iniFileName"
 
-        Invoke-WebRequest $iniUrl -UseBasicParsing | Set-Content -Path $localCachedIni
+        Invoke-WebRequest $iniUrl -UseBasicParsing -OutFile $localCachedIni
+
+        Write-Verbose $localCachedIni
 
         $iniContent = Get-IniContent $localCachedIni
 
@@ -601,6 +601,7 @@ function Find-UnitySetupInstaller {
         $installerTemplates = @{}
 
         foreach ($section in $iniContent.GetEnumerator()) {
+            # replace "-" with "_" to match enum entries
             $sectionName = $section.Name.Replace('-', "_")
             $url = $iniContent[$section.Name].url
 
@@ -1024,67 +1025,60 @@ function Install-UnitySetupPackage {
             }
         }
         ([OperatingSystem]::Linux) {
-            
-            $VerbosePreference = "Continue"
+            # Assume that UnitySetup in the same folder as package 
+            $basePackagePath = [System.IO.Path]::GetDirectoryName($Package.Path)
 
-            # TODO: assert that tar and 7z are installed
+            $versionRegEx = "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)"
+            if (-not ($Package.Path -match $versionRegEx)) {
+                throw "Can't determine Unity version from package"
+            }
+
+            $version = $Matches[0]
+
+            # installer is expected to be already donwloaded to the same location during Find-UnitySetupInstaller invocation
+            $installerName = "UnitySetup-$version"
+            $installerPath = "$basePackagePath/$installerName"
+
+            if (-not (Test-Path $installerPath)) {
+                throw "Can't find Unity installer, expected at $installerPath"
+            }
 
             Write-Verbose "Package path: $($Package.Path)"
             Write-Verbose "Destination: $Destination"
 
-            $isTarXz = $Package.Path -match ".*\.tar\.xz"
-            $isPkg = $Package.Path -match ".*\.pkg"
+            Import-Module PsIni -MinimumVersion '3.1.3' -ErrorAction Stop
 
-            if ($isTarXz) {
-                Write-Verbose ".tar.xz"
+            $iniFileName = "unity-$Version-linux.ini"
+            $iniPath = "$basePackagePath/$iniFileName"
 
-                $unpackedDir = $(Resolve-Path "$($Package.Path)") -replace '\.tar\.xz$','' 
-                New-Item -ItemType Directory -Force "$unpackedDir" | Out-Null
+            $iniContent = Get-IniContent $iniPath
 
-                Write-Verbose "Unpack $($Package.Path) to $unpackedDir"
+            $componentName = ""
+            foreach ($section in $iniContent.GetEnumerator()) {
+                $sectionName = $section.Name
+                $url = $iniContent[$section.Name].url # e.g. "LinuxEditorInstaller/Unity.tar.xz"
 
-                $startProcessArgs = @{
-                    'FilePath'     = 'tar';
-                    'ArgumentList' = @("xf", $Package.Path, "-C", "$unpackedDir", "-v");
-                    'PassThru'     = $true;
-                    'Wait'         = $true;
+                # this should match package name
+                $urlFileName = [System.IO.Path]::GetFileName($url) # e.g. "Unity.tar.xz"
+
+                Write-Verbose "Retrieved $url for $sectionName"
+
+                if ($Package.Path -like "*$urlFileName") {
+                    $componentName = $sectionName
+                    break
                 }
-
-                StartProcessWithArgs($startProcessArgs) 
-            }
-            elseif ($isPkg) {
-                Write-Verbose ".pkg"
-
-                $unpackedDir = $(Resolve-Path "$($Package.Path)") -replace '\.pkg$','' 
-                New-Item -ItemType Directory -Force "$unpackedDir" | Out-Null
-
-                Write-Verbose "Unpack $($Package.Path) to $unpackedDir"
-
-                $startProcessArgs = @{
-                    'FilePath'     = '7z';
-                    'ArgumentList' = @("x", $Package.Path, "-o$unpackedDir/", "-t*", "-y");
-                    'PassThru'     = $true;
-                    'Wait'         = $true;
-                }
-
-                StartProcessWithArgs($startProcessArgs) 
-            }
-            else {
-                throw "$($Package.Path) has unsupported archive format"
             }
 
-            $pkgInfo = [xml](Get-Content ./TargetSupport.pkg.tmp/PackageInfo)
-            $targetName = basename $($pkgInfo.'pkg-info'.'install-location')
+            if (-not $componentName) {
+                throw "Could not determine proper component name for $($Package.Path)"
+            }
 
-            Write-Verbose "targetName: $targetName"
+            # Note: this way user will be asked for license confirmation.
+            # To bypass it, one should use "yes | <command>"
 
-            return
-
-            $payloadPath = "$unpackedDir/TargetSupport.pkg.tmp/Payload"
-            # extract /TargetSupport.pkg.tmp/Payload to destination
             $startProcessArgs = @{
-                'FilePath'     = '7z';
-                'ArgumentList' = @("x", $Package.Path, "-o$unpackedDir", "-t*");
+                'FilePath'     = "$installerPath";
+                'ArgumentList' = @('-u', '-l', $Destination, '-d', $basePackagePath, '-c', $componentName);
                 'PassThru'     = $true;
                 'Wait'         = $true;
             }
