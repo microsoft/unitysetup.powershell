@@ -366,6 +366,10 @@ function ConvertTo-UnitySetupComponent {
    Manually specify the build hash, to select a private build.
 .PARAMETER Components
    What components would you like to search for? Defaults to All
+.PARAMETER Cache
+   File path where installer and configuration for Linux will be downloaded to.
+   Preliminary installer and configuration download is necessary to retrieve actual paths of Unity components for Linux
+   and to allow subsequent components install. Defaults to ~/.unitysetup
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3
 .EXAMPLE
@@ -381,8 +385,26 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All,
 
         [parameter(Mandatory = $false)]
-        [string] $Hash = ""
+        [string] $Hash = "",
+
+        [parameter(Mandatory = $false)]
+        [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
+
+        # ,
+        # [parameter(Mandatory = $false)]
+        # [switch]$Verbose = $false
     )
+
+    # Note that this has to happen before calculating the full path since
+    # Resolve-Path throws an exception on missing paths.
+    if (!(Test-Path $Cache -PathType Container)) {
+        New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
+    }
+
+    # Expanding '~' to the absolute path on the system. `WebClient` on macOS asumes
+    # relative path. macOS also treats alt directory separators as part of the file
+    # name and this corrects the separators to current environment.
+    $fullCachePath = (Resolve-Path -Path $Cache).Path
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
@@ -451,6 +473,9 @@ function Find-UnitySetupInstaller {
         }
         ([OperatingSystem]::Linux) {
             $setupComponent = [UnitySetupComponent]::Linux
+
+            # Note: This is the main installer small executable that is used to install all other components.
+            # It will be replaced later by Linux Editor component
             $installerTemplates[$setupComponent] = , "UnitySetup-$Version";
         }
         ([OperatingSystem]::Mac) {
@@ -541,16 +566,34 @@ function Find-UnitySetupInstaller {
 
         $linkComponents = $prototypeLink -split "/$hashRegEx/" -ne ""
 
-        $iniFileName = "unity-$Version-linux.ini"
-        $baseUrl = $linkComponents[0] + "/" + $linkComponents[1]
-        $iniLink = "$baseUrl/$iniFileName"
+        $unityPath = $linkComponents[0]
+        $unityHash = $linkComponents[1]
+        $unityVersion = $linkComponents[2] # simnilar to UnitySetup-2021.1.23f1
 
-        $linuxIni = Invoke-WebRequest $iniLink -UseBasicParsing
+        $baseUrl = "$unityPath/$unityHash"
+
+        Write-Verbose "Ready to download installer from $baseUrl"
+
+        # also download installer that will be used to install all other components
+        $installerName = $installerTemplates[[UnitySetupComponent]::Linux]
+        $installerUrl = "$baseUrl/$installerName"
+        $cachedInstallerBasePath = "$fullCachePath/Installers/Unity-$Version"
+        New-Item $cachedInstallerBasePath -ItemType Directory -Force | Out-Null
+
+        $localCachedInstaller = "$cachedInstallerBasePath/$installerName"
+
+        Write-Verbose "Saving installer to $localCachedInstaller"
+
+        Invoke-WebRequest $installerUrl -UseBasicParsing | Set-Content -Path $localCachedInstaller
+
+        # Configuration file for installer
+        $iniFileName = "unity-$Version-linux.ini"
+        $iniUrl = "$baseUrl/$iniFileName"
 
         # PsIni can read only from files and from stdin
-        $localCachedIni = "/tmp/$iniFileName"
-                
-        Set-Content -Path $localCachedIni -Value $linuxIni
+        $localCachedIni = "$Cache/$iniFileName"
+
+        Invoke-WebRequest $iniUrl -UseBasicParsing | Set-Content -Path $localCachedIni
 
         $iniContent = Get-IniContent $localCachedIni
 
@@ -947,6 +990,19 @@ function Request-UnitySetupInstaller {
     }
 }
 
+function StartProcessWithArgs($startProcessArgs)
+{
+    $process = Start-Process @startProcessArgs
+    if ( $process ) {
+        if ( $process.ExitCode -ne 0) {
+            Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
+        }
+        else {
+            Write-Verbose "$(Get-Date): Succeeded."
+        }
+    }
+}
+
 function Install-UnitySetupPackage {
     [CmdletBinding()]
     param(
@@ -968,7 +1024,70 @@ function Install-UnitySetupPackage {
             }
         }
         ([OperatingSystem]::Linux) {
-            throw "Install-UnitySetupPackage has not been implemented on the Linux platform. Contributions welcomed!";
+            
+            $VerbosePreference = "Continue"
+
+            # TODO: assert that tar and 7z are installed
+
+            Write-Verbose "Package path: $($Package.Path)"
+            Write-Verbose "Destination: $Destination"
+
+            $isTarXz = $Package.Path -match ".*\.tar\.xz"
+            $isPkg = $Package.Path -match ".*\.pkg"
+
+            if ($isTarXz) {
+                Write-Verbose ".tar.xz"
+
+                $unpackedDir = $(Resolve-Path "$($Package.Path)") -replace '\.tar\.xz$','' 
+                New-Item -ItemType Directory -Force "$unpackedDir" | Out-Null
+
+                Write-Verbose "Unpack $($Package.Path) to $unpackedDir"
+
+                $startProcessArgs = @{
+                    'FilePath'     = 'tar';
+                    'ArgumentList' = @("xf", $Package.Path, "-C", "$unpackedDir", "-v");
+                    'PassThru'     = $true;
+                    'Wait'         = $true;
+                }
+
+                StartProcessWithArgs($startProcessArgs) 
+            }
+            elseif ($isPkg) {
+                Write-Verbose ".pkg"
+
+                $unpackedDir = $(Resolve-Path "$($Package.Path)") -replace '\.pkg$','' 
+                New-Item -ItemType Directory -Force "$unpackedDir" | Out-Null
+
+                Write-Verbose "Unpack $($Package.Path) to $unpackedDir"
+
+                $startProcessArgs = @{
+                    'FilePath'     = '7z';
+                    'ArgumentList' = @("x", $Package.Path, "-o$unpackedDir/", "-t*", "-y");
+                    'PassThru'     = $true;
+                    'Wait'         = $true;
+                }
+
+                StartProcessWithArgs($startProcessArgs) 
+            }
+            else {
+                throw "$($Package.Path) has unsupported archive format"
+            }
+
+            $pkgInfo = [xml](Get-Content ./TargetSupport.pkg.tmp/PackageInfo)
+            $targetName = basename $($pkgInfo.'pkg-info'.'install-location')
+
+            Write-Verbose "targetName: $targetName"
+
+            return
+
+            $payloadPath = "$unpackedDir/TargetSupport.pkg.tmp/Payload"
+            # extract /TargetSupport.pkg.tmp/Payload to destination
+            $startProcessArgs = @{
+                'FilePath'     = '7z';
+                'ArgumentList' = @("x", $Package.Path, "-o$unpackedDir", "-t*");
+                'PassThru'     = $true;
+                'Wait'         = $true;
+            }
         }
         ([OperatingSystem]::Mac) {
             # Note that $Destination has to be a disk path.
@@ -983,15 +1102,7 @@ function Install-UnitySetupPackage {
     }
 
     Write-Verbose "$(Get-Date): Installing $($Package.ComponentType) to $Destination."
-    $process = Start-Process @startProcessArgs
-    if ( $process ) {
-        if ( $process.ExitCode -ne 0) {
-            Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
-        }
-        else {
-            Write-Verbose "$(Get-Date): Succeeded."
-        }
-    }
+    StartProcessWithArgs($startProcessArgs)
 }
 
 <#
@@ -1033,7 +1144,7 @@ function Install-UnitySetupInstance {
     )
     begin {
         $currentOS = Get-OperatingSystem
-        
+
         if ( -not $PSBoundParameters.ContainsKey('BasePath') ) {
             $defaultInstallPath = switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
