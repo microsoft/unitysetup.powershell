@@ -1245,16 +1245,20 @@ function Get-UnitySetupInstanceVersion {
 
     # Try to look in the modules.json file for installer paths that contain version info
     if ( Test-Path "$path\modules.json" -PathType Leaf ) {
+        try {
+            Write-Verbose "Searching $path\modules.json for module versions"
+            $table = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json -AsHashtable
 
-        Write-Verbose "Searching $path\modules.json for module versions"
-        $modules = (Get-Content "$path\modules.json" -Raw) | ConvertFrom-Json
+            foreach ( $url in $table.downloadUrl ) {
+                Write-Debug "`tTesting DownloadUrl $url"
+                if ( $url -notmatch "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) { continue; }
 
-        foreach ( $module in $modules ) {
-            Write-Verbose "`tTesting DownloadUrl $($module.DownloadUrl)"
-            if ( $module.DownloadUrl -notmatch "(\d+)\.(\d+)\.(\d+)([fpab])(\d+)" ) { continue; }
-
-            Write-Verbose "`tFound version!"
-            return [UnityVersion]$Matches[0]
+                Write-Verbose "`tFound version!"
+                return [UnityVersion]$Matches[0]
+            }
+        }
+        catch {
+            Write-Verbose "Error parsing $path\modules.json:`n`t$_"
         }
     }
 
@@ -1464,6 +1468,9 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             }
         }
 
+        # Derived from https://docs.unity3d.com/Manual/SpecialFolders.html
+        $unityAssetExcludes = @('.*', '*~', 'cvs', '*.tmp')
+
         foreach ( $p in $Project) {
 
             $testResult = $true
@@ -1472,17 +1479,20 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             $assetDir = Join-Path $p.Path "Assets"
 
             # get all the directories under assets
-            [System.IO.DirectoryInfo[]]$dirs = Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude '.*'
+            [System.IO.DirectoryInfo[]]$dirs = 
+                Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude $unityAssetExcludes
 
             Write-Verbose "Testing asset directories for missing meta files..."
             [float]$progressCounter = 0
             foreach ($dir in $dirs) {
 
+                ++$progressCounter
                 $progress = @{
                     'Activity'        = "Testing directories for missing meta files"
-                    'Status'          = $dir
-                    'PercentComplete' = (((++$progressCounter) / $dirs.Length) * 100)
+                    'Status'          = "$progressCounter / $($dirs.Length) - $dir"
+                    'PercentComplete' = (($progressCounter / $dirs.Length) * 100)
                 }
+                Write-Debug $progress.Status
                 Write-Progress @progress
 
                 $testPath = "$($dir.FullName).meta";
@@ -1503,20 +1513,24 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             if (-not $testResult) { $false; continue; }
 
             # get all the non-meta files under assets
-            [System.IO.FileInfo[]]$files = Get-ChildItem -Path "$assetDir/*" -Exclude '.*', '*.meta' -File
+            $unityAssetFileExcludes = $unityAssetExcludes + '*.meta'
+            [System.IO.FileInfo[]]$files = Get-ChildItem -Path "$assetDir/*" -Exclude $unityAssetFileExcludes -File
             foreach ($dir in $dirs) {
-                $files += Get-ChildItem -Path "$($dir.FullName)/*" -Exclude '.*', '*.meta' -File
+                $files += Get-ChildItem -Path "$($dir.FullName)/*" -Exclude $unityAssetFileExcludes -File
             }
 
             Write-Verbose "Testing asset files for missing meta files..."
             $progressCounter = 0
             foreach ( $file in $files ) {
 
+                ++$progressCounter
                 $progress = @{
                     'Activity'        = "Testing files for missing meta files"
-                    'Status'          = $file
-                    'PercentComplete' = (((++$progressCounter) / $files.Length) * 100)
+                    'Status'          = "$progressCounter / $($files.Length) - $file"
+                    'PercentComplete' = (($progressCounter / $files.Length) * 100)
+                
                 }
+                Write-Debug $progress.Status
                 Write-Progress @progress
 
                 $testPath = "$($file.FullName).meta";
@@ -1537,7 +1551,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             if (-not $testResult) { $false; continue; }
 
             $metaFileSearchArgs = @{
-                'Exclude' = '.*'
+                'Exclude' = $unityAssetExcludes
                 'Include' = '*.meta'
                 'File'    = $true
                 'Force'   = $true # Ensure we include hidden meta files
@@ -1553,11 +1567,13 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             $progressCounter = 0
             foreach ($metaFile in $metaFiles) {
 
+                ++$progressCounter
                 $progress = @{
                     'Activity'        = "Testing meta files for missing assets"
-                    'Status'          = $metaFile
-                    'PercentComplete' = (((++$progressCounter) / $metaFiles.Length) * 100)
+                    'Status'          = "$progressCounter / $($metaFiles.Length) - $metaFile"
+                    'PercentComplete' = (($progressCounter / $metaFiles.Length) * 100)
                 }
+                Write-Debug $progress.Status
                 Write-Progress @progress
 
                 $testPath = $metaFile.FullName.SubString(0, $metaFile.FullName.Length - $metaFile.Extension.Length);
@@ -1582,11 +1598,13 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             $progressCounter = 0
             foreach ($metaFile in $metaFiles) {
 
+                ++$progressCounter
                 $progress = @{
                     'Activity'        = "Testing meta files for guid collisions"
-                    'Status'          = $metaFile
-                    'PercentComplete' = (((++$progressCounter) / $metaFiles.Length) * 100)
+                    'Status'          = "$progressCounter / $($metaFiles.Length) - $metaFile"
+                    'PercentComplete' = (($progressCounter / $metaFiles.Length) * 100)
                 }
+                Write-Debug $progress.Status
                 Write-Progress @progress
 
                 try {
