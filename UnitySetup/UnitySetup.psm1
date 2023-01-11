@@ -2202,7 +2202,14 @@ function Get-UnityLicense {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "", Justification = "Used to convert discovered plaintext serials into secure strings.")]
     param([SecureString]$Serial)
 
-    $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf" -ErrorAction 'SilentlyContinue'
+    switch (Get-OperatingSystem) {
+       Windows { $licensePaths = "C:\ProgramData\Unity\Unity_*.ulf" }
+       Linux { $licensePaths = "~/.local/share/unity3d/Unity/Unity_*.ulf" }
+       Mac { throw "Get-UnityLicense has not been implemented on the Mac platform. Contributions welcomed!" }
+    }
+
+    $licenseFiles = Get-ChildItem $licensePaths -ErrorAction 'SilentlyContinue'
+
     foreach ( $licenseFile in $licenseFiles ) {
         Write-Verbose "Discovered License File at $licenseFile"
         $doc = [xml](Get-Content "$licenseFile")
