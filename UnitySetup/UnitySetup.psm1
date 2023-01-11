@@ -25,7 +25,7 @@ enum UnitySetupComponent {
     Windows_Server = (1 -shl 17)
     Linux_Server = (1 -shl 18)
     Mac_Server = (1 -shl 19)
-    All = (1 -shl 20) - 1
+    All = 0xFFFFFFFF
 }
 
 [Flags()]
@@ -114,7 +114,6 @@ class UnitySetupInstance {
         $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
         $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
 
-        Write-Verbose "path: $Path"
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
                 if ( Test-Path -PathType Container -Path $test ) {
