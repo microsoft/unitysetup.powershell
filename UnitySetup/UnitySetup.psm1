@@ -1,4 +1,4 @@
-﻿# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
@@ -993,19 +993,6 @@ function Request-UnitySetupInstaller {
     }
 }
 
-function StartProcessWithArgs($startProcessArgs)
-{
-    $process = Start-Process @startProcessArgs
-    if ( $process ) {
-        if ( $process.ExitCode -ne 0) {
-            Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
-        }
-        else {
-            Write-Verbose "$(Get-Date): Succeeded."
-        }
-    }
-}
-
 function Install-UnitySetupPackage {
     [CmdletBinding()]
     param(
@@ -1022,8 +1009,6 @@ function Install-UnitySetupPackage {
             $startProcessArgs = @{
                 'FilePath'     = $Package.Path;
                 'ArgumentList' = @("/S", "/D=$Destination");
-                'PassThru'     = $true;
-                'Wait'         = $true;
             }
         }
         ([OperatingSystem]::Linux) {
@@ -1081,8 +1066,6 @@ function Install-UnitySetupPackage {
             $startProcessArgs = @{
                 'FilePath'     = "$installerPath";
                 'ArgumentList' = @('-u', '-l', $Destination, '-d', $basePackagePath, '-c', $componentName);
-                'PassThru'     = $true;
-                'Wait'         = $true;
             }
         }
         ([OperatingSystem]::Mac) {
@@ -1091,14 +1074,20 @@ function Install-UnitySetupPackage {
             $startProcessArgs = @{
                 'FilePath'     = 'sudo';
                 'ArgumentList' = @("installer", "-package", $Package.Path, "-target", $Destination);
-                'PassThru'     = $true;
-                'Wait'         = $true;
             }
         }
     }
 
     Write-Verbose "$(Get-Date): Installing $($Package.ComponentType) to $Destination."
-    StartProcessWithArgs($startProcessArgs)
+    $process = Start-Process @startProcessArgs -PassThru -Wait
+    if ( $process ) {
+        if ( $process.ExitCode -ne 0) {
+            Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
+        }
+        else {
+            Write-Verbose "$(Get-Date): Succeeded."
+        }
+    }
 }
 
 <#
