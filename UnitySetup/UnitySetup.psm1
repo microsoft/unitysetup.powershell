@@ -140,8 +140,9 @@ class UnityProjectInstance {
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        try { 
-            $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
+        try {
+            # discard non-valid lines with empty keys before passing to ConvertFrom-Yaml
+            $prodName = (((Get-Content $projectSettingsFile -Raw) -replace '\n(\s)*:( \".*\")\n', "`n" | ConvertFrom-Yaml)['playerSettings'])['productName']
             if (!$prodName) { throw "ProjectSettings is missing productName" }
         }
         catch {
