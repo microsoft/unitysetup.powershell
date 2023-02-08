@@ -1179,6 +1179,8 @@ function Uninstall-UnitySetupInstance {
    Get the Unity versions installed and their locations
 .PARAMETER BasePath
    Under what base patterns should we look for Unity installs?
+   Defaults to Unity default locations by platform
+   Default can be configured by comma separated paths in $env:UNITY_SETUP_INSTANCE_DEFAULT_BASEPATH
 .EXAMPLE
    Get-UnitySetupInstance
 #>
@@ -1188,6 +1190,13 @@ function Get-UnitySetupInstance {
         [parameter(Mandatory = $false)]
         [string[]] $BasePath
     )
+
+    if((-not $BasePath) -and $env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT){
+        $BasePath = ($env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT -split ',') | ForEach-Object { 
+            $_.trim() 
+        }
+        Write-Verbose "Set BasePath to $BasePath from `$env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT."
+    }
 
     switch (Get-OperatingSystem) {
         ([OperatingSystem]::Windows) {
@@ -1205,6 +1214,7 @@ function Get-UnitySetupInstance {
         }
     }
 
+    Write-Verbose "Searching `"$BasePath`" for UnitySetup instances..."
     Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore | 
         Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
         ForEach-Object {
