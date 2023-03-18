@@ -64,55 +64,55 @@ class UnitySetupInstance {
         $componentTests = switch ($currentOS) {
             ([OperatingSystem]::Windows) {
                 $this.Components = [UnitySetupComponent]::Windows
-                $playbackEnginePath = Join-Path -Path "$Path" -ChildPath "Editor\Data\PlaybackEngines" -Resolve;
+                $playbackEnginePath = Join-Path "$Path" "Editor\Data\PlaybackEngines";
                 @{
-                    [UnitySetupComponent]::Documentation  = , (Join-Path -Path "$Path" -ChildPath "Editor\Data\Documentation" -Resolve);
-                    [UnitySetupComponent]::StandardAssets = , (Join-Path -Path "$Path" -ChildPath "Editor\Standard Assets" -Resolve);
-                    [UnitySetupComponent]::Windows_IL2CPP = , (Join-Path -Path "$playbackEnginePath" -ChildPath "windowsstandalonesupport\Variations\win32_development_il2cpp" -Resolve),
-                                                              (Join-Path -Path "$playbackEnginePath" -ChildPath "windowsstandalonesupport\Variations\win32_player_development_il2cpp" -Resolve);
-                    [UnitySetupComponent]::UWP            =   (Join-Path -Path "$playbackEnginePath" -ChildPath "MetroSupport\Templates\UWP_.NET_D3D" -Resolve),
-                                                              (Join-Path -Path "$playbackEnginePath" -ChildPath "MetroSupport\Templates\UWP_D3D" -Resolve);
-                    [UnitySetupComponent]::UWP_IL2CPP     = , (Join-Path -Path "$playbackEnginePath" -ChildPath "MetroSupport\Templates\UWP_IL2CPP_D3D" -Resolve);
-                    [UnitySetupComponent]::Linux          = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LinuxStandaloneSupport\Variations\linux64_headless_development_mono" -Resolve);
-                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp" -Resolve);
-                    [UnitySetupComponent]::Mac            = , (Join-Path -Path "$playbackEnginePath" -ChildPath "MacStandaloneSupport" -Resolve);
+                    [UnitySetupComponent]::Documentation  = , (Join-Path "$Path" "Editor\Data\Documentation");
+                    [UnitySetupComponent]::StandardAssets = , (Join-Path "$Path" "Editor\Standard Assets");
+                    [UnitySetupComponent]::Windows_IL2CPP = , (Join-Path "$playbackEnginePath" "windowsstandalonesupport\Variations\win32_development_il2cpp"),
+                                                              (Join-Path "$playbackEnginePath" "windowsstandalonesupport\Variations\win32_player_development_il2cpp");
+                    [UnitySetupComponent]::UWP            =   (Join-Path "$playbackEnginePath" "MetroSupport\Templates\UWP_.NET_D3D"),
+                                                              (Join-Path "$playbackEnginePath" "MetroSupport\Templates\UWP_D3D");
+                    [UnitySetupComponent]::UWP_IL2CPP     = , (Join-Path "$playbackEnginePath" "MetroSupport\Templates\UWP_IL2CPP_D3D");
+                    [UnitySetupComponent]::Linux          = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
+                    [UnitySetupComponent]::Mac            = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport");
                 }
             }
             ([OperatingSystem]::Linux) {
                 $this.Components = [UnitySetupComponent]::Linux
-                $playbackEnginePath = Join-Path -Path "$Path" -ChildPath "Editor/Data/PlaybackEngines" -Resolve;
+                $playbackEnginePath = Join-Path "$Path" "Editor/Data/PlaybackEngines";
                 @{
-                    [UnitySetupComponent]::Documentation  = , (Join-Path -Path "$Path" -ChildPath "Documentation" -Resolve);
-                    [UnitySetupComponent]::StandardAssets = , (Join-Path -Path "$Path" -ChildPath "Standard Assets" -Resolve);
-                    [UnitySetupComponent]::Mac            = , (Join-Path -Path "$playbackEnginePath" -ChildPath "MacStandaloneSupport/Variations/macos_x64_player_development_mono" -Resolve);
-                    [UnitySetupComponent]::Mac_IL2CPP     = , (Join-Path -Path "$playbackEnginePath" -ChildPath "MacStandaloneSupport/Variations/macos_x64_player_development_il2cpp" -Resolve);
-                    [UnitySetupComponent]::Windows        = , (Join-Path -Path "$playbackEnginePath" -ChildPath "WindowsStandaloneSupport" -Resolve);
-                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LinuxStandaloneSupport/Variations/linux64_player_development_il2cpp" -Resolve);
-                    [UnitySetupComponent]::Linux_Server   = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LinuxStandaloneSupport/Variations/linux64_server_development_mono" -Resolve);
+                    [UnitySetupComponent]::Documentation  = , (Join-Path "$Path" "Documentation");
+                    [UnitySetupComponent]::StandardAssets = , (Join-Path "$Path" "Standard Assets");
+                    [UnitySetupComponent]::Mac            = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport/Variations/macos_x64_player_development_mono");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport/Variations/macos_x64_player_development_il2cpp");
+                    [UnitySetupComponent]::Windows        = , (Join-Path "$playbackEnginePath" "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_player_development_il2cpp");
+                    [UnitySetupComponent]::Linux_Server   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_server_development_mono");
                 }
             }
             ([OperatingSystem]::Mac) {
                 $this.Components = [UnitySetupComponent]::Mac
-                $playbackEnginePath = Join-Path -Path "$Path" -ChildPath "PlaybackEngines" -Resolve;
+                $playbackEnginePath = Join-Path "$Path" "PlaybackEngines";
                 @{
-                    [UnitySetupComponent]::Documentation  = , (Join-Path -Path "$Path" -ChildPath "Documentation" -Resolve);
-                    [UnitySetupComponent]::StandardAssets = , (Join-Path -Path "$Path" -ChildPath "Standard Assets" -Resolve);
-                    [UnitySetupComponent]::Mac_IL2CPP     = , (Join-Path -Path "$playbackEnginePath" -ChildPath "MacStandaloneSupport/Variations/macosx64_development_il2cpp" -Resolve);
-                    [UnitySetupComponent]::Windows        = , (Join-Path -Path "$playbackEnginePath" -ChildPath "WindowsStandaloneSupport" -Resolve);
-                    [UnitySetupComponent]::Linux          = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LinuxStandaloneSupport/Variations/linux64_headless_development_mono" -Resolve);
-                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp" -Resolve);
+                    [UnitySetupComponent]::Documentation  = , (Join-Path "$Path" "Documentation");
+                    [UnitySetupComponent]::StandardAssets = , (Join-Path "$Path" "Standard Assets");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
+                    [UnitySetupComponent]::Windows        = , (Join-Path "$playbackEnginePath" "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
                 }
             }
         }
 
         # Common playback engines:
-        $componentTests[[UnitySetupComponent]::Lumin]    = , (Join-Path -Path "$playbackEnginePath" -ChildPath "LuminSupport" -Resolve);
-        $componentTests[[UnitySetupComponent]::Android]  = , (Join-Path -Path "$playbackEnginePath" -ChildPath "AndroidPlayer" -Resolve);
-        $componentTests[[UnitySetupComponent]::iOS]      = , (Join-Path -Path "$playbackEnginePath" -ChildPath "iOSSupport" -Resolve);
-        $componentTests[[UnitySetupComponent]::AppleTV]  = , (Join-Path -Path "$playbackEnginePath" -ChildPath "AppleTVSupport" -Resolve);
-        $componentTests[[UnitySetupComponent]::Facebook] = , (Join-Path -Path "$playbackEnginePath" -ChildPath "Facebook" -Resolve);
-        $componentTests[[UnitySetupComponent]::Vuforia]  = , (Join-Path -Path "$playbackEnginePath" -ChildPath "VuforiaSupport" -Resolve);
-        $componentTests[[UnitySetupComponent]::WebGL]    = , (Join-Path -Path "$playbackEnginePath" -ChildPath "WebGLSupport" -Resolve);
+        $componentTests[[UnitySetupComponent]::Lumin]    = , (Join-Path "$playbackEnginePath" "LuminSupport");
+        $componentTests[[UnitySetupComponent]::Android]  = , (Join-Path "$playbackEnginePath" "AndroidPlayer");
+        $componentTests[[UnitySetupComponent]::iOS]      = , (Join-Path "$playbackEnginePath" "iOSSupport");
+        $componentTests[[UnitySetupComponent]::AppleTV]  = , (Join-Path "$playbackEnginePath" "AppleTVSupport");
+        $componentTests[[UnitySetupComponent]::Facebook] = , (Join-Path "$playbackEnginePath" "Facebook");
+        $componentTests[[UnitySetupComponent]::Vuforia]  = , (Join-Path "$playbackEnginePath" "VuforiaSupport");
+        $componentTests[[UnitySetupComponent]::WebGL]    = , (Join-Path "$playbackEnginePath" "WebGLSupport");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -131,13 +131,13 @@ class UnityProjectInstance {
     [string]$ProductName
 
     UnityProjectInstance([string]$path) {
-        $versionFile = Join-Path -Path $path -ChildPath "ProjectSettings\ProjectVersion.txt" -Resolve
+        $versionFile = Join-Path $path "ProjectSettings\ProjectVersion.txt"
         if (!(Test-Path $versionFile)) { throw "Path is not a Unity project: $path" }
 
         $fileVersion = (Get-Content $versionFile -Raw | ConvertFrom-Yaml)['m_EditorVersion'];
         if (!$fileVersion) { throw "Project is missing a version in: $versionFile" }
 
-        $projectSettingsFile = Join-Path -Path $path -ChildPath "ProjectSettings\ProjectSettings.asset" -Resolve
+        $projectSettingsFile = Join-Path $path "ProjectSettings\ProjectSettings.asset"
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
         try {
@@ -390,7 +390,7 @@ function Find-UnitySetupInstaller {
         [string] $Hash = "",
 
         [parameter(Mandatory = $false)]
-        [string] $Cache = (Join-Path -Path "~" -ChildPath ".unitysetup" -Resolve)
+        [string] $Cache = (Join-Path "~" ".unitysetup")
     )
 
     # Note that this has to happen before calculating the full path since
@@ -819,7 +819,7 @@ function Request-UnitySetupInstaller {
         [UnitySetupInstaller[]] $Installers,
 
         [parameter(Mandatory = $false)]
-        [string] $Cache = (Join-Path -Path "~" -ChildPath ".unitysetup" -Resolve)
+        [string] $Cache = (Join-Path "~" ".unitysetup")
     )
     begin {
         # Note that this has to happen before calculating the full path since
@@ -850,7 +850,7 @@ function Request-UnitySetupInstaller {
 
             $allInstallers | ForEach-Object {
                 $installerFileName = [io.Path]::GetFileName($_.DownloadUrl)
-                $destination = Join-Path -Path $fullCachePath, "Installers", "Unity-$($_.Version)" -ChildPath "$installerFileName" -Resolve
+                $destination = Join-Path $fullCachePath, "Installers", "Unity-$($_.Version)" -ChildPath "$installerFileName"
 
                 # Already downloaded?
                 if ( Test-Path $destination ) {
@@ -1125,7 +1125,7 @@ function Install-UnitySetupInstance {
         [string] $Destination,
 
         [parameter(Mandatory = $false)]
-        [string] $Cache = (Join-Path -Path "~" -ChildPath ".unitysetup" -Resolve)
+        [string] $Cache = (Join-Path "~" ".unitysetup")
     )
     begin {
         $currentOS = Get-OperatingSystem
@@ -1166,16 +1166,16 @@ function Install-UnitySetupInstance {
                     $installPath = $Destination
                 }
                 else {
-                    $installPath = Join-Path -Path $BasePath -ChildPath $Destination -Resolve
+                    $installPath = Join-Path $BasePath $Destination
                 }
             }
             else {
-                $installPath = Join-Path -Path $defaultInstallPath -ChildPath $installVersion -Resolve
+                $installPath = Join-Path $defaultInstallPath $installVersion
             }
 
             if ($currentOS -eq [OperatingSystem]::Mac) {
                 $volumeRoot = "/Volumes/UnitySetup/"
-                $volumeInstallPath = Join-Path -Path $volumeRoot -ChildPath "Applications/Unity/" -Resolve
+                $volumeInstallPath = Join-Path $volumeRoot "Applications/Unity/"
 
                 # Make sure the install path ends with a trailing slash. This
                 # is required in some commands to treat as directory.
@@ -1190,7 +1190,7 @@ function Install-UnitySetupInstance {
                 }
 
                 # Creating sparse bundle to host installing Unity in other locations
-                $unitySetupBundlePath = Join-Path -Path $Cache -ChildPath "UnitySetup.sparsebundle" -Resolve
+                $unitySetupBundlePath = Join-Path $Cache "UnitySetup.sparsebundle"
                 if (-not (Test-Path $unitySetupBundlePath)) {
                     Write-Verbose "Creating new sparse bundle disk image for installation."
                     & hdiutil create -size 32g -fs 'HFS+' -type 'SPARSEBUNDLE' -volname 'UnitySetup' $unitySetupBundlePath
@@ -1201,7 +1201,7 @@ function Install-UnitySetupInstance {
                 # Previous version failed to remove. Cleaning up!
                 if (Test-Path $volumeInstallPath) {
                     Write-Verbose "Previous install did not clean up properly. Doing that now."
-                    & sudo rm -Rf (Join-Path -Path $volumeRoot -ChildPath '*' -Resolve)
+                    & sudo rm -Rf (Join-Path $volumeRoot '*')
                 }
 
                 # Copy installed version back to the sparse bundle disk for Unity component installs.
@@ -1267,7 +1267,7 @@ function Install-UnitySetupInstance {
 
                 Write-Verbose "Freeing sparse bundle disk space and unmounting."
                 # Ensure the drive is cleaned up.
-                & sudo rm -Rf (Join-Path -Path $volumeRoot -ChildPath '*' -Resolve)
+                & sudo rm -Rf (Join-Path $volumeRoot '*')
 
                 & hdiutil eject $volumeRoot
                 # Free up disk space since deleting items in the volume send them to the trash
@@ -1571,7 +1571,7 @@ function Get-UnityProjectInstance {
 
     Get-ChildItem @args |
         ForEach-Object {
-            $path = Join-Path -Path $_.FullName -ChildPath "ProjectVersion.txt" -Resolve
+            $path = Join-Path $_.FullName "ProjectVersion.txt"
             if ( Test-Path $path ) {
                 [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
             }
