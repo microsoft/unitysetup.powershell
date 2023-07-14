@@ -22,7 +22,10 @@ enum UnitySetupComponent {
     Mac_IL2CPP = (1 -shl 14)
     Lumin = (1 -shl 15)
     Linux_IL2CPP = (1 -shl 16)
-    All = (1 -shl 17) - 1
+    Windows_Server = (1 -shl 17)
+    Linux_Server = (1 -shl 18)
+    Mac_Server = (1 -shl 19)
+    All = 0xFFFFFFFF
 }
 
 [Flags()]
@@ -61,47 +64,55 @@ class UnitySetupInstance {
         $componentTests = switch ($currentOS) {
             ([OperatingSystem]::Windows) {
                 $this.Components = [UnitySetupComponent]::Windows
-                $playbackEnginePath = [io.path]::Combine("$Path", "Editor\Data\PlaybackEngines");
+                $playbackEnginePath = Join-Path "$Path" "Editor\Data\PlaybackEngines";
                 @{
-                    [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
-                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
-                    [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp"),
-                                                              [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");;
-                    [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
-                                                              [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
-                    [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
-                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
-                    [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
+                    [UnitySetupComponent]::Documentation  = , (Join-Path "$Path" "Editor\Data\Documentation");
+                    [UnitySetupComponent]::StandardAssets = , (Join-Path "$Path" "Editor\Standard Assets");
+                    [UnitySetupComponent]::Windows_IL2CPP = , (Join-Path "$playbackEnginePath" "windowsstandalonesupport\Variations\win32_development_il2cpp"),
+                                                              (Join-Path "$playbackEnginePath" "windowsstandalonesupport\Variations\win32_player_development_il2cpp");
+                    [UnitySetupComponent]::UWP            =   (Join-Path "$playbackEnginePath" "MetroSupport\Templates\UWP_.NET_D3D"),
+                                                              (Join-Path "$playbackEnginePath" "MetroSupport\Templates\UWP_D3D");
+                    [UnitySetupComponent]::UWP_IL2CPP     = , (Join-Path "$playbackEnginePath" "MetroSupport\Templates\UWP_IL2CPP_D3D");
+                    [UnitySetupComponent]::Linux          = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
+                    [UnitySetupComponent]::Mac            = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport");
                 }
             }
             ([OperatingSystem]::Linux) {
                 $this.Components = [UnitySetupComponent]::Linux
-
-                throw "UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                $playbackEnginePath = Join-Path "$Path" "Editor/Data/PlaybackEngines";
+                @{
+                    [UnitySetupComponent]::Documentation  = , (Join-Path "$Path" "Documentation");
+                    [UnitySetupComponent]::StandardAssets = , (Join-Path "$Path" "Standard Assets");
+                    [UnitySetupComponent]::Mac            = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport/Variations/macos_x64_player_development_mono");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport/Variations/macos_x64_player_development_il2cpp");
+                    [UnitySetupComponent]::Windows        = , (Join-Path "$playbackEnginePath" "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_player_development_il2cpp");
+                    [UnitySetupComponent]::Linux_Server   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_server_development_mono");
+                }
             }
             ([OperatingSystem]::Mac) {
                 $this.Components = [UnitySetupComponent]::Mac
-                $playbackEnginePath = [io.path]::Combine("$Path", "PlaybackEngines");
+                $playbackEnginePath = Join-Path "$Path" "PlaybackEngines";
                 @{
-                    [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Documentation");
-                    [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Standard Assets");
-                    [UnitySetupComponent]::Mac_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
-                    [UnitySetupComponent]::Windows        = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport");
-                    [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
-                    [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
+                    [UnitySetupComponent]::Documentation  = , (Join-Path "$Path" "Documentation");
+                    [UnitySetupComponent]::StandardAssets = , (Join-Path "$Path" "Standard Assets");
+                    [UnitySetupComponent]::Mac_IL2CPP     = , (Join-Path "$playbackEnginePath" "MacStandaloneSupport/Variations/macosx64_development_il2cpp");
+                    [UnitySetupComponent]::Windows        = , (Join-Path "$playbackEnginePath" "WindowsStandaloneSupport");
+                    [UnitySetupComponent]::Linux          = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_headless_development_mono");
+                    [UnitySetupComponent]::Linux_IL2CPP   = , (Join-Path "$playbackEnginePath" "LinuxStandaloneSupport/Variations/linux64_headless_development_il2cpp");
                 }
             }
         }
 
         # Common playback engines:
-        $componentTests[[UnitySetupComponent]::Lumin]    = , [io.path]::Combine("$playbackEnginePath", "LuminSupport");
-        $componentTests[[UnitySetupComponent]::Android]  = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
-        $componentTests[[UnitySetupComponent]::iOS]      = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
-        $componentTests[[UnitySetupComponent]::AppleTV]  = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
-        $componentTests[[UnitySetupComponent]::Facebook] = , [io.path]::Combine("$playbackEnginePath", "Facebook");
-        $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
-        $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
+        $componentTests[[UnitySetupComponent]::Lumin]    = , (Join-Path "$playbackEnginePath" "LuminSupport");
+        $componentTests[[UnitySetupComponent]::Android]  = , (Join-Path "$playbackEnginePath" "AndroidPlayer");
+        $componentTests[[UnitySetupComponent]::iOS]      = , (Join-Path "$playbackEnginePath" "iOSSupport");
+        $componentTests[[UnitySetupComponent]::AppleTV]  = , (Join-Path "$playbackEnginePath" "AppleTVSupport");
+        $componentTests[[UnitySetupComponent]::Facebook] = , (Join-Path "$playbackEnginePath" "Facebook");
+        $componentTests[[UnitySetupComponent]::Vuforia]  = , (Join-Path "$playbackEnginePath" "VuforiaSupport");
+        $componentTests[[UnitySetupComponent]::WebGL]    = , (Join-Path "$playbackEnginePath" "WebGLSupport");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -120,17 +131,18 @@ class UnityProjectInstance {
     [string]$ProductName
 
     UnityProjectInstance([string]$path) {
-        $versionFile = [io.path]::Combine($path, "ProjectSettings\ProjectVersion.txt")
+        $versionFile = Join-Path $path "ProjectSettings\ProjectVersion.txt"
         if (!(Test-Path $versionFile)) { throw "Path is not a Unity project: $path" }
 
         $fileVersion = (Get-Content $versionFile -Raw | ConvertFrom-Yaml)['m_EditorVersion'];
         if (!$fileVersion) { throw "Project is missing a version in: $versionFile" }
 
-        $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
+        $projectSettingsFile = Join-Path $path "ProjectSettings\ProjectSettings.asset"
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        try { 
-            $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
+        try {
+            # discard non-valid lines with empty keys before passing to ConvertFrom-Yaml
+            $prodName = (((Get-Content $projectSettingsFile -Raw) -replace '\n(\s)*:( \".*\")\n', "`n" | ConvertFrom-Yaml)['playerSettings'])['productName']
             if (!$prodName) { throw "ProjectSettings is missing productName" }
         }
         catch {
@@ -286,7 +298,11 @@ function Get-UnityEditor {
                     }
                 }
                 ([OperatingSystem]::Linux) {
-                    throw "Get-UnityEditor has not been implemented on the Linux platform. Contributions welcomed!";
+                    $editor = Join-Path "$p" 'Editor/Unity'
+
+                    if (Test-Path $editor) {
+                        Write-Output (Resolve-Path $editor).Path
+                    }
                 }
                 ([OperatingSystem]::Mac) {
                     $editor = Join-Path "$p" "Unity.app/Contents/MacOS/Unity"
@@ -352,6 +368,10 @@ function ConvertTo-UnitySetupComponent {
    Manually specify the build hash, to select a private build.
 .PARAMETER Components
    What components would you like to search for? Defaults to All
+.PARAMETER Cache
+   File path where installer and configuration for Linux will be downloaded to.
+   Preliminary installer and configuration download is necessary to retrieve actual paths of Unity components for Linux
+   and to allow subsequent components install. Defaults to ~/.unitysetup
 .EXAMPLE
    Find-UnitySetupInstaller -Version 2017.3.0f3
 .EXAMPLE
@@ -367,8 +387,22 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All,
 
         [parameter(Mandatory = $false)]
-        [string] $Hash = ""
+        [string] $Hash = "",
+
+        [parameter(Mandatory = $false)]
+        [string] $Cache = (Join-Path "~" ".unitysetup")
     )
+
+    # Note that this has to happen before calculating the full path since
+    # Resolve-Path throws an exception on missing paths.
+    if (!(Test-Path $Cache -PathType Container)) {
+        New-Item $Cache -ItemType Directory -ErrorAction Stop | Out-Null
+    }
+
+    # Expanding '~' to the absolute path on the system. `WebClient` on macOS asumes
+    # relative path. macOS also treats alt directory separators as part of the file
+    # name and this corrects the separators to current environment.
+    $fullCachePath = (Resolve-Path -Path $Cache).Path
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
@@ -379,7 +413,9 @@ function Find-UnitySetupInstaller {
             $installerExtension = "exe"
         }
         ([OperatingSystem]::Linux) {
-            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+            # This is default, but it seems some packages are used from Mac
+            $targetSupport = "LinuxEditorTargetInstaller"
+            $installerExtension = ""
         }
         ([OperatingSystem]::Mac) {
             $targetSupport = "MacEditorTargetInstaller"
@@ -387,7 +423,9 @@ function Find-UnitySetupInstaller {
         }
     }
 
-    $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/(.+)\/(.+)-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).$installerExtension$"
+    $hashRegEx = "([a-z0-9]+)"
+    $versionRegEx = "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)"
+    $unitySetupRegEx = "^(.+)\/$hashRegEx\/(.+)\/(.+)-$versionRegEx.$installerExtension$"
 
     $knownBaseUrls = @(
         "https://download.unity3d.com/download_unity",
@@ -395,6 +433,7 @@ function Find-UnitySetupInstaller {
         "https://beta.unity3d.com/download"
     )
 
+    # For Linux this hashtable will be rewritten later
     $installerTemplates = @{
         [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
                                                   "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
@@ -432,9 +471,10 @@ function Find-UnitySetupInstaller {
         }
         ([OperatingSystem]::Linux) {
             $setupComponent = [UnitySetupComponent]::Linux
-            # TODO: $installerTemplates[$setupComponent] = , "???/UnitySetup64-$Version.exe";
 
-            throw "Find-UnitySetupInstaller has not been implemented on the Linux platform. Contributions welcomed!";
+            # Note: This is the main installer small executable that is used to install all other components.
+            # It will be replaced later by Linux Editor component
+            $installerTemplates[$setupComponent] = , "UnitySetup-$Version";
         }
         ([OperatingSystem]::Mac) {
             $setupComponent = [UnitySetupComponent]::Mac
@@ -515,10 +555,75 @@ function Find-UnitySetupInstaller {
         throw "Could not find archives for Unity version $Version"
     }
 
-    $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
+    if ($currentOS -ne [OperatingSystem]::Linux) {
+        $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
+    }
+    else {
+        # For Linux we should get list of available components with their target
+        Import-Module PsIni -MinimumVersion '3.1.3' -ErrorAction Stop
+
+        $linkComponents = $prototypeLink -split "/$hashRegEx/" -ne ""
+
+        $unityPath = $linkComponents[0]
+        $unityHash = $linkComponents[1]
+        $unityVersion = $linkComponents[2] # simnilar to UnitySetup-2021.1.23f1
+
+        $baseUrl = "$unityPath/$unityHash"
+
+        Write-Verbose "Ready to download installer from $baseUrl"
+
+        # also download installer that will be used to install all other components
+        $installerName = $installerTemplates[[UnitySetupComponent]::Linux]
+        $installerUrl = "$baseUrl/$installerName"
+        $cachedInstallerBasePath = "$fullCachePath/Installers/Unity-$Version"
+        New-Item $cachedInstallerBasePath -ItemType Directory -Force | Out-Null
+
+        $localCachedInstaller = "$cachedInstallerBasePath/$installerName"
+
+        Write-Verbose "Saving installer to $localCachedInstaller"
+
+        Invoke-WebRequest $installerUrl -OutFile $localCachedInstaller
+
+        chmod +x $localCachedInstaller
+
+        # Configuration file for installer
+        $iniFileName = "unity-$Version-linux.ini"
+        $iniUrl = "$baseUrl/$iniFileName"
+
+        # PsIni can read only from files and from stdin
+        $localCachedIni = "$cachedInstallerBasePath/$iniFileName"
+
+        Invoke-WebRequest $iniUrl -UseBasicParsing -OutFile $localCachedIni
+
+        Write-Verbose $localCachedIni
+
+        $iniContent = Get-IniContent $localCachedIni
+
+        # fill from scratch accessible targets using retrieved .ini
+        $installerTemplates = @{}
+
+        foreach ($section in $iniContent.GetEnumerator()) {
+            # replace "-" with "_" to match enum entries
+            $sectionName = $section.Name.Replace('-', "_")
+            $url = $iniContent[$section.Name].url
+
+            Write-Verbose "Retrieved $url for $sectionName"
+
+            switch ($sectionName) {
+                "Unity" { $component = [UnitySetupComponent]::Linux }
+                "Windows_Mono" { $component = [UnitySetupComponent]::Windows }
+                "Mac_Mono" { $component = [UnitySetupComponent]::Mac }
+                Default { $component = $sectionName }
+            }
+
+            $installerTemplates[$component] = $url
+        }
+    }
+
+    Write-Verbose "components: $linkComponents"
 
     if ($knownBaseUrls -notcontains $linkComponents[0]) {
-        $knownBaseUrls = $linkComponents[0], $knownBaseUrls
+        $knownBaseUrls = @($linkComponents[0]) + $knownBaseUrls
     }
     else {
         $knownBaseUrls = $knownBaseUrls | Sort-Object -Property @{ Expression = { [math]::Abs(($_.CompareTo($linkComponents[0]))) }; Ascending = $true }
@@ -714,7 +819,7 @@ function Request-UnitySetupInstaller {
         [UnitySetupInstaller[]] $Installers,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
+        [string] $Cache = (Join-Path "~" ".unitysetup")
     )
     begin {
         # Note that this has to happen before calculating the full path since
@@ -745,7 +850,7 @@ function Request-UnitySetupInstaller {
 
             $allInstallers | ForEach-Object {
                 $installerFileName = [io.Path]::GetFileName($_.DownloadUrl)
-                $destination = [io.Path]::Combine($fullCachePath, "Installers", "Unity-$($_.Version)", "$installerFileName")
+                $destination = Join-Path $fullCachePath, "Installers", "Unity-$($_.Version)" -ChildPath "$installerFileName"
 
                 # Already downloaded?
                 if ( Test-Path $destination ) {
@@ -904,12 +1009,64 @@ function Install-UnitySetupPackage {
             $startProcessArgs = @{
                 'FilePath'     = $Package.Path;
                 'ArgumentList' = @("/S", "/D=$Destination");
-                'PassThru'     = $true;
-                'Wait'         = $true;
             }
         }
         ([OperatingSystem]::Linux) {
-            throw "Install-UnitySetupPackage has not been implemented on the Linux platform. Contributions welcomed!";
+            # Assume that UnitySetup in the same folder as package 
+            $basePackagePath = [System.IO.Path]::GetDirectoryName($Package.Path)
+
+            $versionRegEx = "(\d+)\.(\d+)\.(\d+)([fpba])(\d+)"
+            if (-not ($Package.Path -match $versionRegEx)) {
+                throw "Can't determine Unity version from package"
+            }
+
+            $version = $Matches[0]
+
+            # installer is expected to be already donwloaded to the same location during Find-UnitySetupInstaller invocation
+            $installerName = "UnitySetup-$version"
+            $installerPath = "$basePackagePath/$installerName"
+
+            if (-not (Test-Path $installerPath)) {
+                throw "Can't find Unity installer, expected at $installerPath"
+            }
+
+            Write-Verbose "Package path: $($Package.Path)"
+            Write-Verbose "Destination: $Destination"
+
+            Import-Module PsIni -MinimumVersion '3.1.3' -ErrorAction Stop
+
+            $iniFileName = "unity-$Version-linux.ini"
+            $iniPath = "$basePackagePath/$iniFileName"
+
+            $iniContent = Get-IniContent $iniPath
+
+            $componentName = ""
+            foreach ($section in $iniContent.GetEnumerator()) {
+                $sectionName = $section.Name
+                $url = $iniContent[$section.Name].url # e.g. "LinuxEditorInstaller/Unity.tar.xz"
+
+                # this should match package name
+                $urlFileName = [System.IO.Path]::GetFileName($url) # e.g. "Unity.tar.xz"
+
+                Write-Verbose "Retrieved $url for $sectionName"
+
+                if ($Package.Path -like "*$urlFileName") {
+                    $componentName = $sectionName
+                    break
+                }
+            }
+
+            if (-not $componentName) {
+                throw "Could not determine proper component name for $($Package.Path)"
+            }
+
+            # Note: this way user will be asked for license confirmation.
+            # To bypass it, one should use "yes | <command>"
+
+            $startProcessArgs = @{
+                'FilePath'     = "$installerPath";
+                'ArgumentList' = @('-u', '-l', $Destination, '-d', $basePackagePath, '-c', $componentName);
+            }
         }
         ([OperatingSystem]::Mac) {
             # Note that $Destination has to be a disk path.
@@ -917,14 +1074,12 @@ function Install-UnitySetupPackage {
             $startProcessArgs = @{
                 'FilePath'     = 'sudo';
                 'ArgumentList' = @("installer", "-package", $Package.Path, "-target", $Destination);
-                'PassThru'     = $true;
-                'Wait'         = $true;
             }
         }
     }
 
     Write-Verbose "$(Get-Date): Installing $($Package.ComponentType) to $Destination."
-    $process = Start-Process @startProcessArgs
+    $process = Start-Process @startProcessArgs -PassThru -Wait
     if ( $process ) {
         if ( $process.ExitCode -ne 0) {
             Write-Error "$(Get-Date): Failed with exit code: $($process.ExitCode)"
@@ -964,19 +1119,16 @@ function Install-UnitySetupInstance {
         [UnitySetupInstaller[]] $Installers,
 
         [parameter(Mandatory = $false)]
-        [string]$BasePath,
+        [string] $BasePath,
 
         [parameter(Mandatory = $false)]
-        [string]$Destination,
+        [string] $Destination,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine("~", ".unitysetup")
+        [string] $Cache = (Join-Path "~" ".unitysetup")
     )
     begin {
         $currentOS = Get-OperatingSystem
-        if ($currentOS -eq [OperatingSystem]::Linux) {
-            throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
-        }
 
         if ( -not $PSBoundParameters.ContainsKey('BasePath') ) {
             $defaultInstallPath = switch ($currentOS) {
@@ -984,7 +1136,7 @@ function Install-UnitySetupInstance {
                     "C:\Program Files\Unity\Hub\Editor\"
                 }
                 ([OperatingSystem]::Linux) {
-                    throw "Install-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+                    "~/Unity/Hub/Editor/"
                 }
                 ([OperatingSystem]::Mac) {
                     "/Applications/Unity/Hub/Editor/"
@@ -1014,16 +1166,16 @@ function Install-UnitySetupInstance {
                     $installPath = $Destination
                 }
                 else {
-                    $installPath = [io.path]::Combine($BasePath, $Destination)
+                    $installPath = Join-Path $BasePath $Destination
                 }
             }
             else {
-                $installPath = [io.path]::Combine($defaultInstallPath, $installVersion)
+                $installPath = Join-Path $defaultInstallPath $installVersion
             }
 
             if ($currentOS -eq [OperatingSystem]::Mac) {
                 $volumeRoot = "/Volumes/UnitySetup/"
-                $volumeInstallPath = [io.path]::Combine($volumeRoot, "Applications/Unity/")
+                $volumeInstallPath = Join-Path $volumeRoot "Applications/Unity/"
 
                 # Make sure the install path ends with a trailing slash. This
                 # is required in some commands to treat as directory.
@@ -1038,7 +1190,7 @@ function Install-UnitySetupInstance {
                 }
 
                 # Creating sparse bundle to host installing Unity in other locations
-                $unitySetupBundlePath = [io.path]::Combine($Cache, "UnitySetup.sparsebundle")
+                $unitySetupBundlePath = Join-Path $Cache "UnitySetup.sparsebundle"
                 if (-not (Test-Path $unitySetupBundlePath)) {
                     Write-Verbose "Creating new sparse bundle disk image for installation."
                     & hdiutil create -size 32g -fs 'HFS+' -type 'SPARSEBUNDLE' -volname 'UnitySetup' $unitySetupBundlePath
@@ -1049,7 +1201,7 @@ function Install-UnitySetupInstance {
                 # Previous version failed to remove. Cleaning up!
                 if (Test-Path $volumeInstallPath) {
                     Write-Verbose "Previous install did not clean up properly. Doing that now."
-                    & sudo rm -Rf ([io.path]::Combine($volumeRoot, '*'))
+                    & sudo rm -Rf (Join-Path $volumeRoot '*')
                 }
 
                 # Copy installed version back to the sparse bundle disk for Unity component installs.
@@ -1115,7 +1267,7 @@ function Install-UnitySetupInstance {
 
                 Write-Verbose "Freeing sparse bundle disk space and unmounting."
                 # Ensure the drive is cleaned up.
-                & sudo rm -Rf ([io.path]::Combine($volumeRoot, '*'))
+                & sudo rm -Rf (Join-Path $volumeRoot '*')
 
                 & hdiutil eject $volumeRoot
                 # Free up disk space since deleting items in the volume send them to the trash
@@ -1205,7 +1357,9 @@ function Get-UnitySetupInstance {
             }
         }
         ([OperatingSystem]::Linux) {
-            throw "Get-UnitySetupInstance has not been implemented on the Linux platform. Contributions welcomed!";
+            if (-not $BasePath) {
+                $BasePath = @('~/Unity/Hub/Editor/*')
+            }
         }
         ([OperatingSystem]::Mac) {
             if (-not $BasePath) {
@@ -1427,7 +1581,7 @@ function Get-UnityProjectInstance {
 
     Get-ChildItem @args |
         ForEach-Object {
-            $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
+            $path = Join-Path $_.FullName "ProjectVersion.txt"
             if ( Test-Path $path ) {
                 [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
             }
@@ -2059,7 +2213,14 @@ function Get-UnityLicense {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "", Justification = "Used to convert discovered plaintext serials into secure strings.")]
     param([SecureString]$Serial)
 
-    $licenseFiles = Get-ChildItem "C:\ProgramData\Unity\Unity_*.ulf" -ErrorAction 'SilentlyContinue'
+    switch (Get-OperatingSystem) {
+       Windows { $licensePaths = "C:\ProgramData\Unity\Unity_*.ulf" }
+       Linux { $licensePaths = "~/.local/share/unity3d/Unity/Unity_*.ulf" }
+       Mac { throw "Get-UnityLicense has not been implemented on the Mac platform. Contributions welcomed!" }
+    }
+
+    $licenseFiles = Get-ChildItem $licensePaths -ErrorAction 'SilentlyContinue'
+
     foreach ( $licenseFile in $licenseFiles ) {
         Write-Verbose "Discovered License File at $licenseFile"
         $doc = [xml](Get-Content "$licenseFile")

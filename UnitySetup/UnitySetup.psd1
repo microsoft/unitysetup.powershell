@@ -14,7 +14,7 @@
     RootModule        = 'UnitySetup'
 
     # Version number of this module.
-    ModuleVersion     = '5.5'
+    ModuleVersion     = '6.0'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -54,7 +54,8 @@
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules   = @(
-        @{ModuleName = "powershell-yaml"; ModuleVersion = "0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da" }
+        @{ModuleName = "powershell-yaml"; ModuleVersion = "0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da" },
+        @{ModuleName = "PsIni"; ModuleVersion = "3.1.3"; Guid = "98e1dc0f-2f03-4ca1-98bb-fd7b4b6ac652" }
     )
 
     # Assemblies that must be loaded prior to importing this module
@@ -155,4 +156,3 @@
     # DefaultCommandPrefix = ''
 
 }
-
