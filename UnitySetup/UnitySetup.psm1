@@ -2073,7 +2073,7 @@ function Get-UnityLicense {
         [PSCustomObject]@{
             'LicenseVersion' = $license.LicenseVersion.Value
             'Serial'         = ConvertTo-SecureString $licenseSerial -AsPlainText -Force
-            'UnityVersion'   = [UnityVersion]$license.ClientProvidedVersion.Value
+            'UnityVersion'   = $license.ClientProvidedVersion.Value
             'DisplaySerial'  = $license.SerialMasked.Value
             'ActivationDate' = ConvertTo-DateTime $license.InitialActivationDate.Value
             'StartDate'      = ConvertTo-DateTime $license.StartDate.Value
