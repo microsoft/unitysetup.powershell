@@ -485,11 +485,16 @@ function Find-UnitySetupInstaller {
         }
     }
 
+    if($Hash -ne ""){
+        $searchPages += "http://beta.unity3d.com/download/$Hash/download.html"
+    }
+
     foreach ($page in $searchPages) {
         try {
+            Write-Verbose "Searching page - $page"
             $webResult = Invoke-WebRequest $page -UseBasicParsing
             $prototypeLink = $webResult.Links | 
-                Select-Object -ExpandProperty href -ErrorAction SilentlyContinue | 
+                Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
                 Where-Object {
                     $link = $_
 
@@ -500,11 +505,18 @@ function Find-UnitySetupInstaller {
                     }
 
                     return $false
-
-                } | 
+                } |
                 Select-Object -First 1
 
-            if ($null -ne $prototypeLink) { break }
+            if ($null -ne $prototypeLink) 
+            {
+                # Ensure prototype link is absolute uri
+                if(-not [system.uri]::IsWellFormedUriString($_,[System.UriKind]::Absolute)) {
+                    $prototypeLink = "$([system.uri]::new([system.uri]$page, [system.uri]$prototypeLink))"
+                }
+
+                break 
+            }
         }
         catch {
             Write-Verbose "$page failed: $($_.Exception.Message)"
@@ -515,6 +527,7 @@ function Find-UnitySetupInstaller {
         throw "Could not find archives for Unity version $Version"
     }
 
+    Write-Verbose "Prototype link found: $prototypeLink"
     $linkComponents = $prototypeLink -split $unitySetupRegEx -ne ""
 
     if ($knownBaseUrls -notcontains $linkComponents[0]) {
@@ -535,6 +548,7 @@ function Find-UnitySetupInstaller {
             foreach ( $baseUrl in $knownBaseUrls) {
                 $endpoint = [uri][System.IO.Path]::Combine($baseUrl, $linkComponents[1], $template);
                 try {
+                    Write-Verbose "Attempting to get component $_ details from endpoint: $endpoint"
                     $testResult = Invoke-WebRequest $endpoint -Method HEAD -UseBasicParsing
                     # For packages on macOS the Content-Length and Last-Modified are returned as an array.
                     if ($testResult.Headers['Content-Length'] -is [System.Array]) {
