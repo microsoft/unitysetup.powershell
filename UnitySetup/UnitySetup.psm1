@@ -1,4 +1,4 @@
-﻿# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
@@ -22,7 +22,8 @@ enum UnitySetupComponent {
     Mac_IL2CPP = (1 -shl 14)
     Lumin = (1 -shl 15)
     Linux_IL2CPP = (1 -shl 16)
-    All = (1 -shl 17) - 1
+    Windows_Server = (1 -shl 17)
+    All = (1 -shl 18) - 1
 }
 
 [Flags()]
@@ -66,13 +67,19 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp"),
-                                                              [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");;
+                                                              [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");
                     [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
                                                               [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
                     [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
                     [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
+                    [UnitySetupComponent]::Windows_Server = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_player_development_mono"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_il2cpp"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_mono"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_player_development_mono"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_il2cpp"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");   
                 }
             }
             ([OperatingSystem]::Linux) {
@@ -414,6 +421,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Windows_IL2CPP = , "$targetSupport/UnitySetup-Windows-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Linux_IL2CPP   = , "$targetSupport/UnitySetup-Linux-IL2CPP-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Windows_Server = , "$targetSupport/UnitySetup-Windows-Server-Support-for-Editor-$Version.$installerExtension";
     }
 
     # In 2019.x there is only IL2CPP UWP so change the search for UWP_IL2CPP
@@ -1692,6 +1700,8 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
    The log file for the Unity Editor to write to.
 .PARAMETER BuildTarget
    The platform build target for the Unity Editor to start in.
+.PARAMETER StandaloneBuildSubtarget 
+   Select an active build sub-target for the Standalone platforms before loading a project.
 .PARAMETER AcceptAPIUpdate
    Accept the API Updater automatically. Implies BatchMode unless explicitly specified by the user.
 .PARAMETER Credential
@@ -1779,6 +1789,9 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [ValidateSet('StandaloneOSX', 'StandaloneWindows', 'iOS', 'Android', 'StandaloneLinux', 'StandaloneWindows64', 'WebGL', 'WSAPlayer', 'StandaloneLinux64', 'StandaloneLinuxUniversal', 'Tizen', 'PSP2', 'PS4', 'XBoxOne', 'N3DS', 'WiiU', 'tvOS', 'Switch', 'Lumin')]
         [string]$BuildTarget,
+        [parameter(Mandatory = $false)]
+        [ValidateSet('Player', 'Server')]
+        [string]$StandaloneBuildSubtarget,
         [parameter(Mandatory = $false)]
         [switch]$AcceptAPIUpdate,
         [parameter(Mandatory = $false)]
@@ -1899,6 +1912,7 @@ function Start-UnityEditor {
         if ( $OutputPath ) { $sharedArgs += "-buildOutput", "`"$OutputPath`"" }
         if ( $LogFile ) { $sharedArgs += "-logFile", "`"$LogFile`"" }
         if ( $BuildTarget ) { $sharedArgs += "-buildTarget", $BuildTarget }
+        if ( $StandaloneBuildSubtarget ) { $sharedArgs += "-standaloneBuildSubtarget", $StandaloneBuildSubtarget }
         if ( $BatchMode ) { $sharedArgs += "-batchmode" }
         if ( $Quit ) { $sharedArgs += "-quit" }
         if ( $ExportPackage ) { $sharedArgs += "-exportPackage", ($ExportPackage | ForEach-Object { "`"$_`"" }) }
