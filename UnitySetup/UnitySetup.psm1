@@ -2370,6 +2370,9 @@ Would you like to continue? (Default: $($createPAT))
     $UPMConfigs = @()
     foreach ($scopedRegistryURL in $scopedRegistryURLs) {
         if ($Verbose) { Write-Host "Resolving $scopedRegistryURL" }
+        if (-not $url -like 'https://pkgs.dev.azure.com/*') {
+            Write-Warning "Scoped registry is not does not match a pkgs.dev.azure.com, automatic PAT generation is likely to fail."
+        }
 
         $CurrentRegistry = [Regex]::Match($scopedRegistryURL, $ScopedURLRegEx)
 
@@ -2669,9 +2672,7 @@ function Update-UPMConfig {
         foreach ($manifest in $ProjectManifests) {
             foreach ($scopedRegistry in $manifest.scopedRegistries) {
                 $url = $scopedRegistry.url -replace '/$', ''
-                if ($url -like 'https://pkgs.dev.azure.com/*') {
-                    $scopedRegistrySet.Add($url) | Out-Null
-                }
+                $scopedRegistrySet.Add($url) | Out-Null
             }
         }
     
