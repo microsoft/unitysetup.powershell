@@ -2133,7 +2133,7 @@ function Get-UnityLicense {
     }
 }
 
-function Import-UPMConfig {
+function Import-ProjectManifests {
     [CmdletBinding()]
     param(
         [Parameter()]
@@ -2145,7 +2145,7 @@ function Import-UPMConfig {
 
     if ((Get-Item $ProjectManifestPath) -is [System.IO.DirectoryInfo]) {
         Write-Host "Path provided is not a manifest.json file ($ProjectManifestPath), will attempt search"
-        $FoundPaths = @(Get-Childitem -Path $ProjectManifestPath -Include manifest.json -File -Recurse -Depth $SearchDepth -ErrorAction SilentlyContinue)
+        $FoundPaths = @(Get-ChildItem -Path $ProjectManifestPath -Include manifest.json -File -Recurse -Depth $SearchDepth -ErrorAction SilentlyContinue)
         foreach ($file in $FoundPaths) {
             $ProjectManifestPaths += $file.FullName
             if ($Verbose) { Write-Host "Found ($file.FullName)" }
@@ -2156,8 +2156,7 @@ function Import-UPMConfig {
     }
 
     if (([string]::IsNullOrEmpty($ProjectManifestPath)) -or (-not $(Test-Path $ProjectManifestPath))) {
-        Write-Error "Unable to find manifest.json file, please provide a path pointing directly to a Unity project's manifest.json or provide a path to a Unity project"
-        return @()
+        throw "Unable to find manifest.json file, please provide a path pointing directly to a Unity project's manifest.json or provide a path to a Unity project"
     }
 
     $scopedRegistrySet = [System.Collections.Generic.HashSet[string]]::new()
@@ -2645,7 +2644,7 @@ function Update-UPMConfig {
         $AutoClean = $true
     }
 
-    $scopedRegistryURLs = Import-UPMConfig -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
+    $scopedRegistryURLs = Import-ProjectManifests -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
     [string[]]$tomlFilePaths = @()
 
     if ($IsMacOS -or $IsLinux) {
