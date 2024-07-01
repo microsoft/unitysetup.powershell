@@ -2174,11 +2174,32 @@ function Import-ProjectManifests {
     return [System.Collections.Generic.HashSet[string]]::new($scopedRegistrySet)
 }
 
+function Import-TOMLFiles {
+    param(
+        [string[]]$tomlFilePaths = @(),
+        [switch]$VerifyOnly
+    )
+
+    $tomlFileContents = @()
+    
+    foreach ($tomlFile in $tomlFilePaths) {
+        if (-not (Test-Path $tomlFile)) {
+            if ($Verbose) { Write-Host "$tomlFile doesn't exist, creating $tomlFile" }
+            New-Item -Path $tomlFile -Force
+        }
+
+        $tomlFileContent = Get-Content $tomlFile -Raw
+        $tomlFileContents += $tomlFileContent
+    }
+    
+    return $tomlFileContents
+}
+
 function Sync-UPMConfig {
     [CmdletBinding()]
     param(
         [string[]]$scopedRegistryURLs,
-        [string[]]$tomlFilePaths,
+        [string[]]$tomlFileContents,
         [switch]$AutoClean,
         [switch]$VerifyOnly,
         [switch]$ManualPAT,
@@ -2200,7 +2221,7 @@ function Sync-UPMConfig {
     function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
         if ($NoValidation) {
             Write-Host "Skipping PAT validation because of -NoValidation flag"
-            return $true;
+            return $true
         }
         $user = 'any'
         $pass = $RawPAT
@@ -2315,7 +2336,7 @@ Would you like to continue? (Default: $($createPAT))
         }
 
         if (-not $env:ADO_BUILD_ENVIRONMENT) {
-            $azaccount = $(Get-AzContext).Account;
+            $azaccount = $(Get-AzContext).Account
 
             if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
                 Write-Host "Connecting to Azure, please login if prompted"
@@ -2353,7 +2374,6 @@ Would you like to continue? (Default: $($createPAT))
     }
 
     $UPMConfigs = @()
-
     foreach ($scopedRegistryURL in $scopedRegistryURLs) {
         if ($Verbose) { Write-Host "Resolving $scopedRegistryURL" }
 
@@ -2368,13 +2388,7 @@ Would you like to continue? (Default: $($createPAT))
 
         $foundCount = 0
 
-        foreach ($tomlFile in $tomlFilePaths) {
-            if (-not (Test-Path $tomlFile) -and (-not $VerifyOnly)) {
-                if ($Verbose) { Write-Host "$tomlFile doesn't exist, creating $tomlFile" }
-                New-Item -Path $tomlFile -Force
-            }
-
-            $tomlFileContent = Get-Content $tomlFile -Raw
+        foreach ($tomlFileContent in $tomlFileContents) {
             if (-not [string]::IsNullOrWhiteSpace($tomlFileContent)) {
                 [string[]]$FullURLs = @()
 
@@ -2644,9 +2658,6 @@ function Update-UPMConfig {
         $AutoClean = $true
     }
 
-    $scopedRegistryURLs = Import-ProjectManifests -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
-    [string[]]$tomlFilePaths = @()
-
     if ($IsMacOS -or $IsLinux) {
         $tomlFilePaths += [io.path]::combine($env:HOME, ".upmconfig.toml")
     }
@@ -2654,7 +2665,10 @@ function Update-UPMConfig {
         $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
     }
 
-    $UPMConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFilePaths $tomlFilePaths -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $DefaultScope -AzAPIVersion $AzAPIVersion -ScopedURLRegEx $ScopedURLRegEx -UPMRegEx $UPMRegEx
+    $scopedRegistryURLs = Import-ProjectManifests -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
+    $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -VerifyOnly $VerifyOnly
+
+    $UPMConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $DefaultScope -AzAPIVersion $AzAPIVersion -ScopedURLRegEx $ScopedURLRegEx -UPMRegEx $UPMRegEx
 
     Export-UPMConfig -UPMConfigs $UPMConfigs -tomlFilePaths $tomlFilePaths
 
