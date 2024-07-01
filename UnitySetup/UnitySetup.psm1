@@ -67,19 +67,19 @@ class UnitySetupInstance {
                     [UnitySetupComponent]::Documentation  = , [io.path]::Combine("$Path", "Editor\Data\Documentation");
                     [UnitySetupComponent]::StandardAssets = , [io.path]::Combine("$Path", "Editor\Standard Assets");
                     [UnitySetupComponent]::Windows_IL2CPP = , [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_development_il2cpp"),
-                    [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");
-                    [UnitySetupComponent]::UWP            = [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
-                    [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
+                                                              [io.path]::Combine("$playbackEnginePath", "windowsstandalonesupport\Variations\win32_player_development_il2cpp");
+                    [UnitySetupComponent]::UWP            =   [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_.NET_D3D"),
+                                                              [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_D3D");
                     [UnitySetupComponent]::UWP_IL2CPP     = , [io.path]::Combine("$playbackEnginePath", "MetroSupport\Templates\UWP_IL2CPP_D3D");
                     [UnitySetupComponent]::Linux          = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_mono");
                     [UnitySetupComponent]::Linux_IL2CPP   = , [io.path]::Combine("$playbackEnginePath", "LinuxStandaloneSupport\Variations\linux64_headless_development_il2cpp");
                     [UnitySetupComponent]::Mac            = , [io.path]::Combine("$playbackEnginePath", "MacStandaloneSupport");
                     [UnitySetupComponent]::Windows_Server = , [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_player_development_mono"),
-                    [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_il2cpp"),
-                    [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_mono"),
-                    [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_player_development_mono"),
-                    [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_il2cpp"),
-                    [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");   
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_il2cpp"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_mono"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_player_development_mono"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_il2cpp"),
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");   
                 }
             }
             ([OperatingSystem]::Linux) {
@@ -102,13 +102,13 @@ class UnitySetupInstance {
         }
 
         # Common playback engines:
-        $componentTests[[UnitySetupComponent]::Lumin] = , [io.path]::Combine("$playbackEnginePath", "LuminSupport");
-        $componentTests[[UnitySetupComponent]::Android] = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
-        $componentTests[[UnitySetupComponent]::iOS] = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
-        $componentTests[[UnitySetupComponent]::AppleTV] = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
+        $componentTests[[UnitySetupComponent]::Lumin]    = , [io.path]::Combine("$playbackEnginePath", "LuminSupport");
+        $componentTests[[UnitySetupComponent]::Android]  = , [io.path]::Combine("$playbackEnginePath", "AndroidPlayer");
+        $componentTests[[UnitySetupComponent]::iOS]      = , [io.path]::Combine("$playbackEnginePath", "iOSSupport");
+        $componentTests[[UnitySetupComponent]::AppleTV]  = , [io.path]::Combine("$playbackEnginePath", "AppleTVSupport");
         $componentTests[[UnitySetupComponent]::Facebook] = , [io.path]::Combine("$playbackEnginePath", "Facebook");
-        $componentTests[[UnitySetupComponent]::Vuforia] = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
-        $componentTests[[UnitySetupComponent]::WebGL] = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
+        $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
+        $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -403,18 +403,18 @@ function Find-UnitySetupInstaller {
     )
 
     $installerTemplates = @{
-        [UnitySetupComponent]::UWP            = "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Universal-Windows-Platform-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::UWP            =   "$targetSupport/UnitySetup-UWP-.NET-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Metro-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Universal-Windows-Platform-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::UWP_IL2CPP     = , "$targetSupport/UnitySetup-UWP-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Android        = , "$targetSupport/UnitySetup-Android-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::iOS            = , "$targetSupport/UnitySetup-iOS-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::AppleTV        = , "$targetSupport/UnitySetup-AppleTV-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Facebook       = , "$targetSupport/UnitySetup-Facebook-Games-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Linux          = "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Linux-Mono-Support-for-Editor-$Version.$installerExtension";
-        [UnitySetupComponent]::Mac            = "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
-        "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Linux          =   "$targetSupport/UnitySetup-Linux-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Linux-Mono-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::Mac            =   "$targetSupport/UnitySetup-Mac-Support-for-Editor-$Version.$installerExtension",
+                                                  "$targetSupport/UnitySetup-Mac-Mono-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Mac_IL2CPP     = , "$targetSupport/UnitySetup-Mac-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Vuforia        = , "$targetSupport/UnitySetup-Vuforia-AR-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::WebGL          = , "$targetSupport/UnitySetup-WebGL-Support-for-Editor-$Version.$installerExtension";
@@ -488,12 +488,12 @@ function Find-UnitySetupInstaller {
 
             $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
             $searchPages += $webResult.Links | 
-            Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } | 
-            ForEach-Object { "https://unity3d.com$($_.href)" }
+                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } | 
+                ForEach-Object { "https://unity3d.com$($_.href)" }
         }
     }
 
-    if ($Hash -ne "") {
+    if($Hash -ne ""){
         $searchPages += "http://beta.unity3d.com/download/$Hash/download.html"
     }
 
@@ -502,23 +502,24 @@ function Find-UnitySetupInstaller {
             Write-Verbose "Searching page - $page"
             $webResult = Invoke-WebRequest $page -UseBasicParsing
             $prototypeLink = $webResult.Links | 
-            Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
-            Where-Object {
-                $link = $_
+                Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
+                Where-Object {
+                    $link = $_
 
-                foreach ( $installer in $installerTemplates.Keys ) {
-                    foreach ( $template in $installerTemplates[$installer] ) {
-                        if ( $link -like "*$template*" ) { return $true }
+                    foreach ( $installer in $installerTemplates.Keys ) {
+                        foreach ( $template in $installerTemplates[$installer] ) {
+                            if ( $link -like "*$template*" ) { return $true }
+                        }
                     }
-                }
 
-                return $false
-            } |
-            Select-Object -First 1
+                    return $false
+                } |
+                Select-Object -First 1
 
-            if ($null -ne $prototypeLink) {
+            if ($null -ne $prototypeLink) 
+            {
                 # Ensure prototype link is absolute uri
-                if (-not [system.uri]::IsWellFormedUriString($_, [System.UriKind]::Absolute)) {
+                if(-not [system.uri]::IsWellFormedUriString($_,[System.UriKind]::Absolute)) {
                     $prototypeLink = "$([system.uri]::new([system.uri]$page, [system.uri]$prototypeLink))"
                 }
 
@@ -1168,7 +1169,7 @@ function Uninstall-UnitySetupInstance {
     process {
         foreach ( $setupInstance in $Instances ) {
             $uninstaller = Get-ChildItem "$($setupInstance.Path)" -Filter 'Uninstall.exe' -Recurse |
-            Select-Object -First 1 -ExpandProperty FullName
+                Select-Object -First 1 -ExpandProperty FullName
 
             if ($null -eq $uninstaller) {
                 Write-Error "Could not find Uninstaller.exe under $($setupInstance.Path)"
@@ -1212,7 +1213,7 @@ function Get-UnitySetupInstance {
         [string[]] $BasePath
     )
 
-    if ((-not $BasePath) -and $env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT) {
+    if((-not $BasePath) -and $env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT){
         $BasePath = ($env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT -split ',') | ForEach-Object { 
             $_.trim() 
         }
@@ -1237,17 +1238,17 @@ function Get-UnitySetupInstance {
 
     Write-Verbose "Searching `"$BasePath`" for UnitySetup instances..."
     Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore | 
-    Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
-    ForEach-Object {
-        $path = $_.FullName
-        try {
-            Write-Verbose "Creating UnitySetupInstance for $path"
-            [UnitySetupInstance]::new($path)
+        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
+        ForEach-Object {
+            $path = $_.FullName
+            try {
+                Write-Verbose "Creating UnitySetupInstance for $path"
+                [UnitySetupInstance]::new($path)
+            }
+            catch {
+                Write-Warning "$_"
+            }
         }
-        catch {
-            Write-Warning "$_"
-        }
-    }
 }
 
 <#
@@ -1322,7 +1323,8 @@ function Get-UnitySetupInstanceVersion {
             Write-Verbose "Looking for UNITY_VERSION defined in $file"
             if (Test-Path -PathType Leaf -Path $file) {
                 $fileMatchInfo = Select-String -Path $file -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`""
-                if ($null -ne $fileMatchInfo) {
+                if($null -ne $fileMatchInfo)
+                {
                     break;
                 }
             }
@@ -1331,9 +1333,9 @@ function Get-UnitySetupInstanceVersion {
         if ($null -eq $fileMatchInfo) {
             Write-Verbose "Looking for source files with UNITY_VERSION defined under $path\Editor\ "
             $fileMatchInfo = do {
-                Get-ChildItem -Path "$path\Editor" -Include '*.cpp', '*.h' -Recurse -ErrorAction Ignore -Force -File | 
-                Select-String -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`"" |
-                ForEach-Object { $_; break; } # Stop the pipeline after the first result
+                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File | 
+                    Select-String -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`"" |
+                    ForEach-Object { $_; break; } # Stop the pipeline after the first result
             } while ($false);
         }
 
@@ -1446,12 +1448,12 @@ function Get-UnityProjectInstance {
     }
 
     Get-ChildItem @args |
-    ForEach-Object {
-        $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
-        if ( Test-Path $path ) {
-            [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+        ForEach-Object {
+            $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
+            if ( Test-Path $path ) {
+                [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+            }
         }
-    }
 }
 
 <#
@@ -1510,7 +1512,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
 
             # get all the directories under assets
             [System.IO.DirectoryInfo[]]$dirs = 
-            Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude $unityAssetExcludes
+                Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude $unityAssetExcludes
 
             Write-Verbose "Testing asset directories for missing meta files..."
             [float]$progressCounter = 0
@@ -1929,9 +1931,9 @@ function Start-UnityEditor {
             $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint  
             $sharedArgs += "-adb2"
             $sharedArgs += "-enableCacheServer"           
-            if ( $CacheServerNamespacePrefix) { $sharedArgs += "-cacheServerNamespacePrefix", $CacheServerNamespacePrefix }
-            $sharedArgs += "-cacheServerEnableDownload", $(If ($CacheServerDisableDownload) { "false" } Else { "true" })
-            $sharedArgs += "-cacheServerEnableUpload", $(If ($CacheServerDisableUpload) { "false" } Else { "true" })
+            if ( $CacheServerNamespacePrefix) { $sharedArgs += "-cacheServerNamespacePrefix", $CacheServerNamespacePrefix}
+            $sharedArgs += "-cacheServerEnableDownload", $(If ($CacheServerDisableDownload) {"false"} Else {"true"})
+            $sharedArgs += "-cacheServerEnableUpload", $(If ($CacheServerDisableUpload) {"false"} Else {"true"})
         }
 
         [string[][]]$instanceArgs = @()
