@@ -2159,19 +2159,13 @@ function Import-ProjectManifests {
         throw "Unable to find manifest.json file, please provide a path pointing directly to a Unity project's manifest.json or provide a path to a Unity project"
     }
 
-    $scopedRegistrySet = [System.Collections.Generic.HashSet[string]]::new()
+    $manifests = @()
     foreach ($ManifestPath in $ProjectManifestPaths) {
         $manifest = Get-Content -Path $ManifestPath | ConvertFrom-Json
-
-        foreach ($scopedRegistry in $manifest.scopedRegistries) {
-            $url = $scopedRegistry.url -replace '/$', ''  
-            if ($url -like 'https://pkgs.dev.azure.com/*') {
-                $scopedRegistrySet.Add($url) | Out-Null
-            }
-        }
+        $manifests += $manifest
     }
 
-    return [System.Collections.Generic.HashSet[string]]::new($scopedRegistrySet)
+    return $manifests
 }
 
 function Import-TOMLFiles {
@@ -2665,7 +2659,27 @@ function Update-UPMConfig {
         $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
     }
 
-    $scopedRegistryURLs = Import-ProjectManifests -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
+    function Get-ScopedRegistries {
+        param(
+            [PSCustomObject[]]$ProjectManifests
+        )
+    
+        $scopedRegistrySet = [System.Collections.Generic.HashSet[string]]::new()
+    
+        foreach ($manifest in $ProjectManifests) {
+            foreach ($scopedRegistry in $manifest.scopedRegistries) {
+                $url = $scopedRegistry.url -replace '/$', ''
+                if ($url -like 'https://pkgs.dev.azure.com/*') {
+                    $scopedRegistrySet.Add($url) | Out-Null
+                }
+            }
+        }
+    
+        return [System.Collections.Generic.HashSet[string]]::new($scopedRegistrySet)
+    }
+
+    $projectManifests = Import-ProjectManifests -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
+    $scopedRegistryURLs = Get-ScopedRegistries -ProjectManifests $projectManifests
     $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -VerifyOnly $VerifyOnly
 
     $UPMConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $DefaultScope -AzAPIVersion $AzAPIVersion -ScopedURLRegEx $ScopedURLRegEx -UPMRegEx $UPMRegEx
