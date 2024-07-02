@@ -2195,7 +2195,7 @@ function Import-TOMLFiles {
     foreach ($tomlFile in $TomlFilePaths) {
         if (-not (Test-Path $tomlFile)) {
             if ($Force) {
-                if ($Verbose) { Write-Host "$tomlFile doesn't exist, creating $tomlFile" }
+                Write-Verbose "$tomlFile doesn't exist, creating $tomlFile"
                 New-Item -Path $tomlFile -Force
             } else {
                 Write-Error "Toml file not found at $TomlFilePaths"
@@ -2209,11 +2209,173 @@ function Import-TOMLFiles {
     return $tomlFileContents
 }
 
+function New-PAT($PATName, $OrgName, $Scopes, $ExpireDays) {
+    $expireDate = (Get-Date).adddays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+
+    $createPAT = 'y'
+
+    if (-not $env:ADO_BUILD_ENVIRONMENT) {
+        $answer = Read-Host "A Personal Access Token (PAT) will be created for you with the following details
+Name: $PATName
+Organization: $OrgName
+Expiration: $expireDate
+Would you like to continue? (Default: $($createPAT))
+"
+        if (-not [string]::IsNullOrEmpty($answer)) {
+            $createPAT = $answer
+        }
+    }
+
+    if (($createPAT -like 'y') -or ($createPAT -like 'yes')) {
+    }
+    else {
+        return $null
+    }
+
+    if ($IsWindows) {
+        $isRunAsAdministrator = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+    }
+    else {
+        $isRunAsAdministrator = (& whoami) -eq "root"
+    }
+
+    if (-not (Get-Module -ListAvailable "Az.Accounts")) {
+        if (-not $isRunAsAdministrator) {
+            Write-Error "This script requires admin permissions to install a module for Azure Accounts (used to log you in and create PATs for you).
+         Please restart the script in an admin console, or run the script with the -ManualPAT option and supply your own PATs when prompted."
+        }
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Install-Module -Name Az.Accounts -AllowClobber -Repository PSGallery -Scope CurrentUser -Force | Out-Null
+    }
+
+    if (-not (Get-Module -ListAvailable "Az.Accounts")) {
+        Write-Error "Unable to find the az.accounts module. Please check previous errors and/or restart Powershell and try again. If it's still not working, run with the `-ManualPAT` flag to go through the interactive flow of manually creating a PAT."
+        exit 1
+    }
+
+    if (-not $env:ADO_BUILD_ENVIRONMENT) {
+        $azaccount = $(Get-AzContext).Account
+
+        if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
+            Write-Host "Connecting to Azure, please login if prompted"
+            Connect-AzAccount | Out-Null
+        }
+        $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
+        $headers = @{Authorization = "Bearer $($AZTokenRequest.Token)" }
+    }
+    else {
+        $headers = @{Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
+    }
+
+    $RequestBody =
+@"
+{
+"allOrgs":"false",
+"displayName":"$($PatName)",
+"scope":"$($Scopes)",
+"validTo":"$($expireDate)"
+}
+"@
+    $Url = "https://vssps.dev.azure.com/$($OrgName)/_apis/tokens/pats?api-version=$AzAPIVersion"
+
+    $responseData = (Invoke-WebRequest -Uri $Url -Body $RequestBody -Method Post -Headers $headers -UseBasicParsing -ContentType "application/json").Content | ConvertFrom-Json
+
+    $UserPAT = "$($responseData.patToken.token.trim())"
+
+    if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT)") {
+        return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT))
+    }
+    else {
+        Write-Host "Unable to validate PAT, please try again"
+        return $null
+    }
+}
+
+function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
+    if ($NoValidation) {
+        Write-Host "Skipping PAT validation because of -NoValidation flag"
+        return $true
+    }
+    $user = 'any'
+    $pass = $RawPAT
+    $pair = "$($user):$($pass)"
+    $encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
+    $basicAuthValue = "Basic $encodedCreds"
+    $Headers = @{
+        Authorization = $basicAuthValue
+    }
+
+    $URI = "https://feeds.dev.azure.com/$($Org)"
+    if (-not [string]::IsNullOrEmpty($Project)) {
+        $URI += "/$($Project)"
+    }
+    $URI += "/_apis/packaging/feeds/$($FeedID)?api-version=$AzAPIVersion"
+
+    Write-Verbose "Attempting to validate PAT for '$($Org)' in feed: '$FeedID'"
+    try {
+        $req = Invoke-WebRequest -uri $URI -Method 'GET' -Headers $Headers -ErrorVariable $WebError -UseBasicParsing -ErrorAction SilentlyContinue
+        $HTTP_Status = [int]$req.StatusCode
+    }
+    catch {
+        $HTTP_Status = [int]$_.Exception.Response.StatusCode
+        $HTTP_ErrorMessage = $_
+    }
+
+    If ($HTTP_Status -eq 200) {
+        if ($Verbose) { Write-Host "PAT is valid for $Org!" }
+        $result = $true
+    }
+    else {
+        Write-Warning "Unable to validate PAT for $($Org). Error: $HTTP_ErrorMessage"
+        $result = $false
+    }
+    if ($HTTP_Response -eq $null) { }
+    else { $HTTP_Response.Close() }
+
+    return $result
+}
+
+function Read-PATFromUser($OrgName) {
+    Write-Host "You need to create or supply a PAT for $($OrgName)."
+
+    Write-Host "Please navigate to:"
+    Write-Host "https://dev.azure.com/$($OrgName)/_usersSettings/tokens" -ForegroundColor Green
+    Write-Host "to create a PAT with at least 'Package Read' (check your documentation for other scopes)"
+    Write-Host ""
+
+    $LaunchBrowserForPATs = 'y'
+    $LaunchBrowserForPATs = Read-Host "Launch browser to 'https://dev.azure.com/$($OrgName)/_usersSettings/tokens'? (Default: $($LaunchBrowserForPATs))"
+    if (($LaunchBrowserForPATs -like 'y') -or ($LaunchBrowserForPATs -like 'yes') -or [string]::IsNullOrEmpty($LaunchBrowserForPATs)) {
+        Start-Process "https://dev.azure.com/$($OrgName)/_usersSettings/tokens"
+    }
+
+    $GoodPAT = $false
+    while (-not $GoodPAT) {
+        $UserPAT = Read-Host -Prompt "Please enter your PAT for $($OrgName)"
+        if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT.trim())") {
+            return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT.trim()))
+            $GoodPAT = $true
+        }
+        else {
+            Write-Host "Unable to validate PAT, please try again"
+        }
+    }
+}
+
+function Get-RegExForConfig($Org, $Project, $Feed, $PAT) {
+    $regexresult = "[`r`n]*\[npmAuth\.""https:\/\/pkgs.dev.azure.com\/$($Org)\/"
+    if (-not [string]::IsNullOrEmpty($Project)) {
+        $regexresult += "$($Project)\/"
+    }
+    $regexresult += "_packaging\/$($Feed)\/npm\/registry""\][\n\r\s]*_auth ?= ?""$($PAT)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]?"
+    return $regexresult
+}
+
 function Sync-UPMConfig {
     [CmdletBinding()]
     param(
-        [string[]]$scopedRegistryURLs,
-        [string[]]$tomlFileContents,
+        [string[]]$ScopedRegistryURLs,
+        [string[]]$TomlFileContents,
         [switch]$AutoClean,
         [switch]$VerifyOnly,
         [switch]$ManualPAT,
@@ -2225,170 +2387,9 @@ function Sync-UPMConfig {
     )
 
     $Results = @()
-    if ($IsWindows) {
-        $isRunAsAdministrator = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-    }
-    else {
-        $isRunAsAdministrator = (& whoami) -eq "root"
-    }
-
-    function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
-        if ($NoValidation) {
-            Write-Host "Skipping PAT validation because of -NoValidation flag"
-            return $true
-        }
-        $user = 'any'
-        $pass = $RawPAT
-        $pair = "$($user):$($pass)"
-        $encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
-        $basicAuthValue = "Basic $encodedCreds"
-        $Headers = @{
-            Authorization = $basicAuthValue
-        }
-
-        $URI = "https://feeds.dev.azure.com/$($Org)"
-        if (-not [string]::IsNullOrEmpty($Project)) {
-            $URI += "/$($Project)"
-        }
-        $URI += "/_apis/packaging/feeds/$($FeedID)?api-version=$AzAPIVersion"
-
-        Write-Host "Attempting to validate PAT for '$($Org)' in feed: '$FeedID'"
-        try {
-            $req = Invoke-WebRequest -uri $URI -Method 'GET' -Headers $Headers -ErrorVariable $WebError -UseBasicParsing -ErrorAction SilentlyContinue
-            $HTTP_Status = [int]$req.StatusCode
-        }
-        catch {
-            $HTTP_Status = [int]$_.Exception.Response.StatusCode
-            $HTTP_ErrorMessage = $_
-        }
-
-        If ($HTTP_Status -eq 200) {
-            if ($Verbose) { Write-Host "PAT is valid for $Org!" }
-            $result = $true
-        }
-        else {
-            Write-Warning "Unable to validate PAT for $($Org). Error: $HTTP_ErrorMessage"
-            $result = $false
-        }
-        if ($HTTP_Response -eq $null) { }
-        else { $HTTP_Response.Close() }
-
-        return $result
-    }
-
-    function Get-RegExForConfig($Org, $Project, $Feed, $PAT) {
-        $regexresult = "[`r`n]*\[npmAuth\.""https:\/\/pkgs.dev.azure.com\/$($Org)\/"
-        if (-not [string]::IsNullOrEmpty($Project)) {
-            $regexresult += "$($Project)\/"
-        }
-        $regexresult += "_packaging\/$($Feed)\/npm\/registry""\][\n\r\s]*_auth ?= ?""$($PAT)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]?"
-        return $regexresult
-    }
-
-    function Read-PATFromUser($OrgName) {
-        Write-Host "You need to create or supply a PAT for $($OrgName)."
-
-        Write-Host "Please navigate to:"
-        Write-Host "https://dev.azure.com/$($OrgName)/_usersSettings/tokens" -ForegroundColor Green
-        Write-Host "to create a PAT with at least 'Package Read' (check your documentation for other scopes)"
-        Write-Host ""
-
-        $LaunchBrowserForPATs = 'y'
-        $LaunchBrowserForPATs = Read-Host "Launch browser to 'https://dev.azure.com/$($OrgName)/_usersSettings/tokens'? (Default: $($LaunchBrowserForPATs))"
-        if (($LaunchBrowserForPATs -like 'y') -or ($LaunchBrowserForPATs -like 'yes') -or [string]::IsNullOrEmpty($LaunchBrowserForPATs)) {
-            Start-Process "https://dev.azure.com/$($OrgName)/_usersSettings/tokens"
-        }
-
-        $GoodPAT = $false
-        while (-not $GoodPAT) {
-            $UserPAT = Read-Host -Prompt "Please enter your PAT for $($OrgName)"
-            if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT.trim())") {
-                return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT.trim()))
-                $GoodPAT = $true
-            }
-            else {
-                Write-Host "Unable to validate PAT, please try again"
-            }
-        }
-    }
-
-    function New-PAT($PATName, $OrgName, $Scopes, $ExpireDays) {
-        $expireDate = (Get-Date).adddays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-
-        $createPAT = 'y'
-
-        if (-not $env:ADO_BUILD_ENVIRONMENT) {
-            $answer = Read-Host "A Personal Access Token (PAT) will be created for you with the following details
-    Name: $PATName
-    Organization: $OrgName
-    Expiration: $expireDate
-Would you like to continue? (Default: $($createPAT))
-"
-            if (-not [string]::IsNullOrEmpty($answer)) {
-                $createPAT = $answer
-            }
-        }
-
-        if (($createPAT -like 'y') -or ($createPAT -like 'yes')) {
-        }
-        else {
-            return $null
-        }
-
-        if (-not (Get-Module -ListAvailable "Az.Accounts")) {
-            if (-not $isRunAsAdministrator) {
-                Write-Error "This script requires admin permissions to install a module for Azure Accounts (used to log you in and create PATs for you).
-             Please restart the script in an admin console, or run the script with the -ManualPAT option and supply your own PATs when prompted."
-            }
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            Install-Module -Name Az.Accounts -AllowClobber -Repository PSGallery -Scope CurrentUser -Force | Out-Null
-        }
-
-        if (-not (Get-Module -ListAvailable "Az.Accounts")) {
-            Write-Error "Unable to find the az.accounts module. Please check previous errors and/or restart Powershell and try again. If it's still not working, run with the `-ManualPAT` flag to go through the interactive flow of manually creating a PAT."
-            exit 1
-        }
-
-        if (-not $env:ADO_BUILD_ENVIRONMENT) {
-            $azaccount = $(Get-AzContext).Account
-
-            if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
-                Write-Host "Connecting to Azure, please login if prompted"
-                Connect-AzAccount | Out-Null
-            }
-            $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
-            $headers = @{Authorization = "Bearer $($AZTokenRequest.Token)" }
-        }
-        else {
-            $headers = @{Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
-        }
-
-        $RequestBody =
-@"
-{
-    "allOrgs":"false",
-    "displayName":"$($PatName)",
-    "scope":"$($Scopes)",
-    "validTo":"$($expireDate)"
-}
-"@
-        $Url = "https://vssps.dev.azure.com/$($OrgName)/_apis/tokens/pats?api-version=$AzAPIVersion"
-
-        $responseData = (Invoke-WebRequest -Uri $Url -Body $RequestBody -Method Post -Headers $headers -UseBasicParsing -ContentType "application/json").Content | ConvertFrom-Json
-
-        $UserPAT = "$($responseData.patToken.token.trim())"
-
-        if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT)") {
-            return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT))
-        }
-        else {
-            Write-Host "Unable to validate PAT, please try again"
-            return $null
-        }
-    }
-
     $UPMConfigs = @()
-    foreach ($scopedRegistryURL in $scopedRegistryURLs) {
+
+    foreach ($scopedRegistryURL in $ScopedRegistryURLs) {
         if ($Verbose) { Write-Host "Resolving $scopedRegistryURL" }
         if (-not $url -like 'https://pkgs.dev.azure.com/*') {
             Write-Warning "Scoped registry is not does not match a pkgs.dev.azure.com, automatic PAT generation is likely to fail."
@@ -2405,7 +2406,7 @@ Would you like to continue? (Default: $($createPAT))
 
         $foundCount = 0
 
-        foreach ($tomlFileContent in $tomlFileContents) {
+        foreach ($tomlFileContent in $TomlFileContents) {
             if (-not [string]::IsNullOrWhiteSpace($tomlFileContent)) {
                 [string[]]$FullURLs = @()
 
@@ -2702,7 +2703,7 @@ function Update-UPMConfig {
 
     $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
     $scopedRegistryURLs = Get-ScopedRegistries -ProjectManifests $projectManifests
-    $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -VerifyOnly $VerifyOnly
+    $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -VerifyOnly $VerifyOnly -Force
 
     $UPMConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $DefaultScope -AzAPIVersion $AzAPIVersion -ScopedURLRegEx $ScopedURLRegEx -UPMRegEx $UPMRegEx
 
