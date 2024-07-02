@@ -2589,14 +2589,14 @@ function Sync-UPMConfig {
 function Export-UPMConfig {
     [CmdletBinding()]
     param(
-        [PSCustomObject[]]$UPMConfigs,
-        [string[]]$tomlFilePaths
+        [PSCustomObject[]]$UPMConfig,
+        [string[]]$TomlFilePaths
     )
 
-    foreach ($UPMConfig in $UPMConfigs) {
-        if (![string]::IsNullOrEmpty($UPMConfig.ScopedURL) -and ![string]::IsNullOrEmpty($UPMConfig.Auth)) {
-            $scopedRegistryURL = $UPMConfig.ScopedURL
-            $convertedScopedPAT = $UPMConfig.Auth
+    foreach ($config in $UPMConfig) {
+        if (![string]::IsNullOrEmpty($config.ScopedURL) -and ![string]::IsNullOrEmpty($config.Auth)) {
+            $scopedRegistryURL = $config.ScopedURL
+            $convertedScopedPAT = $config.Auth
 
             $tomlConfigContent = @(
                 "`r`n[npmAuth.""$scopedRegistryURL""]"
@@ -2604,7 +2604,7 @@ function Export-UPMConfig {
                 "alwaysAuth = true"
             ) -join "`r`n"
 
-            foreach ($filePath in $tomlFilePaths) {
+            foreach ($filePath in $TomlFilePaths) {
                 Add-Content -Path $filePath -Value $tomlConfigContent
             }
         }
@@ -2700,11 +2700,11 @@ function Update-UPMConfig {
 
     $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
     $scopedRegistryURLs = Get-ScopedRegistries -ProjectManifests $projectManifests
-    $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -VerifyOnly $VerifyOnly -Force
+    $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -Force
 
     $UPMConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $DefaultScope -AzAPIVersion $AzAPIVersion -ScopedURLRegEx $ScopedURLRegEx -UPMRegEx $UPMRegEx
 
-    Export-UPMConfig -UPMConfigs $UPMConfigs -tomlFilePaths $tomlFilePaths
+    Export-UPMConfig -UPMConfig $UPMConfigs -tomlFilePaths $tomlFilePaths
 
     Write-Host "Summary"
     Format-Table -AutoSize -InputObject $UPMConfigs
