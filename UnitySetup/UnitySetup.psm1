@@ -2186,16 +2186,20 @@ function Import-ProjectManifest {
 
 function Import-TOMLFiles {
     param(
-        [string[]]$tomlFilePaths = @(),
-        [switch]$VerifyOnly
+        [string[]]$TomlFilePaths = @(),
+        [switch]$Force
     )
 
     $tomlFileContents = @()
     
-    foreach ($tomlFile in $tomlFilePaths) {
+    foreach ($tomlFile in $TomlFilePaths) {
         if (-not (Test-Path $tomlFile)) {
-            if ($Verbose) { Write-Host "$tomlFile doesn't exist, creating $tomlFile" }
-            New-Item -Path $tomlFile -Force
+            if ($Force) {
+                if ($Verbose) { Write-Host "$tomlFile doesn't exist, creating $tomlFile" }
+                New-Item -Path $tomlFile -Force
+            } else {
+                Write-Error "Toml file not found at $TomlFilePaths"
+            }
         }
 
         $tomlFileContent = Get-Content $tomlFile -Raw
