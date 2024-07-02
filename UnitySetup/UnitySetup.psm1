@@ -2611,6 +2611,23 @@ function Export-UPMConfig {
     }
 }
 
+function Get-ScopedRegistries {
+    param(
+        [PSCustomObject[]]$ProjectManifests
+    )
+
+    $scopedRegistrySet = [System.Collections.Generic.HashSet[string]]::new()
+
+    foreach ($manifest in $ProjectManifests) {
+        foreach ($scopedRegistry in $manifest.scopedRegistries) {
+            $url = $scopedRegistry.url -replace '/$', ''
+            $scopedRegistrySet.Add($url) | Out-Null
+        }
+    }
+
+    return $scopedRegistrySet
+}
+
 <#
 .Synopsis
    Ensures that the user has the appropriate auth tokens to fetch Unity packages in their .toml file.
@@ -2664,13 +2681,13 @@ function Update-UPMConfig {
         [int]$PATLifetime = 7
     )
 
-    $ScopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
-    $UPMRegEx = "\[npmAuth\.""(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)""\][\n\r\s]*_auth ?= ?""(?<Token>[a-zA-Z0-9=]*)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]*"
-    $AzAPIVersion = '7.1-preview.1'
-    $DefaultScope = 'vso.packaging'
+    $scopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
+    $upmRegEx = "\[npmAuth\.""(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)""\][\n\r\s]*_auth ?= ?""(?<Token>[a-zA-Z0-9=]*)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]*"
+    $azAPIVersion = '7.1-preview.1'
+    $defaultScope = 'vso.packaging'
 
-    $NonInteractive = [Environment]::GetCommandLineArgs() | Where-Object { $_ -like '-NonI*' }
-    if (-not [Environment]::UserInteractive -or $NonInteractive) {
+    $nonInteractive = [Environment]::GetCommandLineArgs() | Where-Object { $_ -like '-NonI*' }
+    if (-not [Environment]::UserInteractive -or $nonInteractive) {
         $AutoClean = $true
     }
 
@@ -2681,33 +2698,16 @@ function Update-UPMConfig {
         $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
     }
 
-    function Get-ScopedRegistries {
-        param(
-            [PSCustomObject[]]$ProjectManifests
-        )
-    
-        $scopedRegistrySet = [System.Collections.Generic.HashSet[string]]::new()
-    
-        foreach ($manifest in $ProjectManifests) {
-            foreach ($scopedRegistry in $manifest.scopedRegistries) {
-                $url = $scopedRegistry.url -replace '/$', ''
-                $scopedRegistrySet.Add($url) | Out-Null
-            }
-        }
-    
-        return $scopedRegistrySet
-    }
-
     $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
     $scopedRegistryURLs = Get-ScopedRegistries -ProjectManifests $projectManifests
     $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -Force
 
-    $UPMConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $DefaultScope -AzAPIVersion $AzAPIVersion -ScopedURLRegEx $ScopedURLRegEx -UPMRegEx $UPMRegEx
+    $upmConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
 
-    Export-UPMConfig -UPMConfig $UPMConfigs -tomlFilePaths $tomlFilePaths
+    Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
 
     Write-Host "Summary"
-    Format-Table -AutoSize -InputObject $UPMConfigs
+    Format-Table -AutoSize -InputObject $upmConfigs
     if ($VerifyOnly) {
         Write-Host "Verify Mode complete"
         exit 0
