@@ -2695,7 +2695,7 @@ function Update-UPMConfig {
             }
         }
     
-        return [System.Collections.Generic.HashSet[string]]::new($scopedRegistrySet)
+        return $scopedRegistrySet
     }
 
     $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
