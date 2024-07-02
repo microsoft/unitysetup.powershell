@@ -2146,7 +2146,7 @@ function Import-ProjectManifest {
         Write-Error "A SearchPath or ProjectManifestPath must be provided."
     }
 
-    $ProjectManifestPaths = @()
+    $projectManifestPaths = @()
 
     if ($PSBoundParameters.ContainsKey('SearchPath')) {
         Write-Verbose "Search path ($SearchPath) provided, will attempt search within depth $SearchDepth"
@@ -2155,14 +2155,14 @@ function Import-ProjectManifest {
             Write-Verbose "No manifest.json files found in directory ($ProjectManifestPath) within depth $SearchDepth"
         }
         foreach ($file in $FoundPaths) {
-            $ProjectManifestPaths += $file
+            $projectManifestPaths += $file
             Write-Verbose "Found manifest.json file at ($file)"
         }
     }
 
     if ($PSBoundParameters.ContainsKey('ProjectManifestPath')) {
         Write-Host "Path provided is a file ($ProjectManifestPath)"
-        $ProjectManifestPaths += $ProjectManifestPath
+        $projectManifestPaths += $ProjectManifestPath
     }
 
     if (([string]::IsNullOrEmpty($ProjectManifestPath)) -or (-not (Test-Path $ProjectManifestPath))) {
@@ -2170,14 +2170,14 @@ function Import-ProjectManifest {
     }
 
     $manifests = @()
-    foreach ($ManifestPath in $ProjectManifestPaths) {
+    foreach ($manifestPath in $projectManifestPaths) {
         try {
-            $manifest = Get-Content -Path $ManifestPath | ConvertFrom-Json
+            $manifest = Get-Content -Path $manifestPath | ConvertFrom-Json
             $manifests += $manifest
-            Write-Verbose "Successfully imported manifest from ($ManifestPath)"
+            Write-Verbose "Successfully imported manifest from ($manifestPath)"
         }
         catch {
-            Write-Verbose "Failed to import manifest from ($ManifestPath): $_"
+            Write-Verbose "Failed to import manifest from ($manifestPath): $_"
         }
     }
 
@@ -2211,7 +2211,6 @@ function Import-TOMLFiles {
 
 function New-PAT($PATName, $OrgName, $Scopes, $ExpireDays) {
     $expireDate = (Get-Date).adddays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-
     $createPAT = 'y'
 
     if (-not $env:ADO_BUILD_ENVIRONMENT) {
@@ -2301,7 +2300,7 @@ function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
     $pair = "$($user):$($pass)"
     $encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
     $basicAuthValue = "Basic $encodedCreds"
-    $Headers = @{
+    $headers = @{
         Authorization = $basicAuthValue
     }
 
@@ -2313,7 +2312,7 @@ function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
 
     Write-Verbose "Attempting to validate PAT for '$($Org)' in feed: '$FeedID'"
     try {
-        $req = Invoke-WebRequest -uri $URI -Method 'GET' -Headers $Headers -ErrorVariable $WebError -UseBasicParsing -ErrorAction SilentlyContinue
+        $req = Invoke-WebRequest -uri $URI -Method 'GET' -Headers $headers -ErrorVariable $WebError -UseBasicParsing -ErrorAction SilentlyContinue
         $HTTP_Status = [int]$req.StatusCode
     }
     catch {
@@ -2343,18 +2342,18 @@ function Read-PATFromUser($OrgName) {
     Write-Host "to create a PAT with at least 'Package Read' (check your documentation for other scopes)"
     Write-Host ""
 
-    $LaunchBrowserForPATs = 'y'
-    $LaunchBrowserForPATs = Read-Host "Launch browser to 'https://dev.azure.com/$($OrgName)/_usersSettings/tokens'? (Default: $($LaunchBrowserForPATs))"
-    if (($LaunchBrowserForPATs -like 'y') -or ($LaunchBrowserForPATs -like 'yes') -or [string]::IsNullOrEmpty($LaunchBrowserForPATs)) {
+    $launchBrowserForPATs = 'y'
+    $launchBrowserForPATs = Read-Host "Launch browser to 'https://dev.azure.com/$($OrgName)/_usersSettings/tokens'? (Default: $($launchBrowserForPATs))"
+    if (($launchBrowserForPATs -like 'y') -or ($launchBrowserForPATs -like 'yes') -or [string]::IsNullOrEmpty($launchBrowserForPATs)) {
         Start-Process "https://dev.azure.com/$($OrgName)/_usersSettings/tokens"
     }
 
-    $GoodPAT = $false
-    while (-not $GoodPAT) {
+    $goodPAT = $false
+    while (-not $goodPAT) {
         $UserPAT = Read-Host -Prompt "Please enter your PAT for $($OrgName)"
         if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT.trim())") {
             return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT.trim()))
-            $GoodPAT = $true
+            $goodPAT = $true
         }
         else {
             Write-Host "Unable to validate PAT, please try again"
@@ -2574,13 +2573,13 @@ function Sync-UPMConfig {
             Write-Verbose "Auth not found for $scopedRegistryURL. Adding using supplied PAT..."
 
             $UPMConfigs += [PSCustomObject]@{
-                Scoped_URL = $scopedRegistryURL
+                ScopedURL = $scopedRegistryURL
                 Auth = $convertedScopedPAT
             }
         }
         $Results += [PSCustomObject]@{
-            Scoped_URL = $scopedRegistryURL
-            Auth_State = $AuthState
+            ScopedURL = $scopedRegistryURL
+            AuthState = $AuthState
         }
     }
 
@@ -2595,8 +2594,8 @@ function Export-UPMConfig {
     )
 
     foreach ($UPMConfig in $UPMConfigs) {
-        if (![string]::IsNullOrEmpty($UPMConfig.Scoped_URL) -and ![string]::IsNullOrEmpty($UPMConfig.Auth)) {
-            $scopedRegistryURL = $UPMConfig.Scoped_URL
+        if (![string]::IsNullOrEmpty($UPMConfig.ScopedURL) -and ![string]::IsNullOrEmpty($UPMConfig.Auth)) {
+            $scopedRegistryURL = $UPMConfig.ScopedURL
             $convertedScopedPAT = $UPMConfig.Auth
 
             $tomlConfigContent = @(
