@@ -2133,6 +2133,35 @@ function Get-UnityLicense {
     }
 }
 
+<#
+.SYNOPSIS
+    Imports Unity project manifest files from the specified path(s).
+
+.DESCRIPTION
+    This function searches for Unity project manifest files (manifest.json) within a specified directory path and its subdirectories up to a specified depth.
+    It can also directly import a manifest file if a direct file path is provided. Returns an array of the imported manifest data.
+
+.PARAMETER ProjectManifestPath
+    The path to a specific Unity project manifest file (manifest.json) or the root directory path where the search for manifest files should begin.
+
+.PARAMETER SearchPath
+    The root directory path where the search for manifest files should begin. If not provided, the function will use the ProjectManifestPath.
+
+.PARAMETER SearchDepth
+    The depth to which the search should recurse within the directory. The default value is 3.
+
+.EXAMPLE
+    Import-ProjectManifest -ProjectManifestPath "C:\Projects\UnityProject\manifest.json"
+    This example imports the manifest file directly from the specified path.
+
+.EXAMPLE
+    Import-ProjectManifest -SearchPath "C:\Projects" -SearchDepth 2
+    This example searches for manifest.json files within the "C:\Projects" directory and its subdirectories up to a depth of 2 and imports them.
+
+.EXAMPLE
+    Import-ProjectManifest -ProjectManifestPath "C:\Projects\UnityProject"
+    This example searches for manifest.json files within the specified Unity project directory and imports them.
+#>
 function Import-ProjectManifest {
     [CmdletBinding()]
     param(
@@ -2184,6 +2213,33 @@ function Import-ProjectManifest {
     return $manifests
 }
 
+<#
+.SYNOPSIS
+    Imports the contents of TOML files from specified paths.
+
+.DESCRIPTION
+    This function reads the contents of specified TOML files and returns them as an array. 
+    If a TOML file does not exist at a given path and the Force switch is used, the function will create an empty file at that path.
+    If the Force switch is not used, an error will be thrown for missing files.
+
+.PARAMETER TomlFilePaths
+    An array of file paths to the TOML files to be imported.  Returns an array of the file(s) content.
+
+.PARAMETER Force
+    A switch parameter that, when specified, forces the creation of missing TOML files at the provided paths.
+
+.EXAMPLE
+    Import-TOMLFiles -TomlFilePaths "C:\Config\settings.toml"
+    This example imports the contents of the TOML file located at "C:\Config\settings.toml".
+
+.EXAMPLE
+    Import-TOMLFiles -TomlFilePaths "C:\Config\settings.toml", "C:\Config\config.toml"
+    This example imports the contents of multiple TOML files located at the specified paths.
+
+.EXAMPLE
+    Import-TOMLFiles -TomlFilePaths "C:\Config\missing.toml" -Force
+    This example attempts to import the contents of a TOML file at "C:\Config\missing.toml". If the file does not exist, it will be created.
+#>
 function Import-TOMLFiles {
     param(
         [string[]]$TomlFilePaths = @(),
@@ -2370,6 +2426,57 @@ function Get-RegExForConfig($Org, $Project, $Feed, $PAT) {
     return $regexresult
 }
 
+<#
+.SYNOPSIS
+    Synchronizes Unity Package Manager (UPM) configuration with scoped registry URLs and manages Personal Access Tokens (PATs).
+
+.DESCRIPTION
+    This function synchronizes UPM configuration by resolving scoped registry URLs and populating authentication tokens (PATs). 
+    It supports automatic replacing of invalid PATs (expired ones), verification-only mode, manual PAT entry.
+    The function verifies existing PATs and can automatically generate new ones if needed. 
+
+.PARAMETER ScopedRegistryURLs
+    An array of scoped registry URLs to be resolved and managed.
+
+.PARAMETER TomlFileContents
+    An array of strings containing the contents of TOML files to be processed.
+
+.PARAMETER AutoClean
+    Automatically remove invalid or expired PATs from the TOML files without prompting the user.
+
+.PARAMETER VerifyOnly
+    When specified, only verify the existing PATs without making any modifications or generating new ones.
+
+.PARAMETER ManualPAT
+    When specified, open a browser to prompt the user to manually enter PATs if required.
+
+.PARAMETER PATLifetime
+    An integer specifying the lifetime of the generated PATs.
+
+.PARAMETER DefaultScope
+    A string specifying the default scope to be used when generating PATs.
+
+.PARAMETER AzAPIVersion
+    A string specifying the Azure API version to be used.
+
+.PARAMETER ScopedURLRegEx
+    Regular expression pattern to match the targeted scoped URLs.
+
+.PARAMETER UPMRegEx
+    Regular expression pattern to match UPM configurations in TOML files.
+
+.EXAMPLE
+    Sync-UPMConfig -ScopedRegistryURLs "https://pkgs.dev.azure.com/Org/Project/_packaging/Feed/npm/registry" -TomlFileContents $tomlFileContents -AutoClean
+    This example synchronizes the UPM configuration with the specified scoped registry URL and automatically cleans invalid PATs.
+
+.EXAMPLE
+    Sync-UPMConfig -ScopedRegistryURLs "https://pkgs.dev.azure.com/Org/Project/_packaging/Feed/npm/registry" -TomlFileContents $tomlFileContents -VerifyOnly
+    This example verifies the existing PATs for the specified scoped registry URL without making any modifications.
+
+.EXAMPLE
+    Sync-UPMConfig -ScopedRegistryURLs "https://pkgs.dev.azure.com/Org/Project/_packaging/Feed/npm/registry" -TomlFileContents $tomlFileContents -ManualPAT
+    This example prompts the user to manually enter PATs for the specified scoped registry URL if required.
+#>
 function Sync-UPMConfig {
     [CmdletBinding()]
     param(
@@ -2586,6 +2693,35 @@ function Sync-UPMConfig {
     return $UPMConfigs
 }
 
+<#
+.SYNOPSIS
+    Exports Unity Package Manager (UPM) configuration to specified TOML file paths. Formats the provided feed urls
+    and auth tokens as valid .toml files for Unity.
+
+.DESCRIPTION
+    This function exports UPM configuration data, including scoped registry URLs and authentication tokens (PATs), 
+    to specified TOML files. The configuration data is added to each provided TOML file path.
+
+.PARAMETER UPMConfig
+    An array of PSCustomObject instances representing the UPM configuration. Each object should contain properties 
+    'ScopedURL' and 'Auth' for the scoped registry URL and authentication token, respectively.
+
+.PARAMETER TomlFilePaths
+    An array of strings specifying the file paths of the TOML files to which the UPM configuration data will be exported.
+
+.EXAMPLE
+    $config = [PSCustomObject]@{ ScopedURL = "https://pkgs.dev.azure.com/Org/Project/_packaging/Feed/npm/registry"; Auth = "base64token" }
+    Export-UPMConfig -UPMConfig $config -TomlFilePaths "C:\users\<my_directory>\.upmconfig.toml"
+    This example exports the UPM configuration data to the TOML file located at "C:\users\<my_directory>\settings.toml".
+
+.EXAMPLE
+    $configs = @(
+        [PSCustomObject]@{ ScopedURL = "https://pkgs.dev.azure.com/Org/Project/_packaging/Feed1/npm/registry"; Auth = "base64token1" },
+        [PSCustomObject]@{ ScopedURL = "https://pkgs.dev.azure.com/Org/Project/_packaging/Feed2/npm/registry"; Auth = "base64token2" }
+    )
+    Export-UPMConfig -UPMConfig $configs -TomlFilePaths "C:\users\<my_directory>\settings.toml", "C:\users\<my_directory>\config.toml"
+    This example exports multiple UPM configuration data entries to multiple TOML files.
+#>
 function Export-UPMConfig {
     [CmdletBinding()]
     param(
