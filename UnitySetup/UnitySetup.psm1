@@ -2322,7 +2322,7 @@ function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
     }
 
     If ($HTTP_Status -eq 200) {
-        if ($Verbose) { Write-Host "PAT is valid for $Org!" }
+        Write-Verbose "PAT is valid for $Org!"
         $result = $true
     }
     else {
@@ -2390,7 +2390,7 @@ function Sync-UPMConfig {
     $UPMConfigs = @()
 
     foreach ($scopedRegistryURL in $ScopedRegistryURLs) {
-        if ($Verbose) { Write-Host "Resolving $scopedRegistryURL" }
+        Write-Verbose "Resolving $scopedRegistryURL"
         if (-not $url -like 'https://pkgs.dev.azure.com/*') {
             Write-Warning "Scoped registry is not does not match a pkgs.dev.azure.com, automatic PAT generation is likely to fail."
         }
@@ -2450,7 +2450,7 @@ function Sync-UPMConfig {
                         }
 
                         if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $reversedPAT) {
-                            if ($Verbose) { Write-Host "Found: $tomlFile has valid auth for $scopedRegistryURL" }
+                            Write-Verbose "Found: $tomlFile has valid auth for $scopedRegistryURL"
                             $AuthState = "Present and valid"
                             $foundCount++
                         }
@@ -2481,10 +2481,8 @@ function Sync-UPMConfig {
                             $reversedPAT = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("$($org.Groups["Token"])")).trim(':')
 
                             if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $reversedPAT) {
-                                if ($Verbose) {
-                                    Write-Host "Existing auth in the same organization, copying existing auth..."
-                                    Write-Host "Auth for '$($org.Groups["OrgURL"])$($org.Groups["ProjectURL"])$($org.Groups["FeedID"])' will be copied for $scopedRegistryURL"
-                                }
+                                Write-Verbose "Existing auth in the same organization, copying existing auth..."
+                                Write-Verbose "Auth for '$($org.Groups["OrgURL"])$($org.Groups["ProjectURL"])$($org.Groups["FeedID"])' will be copied for $scopedRegistryURL"
 
                                 $tomlConfigContent = @(
                                     "`r`n[npmAuth.""$scopedRegistryURL""]"
@@ -2506,7 +2504,7 @@ function Sync-UPMConfig {
                     }
                     if (-not $MatchedOrg) {
                         $AuthState = "Not found!"
-                        if ($Verbose) { Write-Host "No suitable auth inside $tomlFile for $scopedRegistryURL" }
+                        Write-Verbose "No suitable auth inside $tomlFile for $scopedRegistryURL"
                     }
                 }
             }
@@ -2523,7 +2521,7 @@ function Sync-UPMConfig {
                 if (-not [string]::IsNullOrWhiteSpace($([System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")))) {
                     $org_pat = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
                     if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $org_pat) {
-                        if ($Verbose) { Write-Host "Organization specific token found" }
+                        Write-Verbose "Organization specific token found"
                         $ScopedPAT = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
                         $AuthState = "Applied from $OrgName PAT"
                     }
@@ -2534,7 +2532,7 @@ function Sync-UPMConfig {
                 }
                 else {
                     if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $env:SYSTEM_ACCESSTOKEN) {
-                        if ($Verbose) { Write-Host "System access token found" }
+                        Write-Verbose "System access token found"
                         $ScopedPAT = $env:SYSTEM_ACCESSTOKEN
                         $AuthState = "Applied from system PAT"
                     }
@@ -2573,7 +2571,7 @@ function Sync-UPMConfig {
                 continue
             }
 
-            if ($Verbose) { Write-Host "Auth not found for $scopedRegistryURL. Adding using supplied PAT..." }
+            Write-Verbose "Auth not found for $scopedRegistryURL. Adding using supplied PAT..."
 
             $UPMConfigs += [PSCustomObject]@{
                 Scoped_URL = $scopedRegistryURL
