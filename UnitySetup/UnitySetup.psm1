@@ -2133,36 +2133,52 @@ function Get-UnityLicense {
     }
 }
 
-function Import-ProjectManifests {
+function Import-ProjectManifest {
     [CmdletBinding()]
     param(
         [Parameter()]
         [String]$ProjectManifestPath,
+        [String]$SearchPath,
         [int]$SearchDepth = 3
     )
 
+    if (-not $PSBoundParameters.ContainsKey('SearchPath') -and $PSBoundParameters.ContainsKey('ProjectManifestPath')) {
+        Write-Error "A SearchPath or ProjectManifestPath must be provided."
+    }
+
     $ProjectManifestPaths = @()
 
-    if ((Get-Item $ProjectManifestPath) -is [System.IO.DirectoryInfo]) {
-        Write-Host "Path provided is not a manifest.json file ($ProjectManifestPath), will attempt search"
+    if ($PSBoundParameters.ContainsKey('SearchPath')) {
+        Write-Verbose "Search path ($SearchPath) provided, will attempt search within depth $SearchDepth"
         $FoundPaths = @(Get-ChildItem -Path $ProjectManifestPath -Include manifest.json -File -Recurse -Depth $SearchDepth -ErrorAction SilentlyContinue)
+        if ($FoundPaths.Count -eq 0) {
+            Write-Verbose "No manifest.json files found in directory ($ProjectManifestPath) within depth $SearchDepth"
+        }
         foreach ($file in $FoundPaths) {
-            $ProjectManifestPaths += $file.FullName
-            if ($Verbose) { Write-Host "Found ($file.FullName)" }
+            $ProjectManifestPaths += $file
+            Write-Verbose "Found manifest.json file at ($file)"
         }
     }
-    else {
+
+    if ($PSBoundParameters.ContainsKey('ProjectManifestPath')) {
+        Write-Host "Path provided is a file ($ProjectManifestPath)"
         $ProjectManifestPaths += $ProjectManifestPath
     }
 
-    if (([string]::IsNullOrEmpty($ProjectManifestPath)) -or (-not $(Test-Path $ProjectManifestPath))) {
+    if (([string]::IsNullOrEmpty($ProjectManifestPath)) -or (-not (Test-Path $ProjectManifestPath))) {
         throw "Unable to find manifest.json file, please provide a path pointing directly to a Unity project's manifest.json or provide a path to a Unity project"
     }
 
     $manifests = @()
     foreach ($ManifestPath in $ProjectManifestPaths) {
-        $manifest = Get-Content -Path $ManifestPath | ConvertFrom-Json
-        $manifests += $manifest
+        try {
+            $manifest = Get-Content -Path $ManifestPath | ConvertFrom-Json
+            $manifests += $manifest
+            Write-Verbose "Successfully imported manifest from ($ManifestPath)"
+        }
+        catch {
+            Write-Verbose "Failed to import manifest from ($ManifestPath): $_"
+        }
     }
 
     return $manifests
@@ -2640,6 +2656,7 @@ function Update-UPMConfig {
         [Switch]$AutoClean = $false,
         [Switch]$NoValidation = $false, 
         [Switch]$ManualPAT = $false, 
+        [String]$SearchPath,
         [int]$SearchDepth = 3,
         [Switch]$VerifyOnly,
         [int]$PATLifetime = 7
@@ -2679,7 +2696,7 @@ function Update-UPMConfig {
         return [System.Collections.Generic.HashSet[string]]::new($scopedRegistrySet)
     }
 
-    $projectManifests = Import-ProjectManifests -ProjectManifestPath $ProjectManifestPath -SearchDepth $SearchDepth
+    $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
     $scopedRegistryURLs = Get-ScopedRegistries -ProjectManifests $projectManifests
     $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -VerifyOnly $VerifyOnly
 
