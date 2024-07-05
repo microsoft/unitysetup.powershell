@@ -90,9 +90,6 @@
         'ConvertTo-UnitySetupComponent',
         'Get-UnityLicense',
         'Import-ProjectManifest',
-        'Import-TOMLFiles',
-        'Sync-UPMConfig',
-        'Export-UPMConfig',
         'Update-UPMConfig'
     )
 
