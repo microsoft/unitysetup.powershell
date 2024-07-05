@@ -2174,7 +2174,7 @@ function New-PAT {
     $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $createPAT = 'y'
 
-    if (-not $env:ADO_BUILD_ENVIRONMENT) {
+    if (-not $env:TF_BUILD) {
         $answer = Read-Host "A Personal Access Token (PAT) will be created for you with the following details
 Name: $PATName
 Organization: $OrgName
@@ -2214,7 +2214,7 @@ Would you like to continue? (Default: $($createPAT))"
         }
     }
 
-    if (-not $env:ADO_BUILD_ENVIRONMENT) {
+    if (-not $env:TF_BUILD) {
         $azaccount = $(Get-AzContext).Account
 
         if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
@@ -2478,7 +2478,7 @@ function Sync-UPMConfig {
                 exit 1
             }
 
-            if ($env:ADO_BUILD_ENVIRONMENT) {
+            if ($env:TF_BUILD) {
                 if (-not [string]::IsNullOrWhiteSpace($([System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")))) {
                     $org_pat = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
                     if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $org_pat) {
