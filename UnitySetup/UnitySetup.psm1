@@ -2711,7 +2711,7 @@ function Import-ProjectManifest {
 #>
 # Disable PSUseShouldProcessForStateChangingFunctions
 function Update-UPMConfig {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true)]
     param(
         [Parameter()]
         [String]$ProjectManifestPath,
@@ -2744,12 +2744,17 @@ function Update-UPMConfig {
     $scopedRegistryURLs = Get-ScopedRegistry -ProjectManifests $projectManifests
     $tomlFileContents = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
-    $upmConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
+    if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
+        $upmConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
 
-    Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
+        if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
+            Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
+        }
 
-    Write-Verbose "Summary"
-    Format-Table -AutoSize -InputObject $upmConfigs
+        Write-Verbose "Summary"
+        Format-Table -AutoSize -InputObject $upmConfigs
+    }
+
     if ($VerifyOnly) {
         Write-Verbose "Verify Mode complete"
         exit 0
