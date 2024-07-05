@@ -2133,14 +2133,14 @@ function Get-UnityLicense {
     }
 }
 
-function Import-TOMLFiles {
+function Import-TOMLFile {
     param(
         [string[]]$TomlFilePaths = @(),
         [switch]$Force
     )
 
     $tomlFileContents = @()
-    
+
     foreach ($tomlFile in $TomlFilePaths) {
         if (-not (Test-Path $tomlFile)) {
             if ($Force) {
@@ -2154,12 +2154,20 @@ function Import-TOMLFiles {
         $tomlFileContent = Get-Content $tomlFile -Raw
         $tomlFileContents += $tomlFileContent
     }
-    
+
     return $tomlFileContents
 }
 
-function New-PAT($PATName, $OrgName, $Scopes, $ExpireDays) {
-    $expireDate = (Get-Date).adddays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+function New-PAT {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param (
+        [string]$PATName,
+        [string]$OrgName,
+        [string]$Scopes,
+        [int]$ExpireDays
+    )
+
+    $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $createPAT = 'y'
 
     if (-not $env:ADO_BUILD_ENVIRONMENT) {
@@ -2167,8 +2175,7 @@ function New-PAT($PATName, $OrgName, $Scopes, $ExpireDays) {
 Name: $PATName
 Organization: $OrgName
 Expiration: $expireDate
-Would you like to continue? (Default: $($createPAT))
-"
+Would you like to continue? (Default: $($createPAT))"
         if (-not [string]::IsNullOrEmpty($answer)) {
             $createPAT = $answer
         }
@@ -2187,36 +2194,37 @@ Would you like to continue? (Default: $($createPAT))
         $isRunAsAdministrator = (& whoami) -eq "root"
     }
 
-    if (-not (Get-Module -ListAvailable "Az.Accounts")) {
-        if (-not $isRunAsAdministrator) {
-            Write-Error "This script requires admin permissions to install a module for Azure Accounts (used to log you in and create PATs for you).
+    if ($PSCmdlet.ShouldProcess("Installing Az.Accounts module")) {
+        if (-not (Get-Module -ListAvailable "Az.Accounts")) {
+            if (-not $isRunAsAdministrator) {
+                Write-Error "This script requires admin permissions to install a module for Azure Accounts (used to log you in and create PATs for you).
          Please restart the script in an admin console, or run the script with the -ManualPAT option and supply your own PATs when prompted."
+            }
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Install-Module -Name Az.Accounts -AllowClobber -Repository PSGallery -Scope CurrentUser -Force | Out-Null
         }
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Install-Module -Name Az.Accounts -AllowClobber -Repository PSGallery -Scope CurrentUser -Force | Out-Null
-    }
 
-    if (-not (Get-Module -ListAvailable "Az.Accounts")) {
-        Write-Error "Unable to find the az.accounts module. Please check previous errors and/or restart Powershell and try again. If it's still not working, run with the `-ManualPAT` flag to go through the interactive flow of manually creating a PAT."
-        exit 1
+        if (-not (Get-Module -ListAvailable "Az.Accounts")) {
+            Write-Error "Unable to find the az.accounts module. Please check previous errors and/or restart Powershell and try again. If it's still not working, run with the `-ManualPAT` flag to go through the interactive flow of manually creating a PAT."
+            exit 1
+        }
     }
 
     if (-not $env:ADO_BUILD_ENVIRONMENT) {
         $azaccount = $(Get-AzContext).Account
 
         if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
-            Write-Host "Connecting to Azure, please login if prompted"
+            Write-Verbose "Connecting to Azure, please login if prompted"
             Connect-AzAccount | Out-Null
         }
         $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
-        $headers = @{Authorization = "Bearer $($AZTokenRequest.Token)" }
+        $headers = @{ Authorization = "Bearer $($AZTokenRequest.Token)" }
     }
     else {
-        $headers = @{Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
+        $headers = @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
     }
 
-    $RequestBody =
-@"
+    $RequestBody = @"
 {
 "allOrgs":"false",
 "displayName":"$($PatName)",
@@ -2226,22 +2234,24 @@ Would you like to continue? (Default: $($createPAT))
 "@
     $Url = "https://vssps.dev.azure.com/$($OrgName)/_apis/tokens/pats?api-version=$AzAPIVersion"
 
-    $responseData = (Invoke-WebRequest -Uri $Url -Body $RequestBody -Method Post -Headers $headers -UseBasicParsing -ContentType "application/json").Content | ConvertFrom-Json
+    if ($PSCmdlet.ShouldProcess("Creating PAT", "PAT Name: $PATName, Organization: $OrgName")) {
+        $responseData = (Invoke-WebRequest -Uri $Url -Body $RequestBody -Method Post -Headers $headers -UseBasicParsing -ContentType "application/json").Content | ConvertFrom-Json
 
-    $UserPAT = "$($responseData.patToken.token.trim())"
+        $UserPAT = "$($responseData.patToken.token.trim())"
 
-    if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT)") {
-        return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT))
-    }
-    else {
-        Write-Host "Unable to validate PAT, please try again"
-        return $null
+        if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT)") {
+            return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT))
+        }
+        else {
+            Write-Verbose "Unable to validate PAT, please try again"
+            return $null
+        }
     }
 }
 
 function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
     if ($NoValidation) {
-        Write-Host "Skipping PAT validation because of -NoValidation flag"
+        Write-Verbose "Skipping PAT validation because of -NoValidation flag"
         return $true
     }
     $user = 'any'
@@ -2277,19 +2287,19 @@ function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
         Write-Warning "Unable to validate PAT for $($Org). Error: $HTTP_ErrorMessage"
         $result = $false
     }
-    if ($HTTP_Response -eq $null) { }
+    if ($null -eq $HTTP_Response) { }
     else { $HTTP_Response.Close() }
 
     return $result
 }
 
 function Read-PATFromUser($OrgName) {
-    Write-Host "You need to create or supply a PAT for $($OrgName)."
+    Write-Verbose "You need to create or supply a PAT for $($OrgName)."
 
-    Write-Host "Please navigate to:"
-    Write-Host "https://dev.azure.com/$($OrgName)/_usersSettings/tokens" -ForegroundColor Green
-    Write-Host "to create a PAT with at least 'Package Read' (check your documentation for other scopes)"
-    Write-Host ""
+    Write-Verbose "Please navigate to:"
+    Write-Verbose "https://dev.azure.com/$($OrgName)/_usersSettings/tokens" -ForegroundColor Green
+    Write-Verbose "to create a PAT with at least 'Package Read' (check your documentation for other scopes)"
+    Write-Verbose ""
 
     $launchBrowserForPATs = 'y'
     $launchBrowserForPATs = Read-Host "Launch browser to 'https://dev.azure.com/$($OrgName)/_usersSettings/tokens'? (Default: $($launchBrowserForPATs))"
@@ -2305,7 +2315,7 @@ function Read-PATFromUser($OrgName) {
             $goodPAT = $true
         }
         else {
-            Write-Host "Unable to validate PAT, please try again"
+            Write-Error "Unable to validate PAT, please try again"
         }
     }
 }
@@ -2329,7 +2339,6 @@ function Sync-UPMConfig {
         [switch]$ManualPAT,
         [int]$PATLifetime,
         [string]$DefaultScope,
-        [string]$AzAPIVersion,
         [string]$ScopedURLRegEx,
         [string]$UPMRegEx
     )
@@ -2368,8 +2377,8 @@ function Sync-UPMConfig {
                             $RemoveBadPAT = Read-Host "Remove all entries for $($org.Groups["Org"]) $($org.Groups["Project"]) $($org.Groups["Feed"])? (Default: $($RemoveBadPAT))"
                         }
                         if (($RemoveBadPAT -like 'y') -or ($RemoveBadPAT -like 'yes') -or [string]::IsNullOrEmpty($RemoveBadPAT)) {
-                            Write-Host "Removing all entries for $($org.Groups["Org"]) $($org.Groups["Project"]) $($org.Groups["Feed"])"
-                            $replaceFilter = (Get-RegExForConfig $org.Groups["Org"] $org.Groups["Project"] $org.Groups["Feed"] "$($org.Groups["Token"])")
+                            Write-Verbose "Removing all entries for $($org.Groups["Org"]) $($org.Groups["Project"]) $($org.Groups["Feed"])"
+                            $replaceFilter = (Get-RegExForConfig -Org $org.Groups["Org"] -Project $org.Groups["Project"] -Feed $org.Groups["Feed"] -PAT "$($org.Groups["Token"])")
                             $tomlFileContent = $tomlFileContent -replace $replaceFilter, ''
                             Set-Content -Path $tomlFile $tomlFileContent
                         }
@@ -2390,14 +2399,14 @@ function Sync-UPMConfig {
                                 $RemoveBadPAT = Read-Host "Unable to validate a cached PAT, it could be expired or otherwise invalid. Remove expired/invalid auth for $OrgName in feed $FeedName? (Default: $($RemoveBadPAT))"
                             }
                             if (($RemoveBadPAT -like 'y') -or ($RemoveBadPAT -like 'yes') -or [string]::IsNullOrEmpty($RemoveBadPAT)) {
-                                $replaceFilter = "$(Get-RegExForConfig "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($org.Groups["Token"])")"
+                                $replaceFilter = "$(Get-RegExForConfig -Org "$($OrgName)" -Project "$($ProjectName)" -Feed "$($FeedName)" -RawPAT "$($org.Groups["Token"])")"
                                 $tomlFileContent = $tomlFileContent -replace $replaceFilter, ''
                                 Set-Content -Path $tomlFile $tomlFileContent
                             }
                             continue
                         }
 
-                        if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $reversedPAT) {
+                        if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $reversedPAT) {
                             Write-Verbose "Found: $tomlFile has valid auth for $scopedRegistryURL"
                             $AuthState = "Present and valid"
                             $foundCount++
@@ -2414,7 +2423,7 @@ function Sync-UPMConfig {
                                 $RemoveBadPAT = Read-Host "Unable to validate a cached PAT, it could be expired or otherwise invalid. Remove expired/invalid auth for $OrgName in feed $FeedName? (Default: $($RemoveBadPAT))"
                             }
                             if (($RemoveBadPAT -like 'y') -or ($RemoveBadPAT -like 'yes') -or [string]::IsNullOrEmpty($RemoveBadPAT)) {
-                                $replaceFilter = "$(Get-RegExForConfig "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($org.Groups["Token"])")"
+                                $replaceFilter = "$(Get-RegExForConfig -Org "$($OrgName)" -Project "$($ProjectName)" -Feed "$($FeedName)" -PAT "$($org.Groups["Token"])")"
                                 $tomlFileContent = $tomlFileContent -replace $replaceFilter, ''
                                 Set-Content -Path $tomlFile $tomlFileContent
                             }
@@ -2443,7 +2452,7 @@ function Sync-UPMConfig {
                                 $foundCount++
                             }
                             else {
-                                Write-Host "Existing auth in the same organization found, but it appears to be expired or otherwise invalid"
+                                Write-Verbose "Existing auth in the same organization found, but it appears to be expired or otherwise invalid"
                             }
                         }
                         if ($MatchedOrg) {
@@ -2468,7 +2477,7 @@ function Sync-UPMConfig {
             if ($env:ADO_BUILD_ENVIRONMENT) {
                 if (-not [string]::IsNullOrWhiteSpace($([System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")))) {
                     $org_pat = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
-                    if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $org_pat) {
+                    if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $org_pat) {
                         Write-Verbose "Organization specific token found"
                         $ScopedPAT = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
                         $AuthState = "Applied from $OrgName PAT"
@@ -2479,7 +2488,7 @@ function Sync-UPMConfig {
                     }
                 }
                 else {
-                    if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $env:SYSTEM_ACCESSTOKEN) {
+                    if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $env:SYSTEM_ACCESSTOKEN) {
                         Write-Verbose "System access token found"
                         $ScopedPAT = $env:SYSTEM_ACCESSTOKEN
                         $AuthState = "Applied from system PAT"
@@ -2496,13 +2505,13 @@ function Sync-UPMConfig {
 
             }
             else {
-                Write-Host "Missing authentication for $scopedRegistryURL"
-                Write-Host ""
+                Write-Verbose "Missing authentication for $scopedRegistryURL"
+                Write-Verbose ""
                 if ($ManualPAT) {
                     $newPAT = Read-PATFromUser($OrgName)
                 }
                 else {
-                    $newPAT = $(New-PAT "$($OrgName)_Package-Read (Automated)"  "$($OrgName)"  "$($DefaultScope)"  $PATLifetime)
+                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime)
                 }
                 if (-not [string]::IsNullOrEmpty($newPAT)) {
                     $convertedScopedPAT = $newPAT
@@ -2560,7 +2569,7 @@ function Export-UPMConfig {
     }
 }
 
-function Get-ScopedRegistries {
+function Get-ScopedRegisty {
     param(
         [PSCustomObject[]]$ProjectManifests
     )
@@ -2634,7 +2643,7 @@ function Import-ProjectManifest {
     }
 
     if ($PSBoundParameters.ContainsKey('ProjectManifestPath')) {
-        Write-Host "Path provided is a file ($ProjectManifestPath)"
+        Write-Verbose "Path provided is a file ($ProjectManifestPath)"
         $projectManifestPaths += $ProjectManifestPath
     }
 
@@ -2663,7 +2672,7 @@ function Import-ProjectManifest {
 
    For more information on Unity Package Manager config, please visit https://docs.unity3d.com/Manual/upm-config.html
 .DESCRIPTION
-   Looks at the Unity Project Manifest and finds the scoped registries used for fetching NPM packages.  
+   Looks at the Unity Project Manifest and finds the scoped registries used for fetching NPM packages.
 
    For each of the scoped registries found within the project manifest(s) or SOT.json file, the cmdlet will verify that
    there is a valid auth token for each scoped registry URL.  If none were found, it will try to fetch a new auth token
@@ -2702,8 +2711,7 @@ function Update-UPMConfig {
         [Parameter()]
         [String]$ProjectManifestPath,
         [Switch]$AutoClean = $false,
-        [Switch]$NoValidation = $false, 
-        [Switch]$ManualPAT = $false, 
+        [Switch]$ManualPAT = $false,
         [String]$SearchPath,
         [int]$SearchDepth = 3,
         [Switch]$VerifyOnly,
@@ -2728,17 +2736,17 @@ function Update-UPMConfig {
     }
 
     $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
-    $scopedRegistryURLs = Get-ScopedRegistries -ProjectManifests $projectManifests
-    $tomlFileContents = Import-TOMLFiles -tomlFilePaths $tomlFilePaths -Force
+    $scopedRegistryURLs = Get-ScopedRegistry -ProjectManifests $projectManifests
+    $tomlFileContents = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
     $upmConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
 
     Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
 
-    Write-Host "Summary"
+    Write-Verbose "Summary"
     Format-Table -AutoSize -InputObject $upmConfigs
     if ($VerifyOnly) {
-        Write-Host "Verify Mode complete"
+        Write-Verbose "Verify Mode complete"
         exit 0
     }
 }
