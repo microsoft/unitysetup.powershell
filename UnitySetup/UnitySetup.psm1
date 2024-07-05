@@ -79,7 +79,7 @@ class UnitySetupInstance {
                                                               [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_mono"),
                                                               [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_player_development_mono"),
                                                               [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_il2cpp"),
-                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");   
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");
                 }
             }
             ([OperatingSystem]::Linux) {
@@ -136,7 +136,7 @@ class UnityProjectInstance {
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        try { 
+        try {
             $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
             if (!$prodName) { throw "ProjectSettings is missing productName" }
         }
@@ -146,7 +146,7 @@ class UnityProjectInstance {
             $msg += "`nException Type: $($_.Exception.GetType().FullName)"
             $msg += "`nException Message: $($_.Exception.Message)"
             Write-Warning -Message $msg
-            
+
             $prodName = $null
         }
 
@@ -287,7 +287,7 @@ function Get-UnityEditor {
             switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
                     $editor = Join-Path "$p" 'Editor\Unity.exe'
-                    
+
                     if (Test-Path $editor) {
                         Write-Output (Resolve-Path $editor).Path
                     }
@@ -328,7 +328,7 @@ function ConvertTo-UnitySetupComponent {
         [parameter(Mandatory = $false)]
         [UnityVersion] $Version
     )
-    
+
     if ($Version) {
         if ($Version.Major -ge 2019) {
             if ($Component -band [UnitySetupComponent]::UWP) {
@@ -474,7 +474,7 @@ function Find-UnitySetupInstaller {
         'f' {
             $searchPages += "https://unity3d.com/get-unity/download/archive",
             "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
-            
+
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
                 $searchPages += "https://unity3d.com/unity/beta/unity$Version",
@@ -487,8 +487,8 @@ function Find-UnitySetupInstaller {
             $searchPages += $patchPage
 
             $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
-            $searchPages += $webResult.Links | 
-                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } | 
+            $searchPages += $webResult.Links |
+                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } |
                 ForEach-Object { "https://unity3d.com$($_.href)" }
         }
     }
@@ -501,7 +501,7 @@ function Find-UnitySetupInstaller {
         try {
             Write-Verbose "Searching page - $page"
             $webResult = Invoke-WebRequest $page -UseBasicParsing
-            $prototypeLink = $webResult.Links | 
+            $prototypeLink = $webResult.Links |
                 Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
                 Where-Object {
                     $link = $_
@@ -516,14 +516,14 @@ function Find-UnitySetupInstaller {
                 } |
                 Select-Object -First 1
 
-            if ($null -ne $prototypeLink) 
+            if ($null -ne $prototypeLink)
             {
                 # Ensure prototype link is absolute uri
                 if(-not [system.uri]::IsWellFormedUriString($_,[System.UriKind]::Absolute)) {
                     $prototypeLink = "$([system.uri]::new([system.uri]$page, [system.uri]$prototypeLink))"
                 }
 
-                break 
+                break
             }
         }
         catch {
@@ -718,7 +718,7 @@ function Format-BitsPerSecond {
 .Synopsis
    Download specified Unity installers.
 .DESCRIPTION
-   Downloads the given installers into the $Cache directory. 
+   Downloads the given installers into the $Cache directory.
 .PARAMETER Installers
    List of installers that needs to be downloaded.
 .PARAMETER Cache
@@ -1052,7 +1052,7 @@ function Install-UnitySetupInstance {
                 if (-not $installPath.EndsWith([io.path]::DirectorySeparatorChar)) {
                     $installPath += [io.path]::DirectorySeparatorChar
                 }
-                
+
                 # Make sure the folder .unitysetup exist before create sparsebundle
                 if (-not (Test-Path $Cache -PathType Container)) {
                     Write-Verbose "Creating directory $Cache."
@@ -1214,8 +1214,8 @@ function Get-UnitySetupInstance {
     )
 
     if((-not $BasePath) -and $env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT){
-        $BasePath = ($env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT -split ',') | ForEach-Object { 
-            $_.trim() 
+        $BasePath = ($env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT -split ',') | ForEach-Object {
+            $_.trim()
         }
         Write-Verbose "Set BasePath to $BasePath from `$env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT."
     }
@@ -1237,8 +1237,8 @@ function Get-UnitySetupInstance {
     }
 
     Write-Verbose "Searching `"$BasePath`" for UnitySetup instances..."
-    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore | 
-        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
+    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore |
+        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } |
         ForEach-Object {
             $path = $_.FullName
             try {
@@ -1296,7 +1296,7 @@ function Get-UnitySetupInstanceVersion {
 
     # No version found, start digging deeper
     if ( Test-Path "$path\Editor" -PathType Container ) {
-        
+
         # Search for the version using the ivy.xml definitions for legacy editor compatibility.
         Write-Verbose "Looking for ivy.xml files under $path\Editor\"
         $ivyFiles = Get-ChildItem -Path "$path\Editor\" -Filter 'ivy.xml' -Recurse -ErrorAction SilentlyContinue -Force -File
@@ -1333,7 +1333,7 @@ function Get-UnitySetupInstanceVersion {
         if ($null -eq $fileMatchInfo) {
             Write-Verbose "Looking for source files with UNITY_VERSION defined under $path\Editor\ "
             $fileMatchInfo = do {
-                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File | 
+                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File |
                     Select-String -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`"" |
                     ForEach-Object { $_; break; } # Stop the pipeline after the first result
             } while ($false);
@@ -1460,7 +1460,7 @@ function Get-UnityProjectInstance {
 .Synopsis
    Tests the meta file integrity of the Unity Project Instance(s).
 .DESCRIPTION
-   Tests if every item under assets has an associated .meta file 
+   Tests if every item under assets has an associated .meta file
    and every .meta file an associated item
    and that none of the meta file guids collide.
 .PARAMETER Project
@@ -1511,7 +1511,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             $assetDir = Join-Path $p.Path "Assets"
 
             # get all the directories under assets
-            [System.IO.DirectoryInfo[]]$dirs = 
+            [System.IO.DirectoryInfo[]]$dirs =
                 Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude $unityAssetExcludes
 
             Write-Verbose "Testing asset directories for missing meta files..."
@@ -1560,7 +1560,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
                     'Activity'        = "Testing files for missing meta files"
                     'Status'          = "$progressCounter / $($files.Length) - $file"
                     'PercentComplete' = (($progressCounter / $files.Length) * 100)
-                
+
                 }
                 Write-Debug $progress.Status
                 Write-Progress @progress
@@ -1700,7 +1700,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
    The log file for the Unity Editor to write to.
 .PARAMETER BuildTarget
    The platform build target for the Unity Editor to start in.
-.PARAMETER StandaloneBuildSubtarget 
+.PARAMETER StandaloneBuildSubtarget
    Select an active build sub-target for the Standalone platforms before loading a project.
 .PARAMETER AcceptAPIUpdate
    Accept the API Updater automatically. Implies BatchMode unless explicitly specified by the user.
@@ -1733,7 +1733,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
 .PARAMETER CacheServerEndpoint
     If included, the editor will attempt to use a Unity Accelerator hosted in the provided IP. The endpoint should be in the format of [IP]:[Port]. If the default Accelerator port is used, at the time of writing this, the port should be ommited.
 .PARAMETER CacheServerNamespacePrefix
-    Set the namespace prefix. Used to group data together on the cache server. 
+    Set the namespace prefix. Used to group data together on the cache server.
 .PARAMETER CacheServerDisableDownload
     Disable downloading from the cache server. If ommited, the default value is true (download enabled)
 .PARAMETER CacheServerDisableUpload
@@ -1928,9 +1928,9 @@ function Start-UnityEditor {
         if ( $ForceFree) { $sharedArgs += '-force-free' }
         if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
         if ( $CacheServerEndpoint) {
-            $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint  
+            $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint
             $sharedArgs += "-adb2"
-            $sharedArgs += "-enableCacheServer"           
+            $sharedArgs += "-enableCacheServer"
             if ( $CacheServerNamespacePrefix) { $sharedArgs += "-cacheServerNamespacePrefix", $CacheServerNamespacePrefix}
             $sharedArgs += "-cacheServerEnableDownload", $(If ($CacheServerDisableDownload) {"false"} Else {"true"})
             $sharedArgs += "-cacheServerEnableUpload", $(If ($CacheServerDisableUpload) {"false"} Else {"true"})
