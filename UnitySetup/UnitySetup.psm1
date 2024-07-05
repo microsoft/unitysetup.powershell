@@ -692,6 +692,7 @@ filter Format-Bytes {
 
 function Format-BitsPerSecond {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [parameter(Mandatory = $true)]
         [int64] $Bytes,
@@ -731,6 +732,7 @@ function Format-BitsPerSecond {
 #>
 function Request-UnitySetupInstaller {
     [CmdletBinding()]
+    [OutputType([Object[]])]
     param(
         [parameter(ValueFromPipeline = $true)]
         [UnitySetupInstaller[]] $Installers,
@@ -1482,6 +1484,7 @@ function Get-UnityProjectInstance {
 #>
 function Test-UnityProjectInstanceMetaFileIntegrity {
     [CmdletBinding(DefaultParameterSetName = "Context")]
+    [OutputType([bool])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = "Projects")]
         [ValidateNotNullOrEmpty()]
@@ -2011,7 +2014,7 @@ function Start-UnityEditor {
                 if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                     # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
                     # to make sure that we flag such errors.
-                    Write-UnityErrors $LogFile
+                    Write-UnityError $LogFile
 
                     Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
                     Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
@@ -2028,7 +2031,7 @@ function Start-UnityEditor {
 }
 
 # Open the specified Unity log file and write any errors found in the file to the error stream.
-function Write-UnityErrors {
+function Write-UnityError {
     param([string] $LogFileName)
     Write-Verbose "Checking $LogFileName for errors"
     $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
@@ -2160,6 +2163,7 @@ function Import-TOMLFile {
 
 function New-PAT {
     [CmdletBinding(SupportsShouldProcess=$true)]
+    [OutputType([string])]
     param (
         [string]$PATName,
         [string]$OrgName,
@@ -2239,7 +2243,7 @@ Would you like to continue? (Default: $($createPAT))"
 
         $UserPAT = "$($responseData.patToken.token.trim())"
 
-        if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT)") {
+        if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT "$($UserPAT)") {
             return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT))
         }
         else {
@@ -2310,7 +2314,7 @@ function Read-PATFromUser($OrgName) {
     $goodPAT = $false
     while (-not $goodPAT) {
         $UserPAT = Read-Host -Prompt "Please enter your PAT for $($OrgName)"
-        if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" "$($UserPAT.trim())") {
+        if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT "$($UserPAT.trim())") {
             return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT.trim()))
             $goodPAT = $true
         }
@@ -2437,7 +2441,7 @@ function Sync-UPMConfig {
                         if (($org.Groups["OrgURL"]) -like $OrgURL) {
                             $reversedPAT = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("$($org.Groups["Token"])")).trim(':')
 
-                            if (Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $reversedPAT) {
+                            if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $reversedPAT) {
                                 Write-Verbose "Existing auth in the same organization, copying existing auth..."
                                 Write-Verbose "Auth for '$($org.Groups["OrgURL"])$($org.Groups["ProjectURL"])$($org.Groups["FeedID"])' will be copied for $scopedRegistryURL"
 
@@ -2705,6 +2709,7 @@ function Import-ProjectManifest {
 .EXAMPLE
    Update-UPMConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot' -SearchDepth 7 -VerifyOnly True
 #>
+# Disable PSUseShouldProcessForStateChangingFunctions
 function Update-UPMConfig {
     [CmdletBinding()]
     param(
