@@ -2478,32 +2478,6 @@ function Sync-UPMConfig {
                 exit 1
             }
 
-            if ($env:TF_BUILD) {
-                if (-not [string]::IsNullOrWhiteSpace($([System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")))) {
-                    $org_pat = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
-                    if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $org_pat) {
-                        Write-Verbose "Organization specific token found"
-                        $ScopedPAT = [System.Environment]::GetEnvironmentVariable("$($OrgNameUpper)_ACCESSTOKEN")
-                        $AuthState = "Applied from $OrgName PAT"
-                    }
-                    else {
-                        Write-Error "Organization specific token found, but it was invalid"
-                        $AuthState = "$OrgName PAT is invalid"
-                    }
-                }
-                else {
-                    if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $env:SYSTEM_ACCESSTOKEN) {
-                        Write-Verbose "System access token found"
-                        $ScopedPAT = $env:SYSTEM_ACCESSTOKEN
-                        $AuthState = "Applied from system PAT"
-                    }
-                    else {
-                        Write-Error "System access token found, but it was invalid for this org"
-                        $AuthState = "PAT is invalid"
-                    }
-                }
-            }
-
             if (![string]::IsNullOrEmpty($ScopedPAT)) {
                 $convertedScopedPAT = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $ScopedPAT.trim()))
 
