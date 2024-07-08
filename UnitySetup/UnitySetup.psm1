@@ -2168,7 +2168,8 @@ function New-PAT {
         [string]$PATName,
         [string]$OrgName,
         [string]$Scopes,
-        [int]$ExpireDays
+        [int]$ExpireDays,
+        [string]$AzAPIVersion
     )
 
     $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -2190,30 +2191,7 @@ Would you like to continue? (Default: $($createPAT))"
     else {
         return $null
     }
-
-    if ($IsWindows) {
-        $isRunAsAdministrator = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-    }
-    else {
-        $isRunAsAdministrator = (& whoami) -eq "root"
-    }
-
-    if ($PSCmdlet.ShouldProcess("Installing Az.Accounts module")) {
-        if (-not (Get-Module -ListAvailable "Az.Accounts")) {
-            if (-not $isRunAsAdministrator) {
-                Write-Error "This script requires admin permissions to install a module for Azure Accounts (used to log you in and create PATs for you).
-         Please restart the script in an admin console, or run the script with the -ManualPAT option and supply your own PATs when prompted."
-            }
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            Install-Module -Name Az.Accounts -AllowClobber -Repository PSGallery -Scope CurrentUser -Force | Out-Null
-        }
-
-        if (-not (Get-Module -ListAvailable "Az.Accounts")) {
-            Write-Error "Unable to find the az.accounts module. Please check previous errors and/or restart Powershell and try again. If it's still not working, run with the `-ManualPAT` flag to go through the interactive flow of manually creating a PAT."
-            exit 1
-        }
-    }
-
+    
     if (-not $env:TF_BUILD) {
         $azaccount = $(Get-AzContext).Account
 
@@ -2341,6 +2319,7 @@ function Sync-UPMConfig {
         [switch]$AutoClean,
         [switch]$VerifyOnly,
         [switch]$ManualPAT,
+        [string]$AzAPIVersion,
         [int]$PATLifetime,
         [string]$DefaultScope,
         [string]$ScopedURLRegEx,
@@ -2489,7 +2468,7 @@ function Sync-UPMConfig {
                     $newPAT = Read-PATFromUser($OrgName)
                 }
                 else {
-                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime)
+                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime -AzAPIVersion $AzAPIVersion)
                 }
                 if (-not [string]::IsNullOrEmpty($newPAT)) {
                     $convertedScopedPAT = $newPAT
@@ -2547,7 +2526,7 @@ function Export-UPMConfig {
     }
 }
 
-function Get-ScopedRegisty {
+function Get-ScopedRegistry {
     param(
         [PSCustomObject[]]$ProjectManifests
     )
