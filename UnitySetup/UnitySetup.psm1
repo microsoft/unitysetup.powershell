@@ -2191,7 +2191,7 @@ Would you like to continue? (Default: $($createPAT))"
     else {
         return $null
     }
-    
+
     if (-not $env:TF_BUILD) {
         $azaccount = $(Get-AzContext).Account
 
@@ -2311,7 +2311,7 @@ function Get-RegExForConfig($Org, $Project, $Feed, $PAT) {
     return $regexresult
 }
 
-function Sync-UPMConfig {
+function Update-PackageAuthConfig {
     [CmdletBinding()]
     param(
         [string[]]$ScopedRegistryURLs,
@@ -2341,8 +2341,6 @@ function Sync-UPMConfig {
         $OrgName = "$($CurrentRegistry.Groups["Org"])"
         $ProjectName = "$($CurrentRegistry.Groups["Project"])"
         $FeedName = "$($CurrentRegistry.Groups["Feed"])"
-
-        $OrgNameUpper = $($OrgName).ToUpper()
 
         $foundCount = 0
 
@@ -2698,7 +2696,7 @@ function Update-UPMConfig {
     $tomlFileContents = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
     if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
-        $upmConfigs = Sync-UPMConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
+        $upmConfigs = Update-PackageAuthConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
 
         if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
             Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
