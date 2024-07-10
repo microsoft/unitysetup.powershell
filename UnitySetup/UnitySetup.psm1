@@ -2559,18 +2559,18 @@ function Get-ScopedRegistry {
     The depth to which the search should recurse within the directory. The default value is 3.
 
 .EXAMPLE
-    Import-ProjectManifest -ProjectManifestPath "C:\Projects\UnityProject\manifest.json"
+    Import-UnityProjectManifest -ProjectManifestPath "C:\Projects\UnityProject\manifest.json"
     This example imports the manifest file directly from the specified path.
 
 .EXAMPLE
-    Import-ProjectManifest -SearchPath "C:\Projects" -SearchDepth 2
+    Import-UnityProjectManifest -SearchPath "C:\Projects" -SearchDepth 2
     This example searches for manifest.json files within the "C:\Projects" directory and its subdirectories up to a depth of 2 and imports them.
 
 .EXAMPLE
-    Import-ProjectManifest -ProjectManifestPath "C:\Projects\UnityProject"
+    Import-UnityProjectManifest -ProjectManifestPath "C:\Projects\UnityProject"
     This example searches for manifest.json files within the specified Unity project directory and imports them.
 #>
-function Import-ProjectManifest {
+function Import-UnityProjectManifest {
     [CmdletBinding()]
     param(
         [Parameter()]
@@ -2650,18 +2650,18 @@ function Import-ProjectManifest {
 .PARAMETER PATLifetime
    How many days the created PAT is valid
 .EXAMPLE
-   Update-UPMConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot'
+   Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot'
 .EXAMPLE
-   Update-UPMConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot/manifest.json'
+   Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot/manifest.json'
 .EXAMPLE
-   Update-UPMConfig -AutoClean True
+   Update-UnityPackageManagerConfig -AutoClean True
 .EXAMPLE
-   Update-UPMConfig -NoValidation True -ManualPAT True
+   Update-UnityPackageManagerConfig -NoValidation True -ManualPAT True
 .EXAMPLE
-   Update-UPMConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot' -SearchDepth 7 -VerifyOnly True
+   Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot' -SearchDepth 7 -VerifyOnly True
 #>
 # Disable PSUseShouldProcessForStateChangingFunctions
-function Update-UPMConfig {
+function Update-UnityPackageManagerConfig {
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
         [Parameter()]
@@ -2691,7 +2691,7 @@ function Update-UPMConfig {
         $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
     }
 
-    $projectManifests = Import-ProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
+    $projectManifests = Import-UnityProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
     $scopedRegistryURLs = Get-ScopedRegistry -ProjectManifests $projectManifests
     $tomlFileContents = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
