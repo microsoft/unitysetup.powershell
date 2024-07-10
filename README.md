@@ -170,6 +170,23 @@ Start-UnityEditor -Credential <unityAccount> -Serial <unitySerial> -Wait
 Start-UnityEditor -Credential <unityAccount> -ReturnLicense -Wait
 ```
 
+Manage Unity Package Manager configuration
+``` powershell
+# Update NPM auth tokens for my project manifest
+Update-UnityPackageManagerConfig -ProjectManifestPath "C:\MyUnityProject\Packages\manifest.json"   
+
+# Example output
+# A Personal Access Token (PAT) will be created for you with the following details
+# Name: myorg_Package-Read (Automated)
+# Organization: myorg
+# Expiration: 2024-07-17T13:53:04.889Z
+# Would you like to continue? (Default: y): y
+#
+# ScopedURL                                                                 Auth
+# ---------                                                                 ----
+# https://pkgs.dev.azure.com/myorg/myproject/_packaging/MyRegistry/npm/registry my_auth_token_string_base64=
+```
+
 ### DSC
 UnitySetup includes the xUnitySetupInstance DSC Resource. An example configuration might look like:
 
