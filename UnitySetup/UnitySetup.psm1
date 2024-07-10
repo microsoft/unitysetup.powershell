@@ -2142,7 +2142,7 @@ function Import-TOMLFile {
         [switch]$Force
     )
 
-    $tomlFileContents = @()
+    $tomlFileObjects = @();
 
     foreach ($tomlFile in $TomlFilePaths) {
         if (-not (Test-Path $tomlFile)) {
@@ -2155,10 +2155,14 @@ function Import-TOMLFile {
         }
 
         $tomlFileContent = Get-Content $tomlFile -Raw
-        $tomlFileContents += $tomlFileContent
+        $tomlFileObject = [PSCustomObject]@{
+            tomlFilePath = $tomlFile
+            tomlFileContent = $tomlFileContent
+        }
+        $tomlFileObjects += $tomlFileObject
     }
 
-    return $tomlFileContents
+    return $tomlFileObjects
 }
 
 function New-PAT {
@@ -2315,7 +2319,7 @@ function Update-PackageAuthConfig {
     [CmdletBinding()]
     param(
         [string[]]$ScopedRegistryURLs,
-        [string[]]$TomlFileContents,
+        [PSCustomObject[]]$TomlFileObjects,
         [switch]$AutoClean,
         [switch]$VerifyOnly,
         [switch]$ManualPAT,
@@ -2344,7 +2348,9 @@ function Update-PackageAuthConfig {
 
         $foundCount = 0
 
-        foreach ($tomlFileContent in $TomlFileContents) {
+        foreach ($tomlObject in $TomlFileObjects) {
+            $tomlFileContent = $tomlObject.tomlFileContent
+            $tomlFile = $tomlObject.tomlFilePath
             if (-not [string]::IsNullOrWhiteSpace($tomlFileContent)) {
                 [string[]]$FullURLs = @()
 
@@ -2693,10 +2699,10 @@ function Update-UnityPackageManagerConfig {
 
     $projectManifests = Import-UnityProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
     $scopedRegistryURLs = Get-ScopedRegistry -ProjectManifests $projectManifests
-    $tomlFileContents = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
+    $tomlFileObjects = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
     if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
-        $upmConfigs = Update-PackageAuthConfig -scopedRegistryURLs $scopedRegistryURLs -tomlFileContents $tomlFileContents -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
+        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
 
         if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
             Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
