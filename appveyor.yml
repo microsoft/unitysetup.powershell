@@ -16,6 +16,8 @@ install:
     Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber -Verbose
 
     Install-Module 'powershell-yaml' -Scope CurrentUser -Force -AllowClobber -Verbose
+
+    Install-Module 'Az.Accounts' -RequiredVersion 2.15.1 -Scope CurrentUser -Force -AllowClobber -Verbose
 build_script:
 - ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER" -Suffix "$env:APPVEYOR_REPO_BRANCH"
 deploy_script:
