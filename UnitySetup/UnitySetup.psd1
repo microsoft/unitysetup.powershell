@@ -14,7 +14,7 @@
     RootModule        = 'UnitySetup'
 
     # Version number of this module.
-    ModuleVersion     = '5.6'
+    ModuleVersion     = '5.7'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -54,7 +54,8 @@
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules   = @(
-        @{ModuleName = "powershell-yaml"; ModuleVersion = "0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da" }
+        @{ModuleName = "powershell-yaml"; ModuleVersion = "0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da" },
+        @{ModuleName = "Az.Accounts"; ModuleVersion = "2.15.1"; Guid = "17a2feff-488b-47f9-8729-e2cec094624c" }
     )
 
     # Assemblies that must be loaded prior to importing this module
@@ -88,7 +89,9 @@
         'Get-UnityEditor',
         'Start-UnityEditor',
         'ConvertTo-UnitySetupComponent',
-        'Get-UnityLicense'
+        'Get-UnityLicense',
+        'Import-UnityProjectManifest',
+        'Update-UnityPackageManagerConfig'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

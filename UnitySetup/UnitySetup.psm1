@@ -79,7 +79,7 @@ class UnitySetupInstance {
                                                               [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win32_server_development_mono"),
                                                               [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_player_development_mono"),
                                                               [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_il2cpp"),
-                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");   
+                                                              [io.path]::Combine("$playbackEnginePath", "WindowsStandaloneSupport\Variations\win64_server_development_mono");
                 }
             }
             ([OperatingSystem]::Linux) {
@@ -136,7 +136,7 @@ class UnityProjectInstance {
         $projectSettingsFile = [io.path]::Combine($path, "ProjectSettings\ProjectSettings.asset")
         if (!(Test-Path $projectSettingsFile)) { throw "Project is missing ProjectSettings.asset" }
 
-        try { 
+        try {
             $prodName = ((Get-Content $projectSettingsFile -Raw | ConvertFrom-Yaml)['playerSettings'])['productName']
             if (!$prodName) { throw "ProjectSettings is missing productName" }
         }
@@ -146,7 +146,7 @@ class UnityProjectInstance {
             $msg += "`nException Type: $($_.Exception.GetType().FullName)"
             $msg += "`nException Message: $($_.Exception.Message)"
             Write-Warning -Message $msg
-            
+
             $prodName = $null
         }
 
@@ -287,7 +287,7 @@ function Get-UnityEditor {
             switch ($currentOS) {
                 ([OperatingSystem]::Windows) {
                     $editor = Join-Path "$p" 'Editor\Unity.exe'
-                    
+
                     if (Test-Path $editor) {
                         Write-Output (Resolve-Path $editor).Path
                     }
@@ -328,7 +328,7 @@ function ConvertTo-UnitySetupComponent {
         [parameter(Mandatory = $false)]
         [UnityVersion] $Version
     )
-    
+
     if ($Version) {
         if ($Version.Major -ge 2019) {
             if ($Component -band [UnitySetupComponent]::UWP) {
@@ -474,7 +474,7 @@ function Find-UnitySetupInstaller {
         'f' {
             $searchPages += "https://unity3d.com/get-unity/download/archive",
             "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
-            
+
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
                 $searchPages += "https://unity3d.com/unity/beta/unity$Version",
@@ -487,8 +487,8 @@ function Find-UnitySetupInstaller {
             $searchPages += $patchPage
 
             $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
-            $searchPages += $webResult.Links | 
-                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } | 
+            $searchPages += $webResult.Links |
+                Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } |
                 ForEach-Object { "https://unity3d.com$($_.href)" }
         }
     }
@@ -501,7 +501,7 @@ function Find-UnitySetupInstaller {
         try {
             Write-Verbose "Searching page - $page"
             $webResult = Invoke-WebRequest $page -UseBasicParsing
-            $prototypeLink = $webResult.Links | 
+            $prototypeLink = $webResult.Links |
                 Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
                 Where-Object {
                     $link = $_
@@ -516,14 +516,14 @@ function Find-UnitySetupInstaller {
                 } |
                 Select-Object -First 1
 
-            if ($null -ne $prototypeLink) 
+            if ($null -ne $prototypeLink)
             {
                 # Ensure prototype link is absolute uri
                 if(-not [system.uri]::IsWellFormedUriString($_,[System.UriKind]::Absolute)) {
                     $prototypeLink = "$([system.uri]::new([system.uri]$page, [system.uri]$prototypeLink))"
                 }
 
-                break 
+                break
             }
         }
         catch {
@@ -692,6 +692,7 @@ filter Format-Bytes {
 
 function Format-BitsPerSecond {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [parameter(Mandatory = $true)]
         [int64] $Bytes,
@@ -718,7 +719,7 @@ function Format-BitsPerSecond {
 .Synopsis
    Download specified Unity installers.
 .DESCRIPTION
-   Downloads the given installers into the $Cache directory. 
+   Downloads the given installers into the $Cache directory.
 .PARAMETER Installers
    List of installers that needs to be downloaded.
 .PARAMETER Cache
@@ -731,6 +732,7 @@ function Format-BitsPerSecond {
 #>
 function Request-UnitySetupInstaller {
     [CmdletBinding()]
+    [OutputType([Object[]])]
     param(
         [parameter(ValueFromPipeline = $true)]
         [UnitySetupInstaller[]] $Installers,
@@ -1052,7 +1054,7 @@ function Install-UnitySetupInstance {
                 if (-not $installPath.EndsWith([io.path]::DirectorySeparatorChar)) {
                     $installPath += [io.path]::DirectorySeparatorChar
                 }
-                
+
                 # Make sure the folder .unitysetup exist before create sparsebundle
                 if (-not (Test-Path $Cache -PathType Container)) {
                     Write-Verbose "Creating directory $Cache."
@@ -1214,8 +1216,8 @@ function Get-UnitySetupInstance {
     )
 
     if((-not $BasePath) -and $env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT){
-        $BasePath = ($env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT -split ',') | ForEach-Object { 
-            $_.trim() 
+        $BasePath = ($env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT -split ',') | ForEach-Object {
+            $_.trim()
         }
         Write-Verbose "Set BasePath to $BasePath from `$env:UNITY_SETUP_INSTANCE_BASEPATH_DEFAULT."
     }
@@ -1237,8 +1239,8 @@ function Get-UnitySetupInstance {
     }
 
     Write-Verbose "Searching `"$BasePath`" for UnitySetup instances..."
-    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore | 
-        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } | 
+    Get-ChildItem -Path $BasePath -Directory -ErrorAction Ignore |
+        Where-Object { (Get-UnityEditor $_.FullName).Count -gt 0 } |
         ForEach-Object {
             $path = $_.FullName
             try {
@@ -1296,7 +1298,7 @@ function Get-UnitySetupInstanceVersion {
 
     # No version found, start digging deeper
     if ( Test-Path "$path\Editor" -PathType Container ) {
-        
+
         # Search for the version using the ivy.xml definitions for legacy editor compatibility.
         Write-Verbose "Looking for ivy.xml files under $path\Editor\"
         $ivyFiles = Get-ChildItem -Path "$path\Editor\" -Filter 'ivy.xml' -Recurse -ErrorAction SilentlyContinue -Force -File
@@ -1333,7 +1335,7 @@ function Get-UnitySetupInstanceVersion {
         if ($null -eq $fileMatchInfo) {
             Write-Verbose "Looking for source files with UNITY_VERSION defined under $path\Editor\ "
             $fileMatchInfo = do {
-                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File | 
+                Get-ChildItem -Path "$path\Editor" -Include '*.cpp','*.h' -Recurse -ErrorAction Ignore -Force -File |
                     Select-String -Pattern "UNITY_VERSION.+`"(\d+\.\d+\.\d+[fpba]\d+).*`"" |
                     ForEach-Object { $_; break; } # Stop the pipeline after the first result
             } while ($false);
@@ -1460,7 +1462,7 @@ function Get-UnityProjectInstance {
 .Synopsis
    Tests the meta file integrity of the Unity Project Instance(s).
 .DESCRIPTION
-   Tests if every item under assets has an associated .meta file 
+   Tests if every item under assets has an associated .meta file
    and every .meta file an associated item
    and that none of the meta file guids collide.
 .PARAMETER Project
@@ -1482,6 +1484,7 @@ function Get-UnityProjectInstance {
 #>
 function Test-UnityProjectInstanceMetaFileIntegrity {
     [CmdletBinding(DefaultParameterSetName = "Context")]
+    [OutputType([bool])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = "Projects")]
         [ValidateNotNullOrEmpty()]
@@ -1511,7 +1514,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             $assetDir = Join-Path $p.Path "Assets"
 
             # get all the directories under assets
-            [System.IO.DirectoryInfo[]]$dirs = 
+            [System.IO.DirectoryInfo[]]$dirs =
                 Get-ChildItem -Path "$assetDir/*" -Recurse -Directory -Exclude $unityAssetExcludes
 
             Write-Verbose "Testing asset directories for missing meta files..."
@@ -1560,7 +1563,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
                     'Activity'        = "Testing files for missing meta files"
                     'Status'          = "$progressCounter / $($files.Length) - $file"
                     'PercentComplete' = (($progressCounter / $files.Length) * 100)
-                
+
                 }
                 Write-Debug $progress.Status
                 Write-Progress @progress
@@ -1700,7 +1703,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
    The log file for the Unity Editor to write to.
 .PARAMETER BuildTarget
    The platform build target for the Unity Editor to start in.
-.PARAMETER StandaloneBuildSubtarget 
+.PARAMETER StandaloneBuildSubtarget
    Select an active build sub-target for the Standalone platforms before loading a project.
 .PARAMETER AcceptAPIUpdate
    Accept the API Updater automatically. Implies BatchMode unless explicitly specified by the user.
@@ -1733,7 +1736,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
 .PARAMETER CacheServerEndpoint
     If included, the editor will attempt to use a Unity Accelerator hosted in the provided IP. The endpoint should be in the format of [IP]:[Port]. If the default Accelerator port is used, at the time of writing this, the port should be ommited.
 .PARAMETER CacheServerNamespacePrefix
-    Set the namespace prefix. Used to group data together on the cache server. 
+    Set the namespace prefix. Used to group data together on the cache server.
 .PARAMETER CacheServerDisableDownload
     Disable downloading from the cache server. If ommited, the default value is true (download enabled)
 .PARAMETER CacheServerDisableUpload
@@ -1928,9 +1931,9 @@ function Start-UnityEditor {
         if ( $ForceFree) { $sharedArgs += '-force-free' }
         if ( $AdditionalArguments) { $sharedArgs += $AdditionalArguments }
         if ( $CacheServerEndpoint) {
-            $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint  
+            $sharedArgs += "-cacheServerEndpoint", $CacheServerEndpoint
             $sharedArgs += "-adb2"
-            $sharedArgs += "-enableCacheServer"           
+            $sharedArgs += "-enableCacheServer"
             if ( $CacheServerNamespacePrefix) { $sharedArgs += "-cacheServerNamespacePrefix", $CacheServerNamespacePrefix}
             $sharedArgs += "-cacheServerEnableDownload", $(If ($CacheServerDisableDownload) {"false"} Else {"true"})
             $sharedArgs += "-cacheServerEnableUpload", $(If ($CacheServerDisableUpload) {"false"} Else {"true"})
@@ -2011,7 +2014,7 @@ function Start-UnityEditor {
                 if ( $LogFile -and (Test-Path $LogFile -Type Leaf) ) {
                     # Note that Unity sometimes returns a success ExitCode despite the presence of errors, but we want
                     # to make sure that we flag such errors.
-                    Write-UnityErrors $LogFile
+                    Write-UnityError $LogFile
 
                     Write-Verbose "Writing $LogFile to Information stream Tagged as 'Logs'"
                     Get-Content $LogFile | ForEach-Object { Write-Information -MessageData $_ -Tags 'Logs' }
@@ -2028,7 +2031,7 @@ function Start-UnityEditor {
 }
 
 # Open the specified Unity log file and write any errors found in the file to the error stream.
-function Write-UnityErrors {
+function Write-UnityError {
     param([string] $LogFileName)
     Write-Verbose "Checking $LogFileName for errors"
     $errors = Get-Content $LogFileName | Where-Object { Get-IsUnityError $_ }
@@ -2130,5 +2133,587 @@ function Get-UnityLicense {
     }
     else {
         Write-Warning "Alias $($_.Name) already configured by $($alias.Source)"
+    }
+}
+
+function Import-TOMLFile {
+    param(
+        [string[]]$TomlFilePaths = @(),
+        [switch]$Force
+    )
+
+    $tomlFileObjects = @();
+
+    foreach ($tomlFile in $TomlFilePaths) {
+        if (-not (Test-Path $tomlFile)) {
+            if ($Force) {
+                Write-Verbose "$tomlFile doesn't exist, creating $tomlFile"
+                New-Item -Path $tomlFile -Force
+            } else {
+                Write-Error "Toml file not found at $TomlFilePaths"
+            }
+        }
+
+        $tomlFileContent = Get-Content $tomlFile -Raw
+        $tomlFileObject = [PSCustomObject]@{
+            tomlFilePath = $tomlFile
+            tomlFileContent = $tomlFileContent
+        }
+        $tomlFileObjects += $tomlFileObject
+    }
+
+    return $tomlFileObjects
+}
+
+function New-PAT {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    [OutputType([string])]
+    param (
+        [string]$PATName,
+        [string]$OrgName,
+        [string]$Scopes,
+        [int]$ExpireDays,
+        [string]$AzAPIVersion
+    )
+
+    $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+    $createPAT = 'y'
+
+    if (-not $env:TF_BUILD) {
+        $answer = Read-Host "A Personal Access Token (PAT) will be created for you with the following details
+Name: $PATName
+Organization: $OrgName
+Expiration: $expireDate
+Would you like to continue? (Default: $($createPAT))"
+        if (-not [string]::IsNullOrEmpty($answer)) {
+            $createPAT = $answer
+        }
+    }
+
+    if (($createPAT -like 'y') -or ($createPAT -like 'yes')) {
+    }
+    else {
+        return $null
+    }
+
+    if (-not $env:TF_BUILD) {
+        $azaccount = $(Get-AzContext).Account
+
+        if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
+            Write-Verbose "Connecting to Azure, please login if prompted"
+            Connect-AzAccount | Out-Null
+        }
+        $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
+        $headers = @{ Authorization = "Bearer $($AZTokenRequest.Token)" }
+    }
+    else {
+        $headers = @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
+    }
+
+    $RequestBody = @"
+{
+"allOrgs":"false",
+"displayName":"$($PatName)",
+"scope":"$($Scopes)",
+"validTo":"$($expireDate)"
+}
+"@
+    $Url = "https://vssps.dev.azure.com/$($OrgName)/_apis/tokens/pats?api-version=$AzAPIVersion"
+
+    if ($PSCmdlet.ShouldProcess("Creating PAT", "PAT Name: $PATName, Organization: $OrgName")) {
+        $responseData = (Invoke-WebRequest -Uri $Url -Body $RequestBody -Method Post -Headers $headers -UseBasicParsing -ContentType "application/json").Content | ConvertFrom-Json
+
+        $UserPAT = "$($responseData.patToken.token.trim())"
+
+        if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT "$($UserPAT)") {
+            return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT))
+        }
+        else {
+            Write-Verbose "Unable to validate PAT, please try again"
+            return $null
+        }
+    }
+}
+
+function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
+    if ($NoValidation) {
+        Write-Verbose "Skipping PAT validation because of -NoValidation flag"
+        return $true
+    }
+    $user = 'any'
+    $pass = $RawPAT
+    $pair = "$($user):$($pass)"
+    $encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
+    $basicAuthValue = "Basic $encodedCreds"
+    $headers = @{
+        Authorization = $basicAuthValue
+    }
+
+    $URI = "https://feeds.dev.azure.com/$($Org)"
+    if (-not [string]::IsNullOrEmpty($Project)) {
+        $URI += "/$($Project)"
+    }
+    $URI += "/_apis/packaging/feeds/$($FeedID)?api-version=$AzAPIVersion"
+
+    Write-Verbose "Attempting to validate PAT for '$($Org)' in feed: '$FeedID'"
+    try {
+        $req = Invoke-WebRequest -uri $URI -Method 'GET' -Headers $headers -ErrorVariable $WebError -UseBasicParsing -ErrorAction SilentlyContinue
+        $HTTP_Status = [int]$req.StatusCode
+    }
+    catch {
+        $HTTP_Status = [int]$_.Exception.Response.StatusCode
+        $HTTP_ErrorMessage = $_
+    }
+
+    If ($HTTP_Status -eq 200) {
+        Write-Verbose "PAT is valid for $Org!"
+        $result = $true
+    }
+    else {
+        Write-Warning "Unable to validate PAT for $($Org). Error: $HTTP_ErrorMessage"
+        $result = $false
+    }
+    if ($null -eq $HTTP_Response) { }
+    else { $HTTP_Response.Close() }
+
+    return $result
+}
+
+function Read-PATFromUser($OrgName) {
+    Write-Verbose "You need to create or supply a PAT for $($OrgName)."
+
+    Write-Verbose "Please navigate to:"
+    Write-Verbose "https://dev.azure.com/$($OrgName)/_usersSettings/tokens" -ForegroundColor Green
+    Write-Verbose "to create a PAT with at least 'Package Read' (check your documentation for other scopes)"
+    Write-Verbose ""
+
+    $launchBrowserForPATs = 'y'
+    $launchBrowserForPATs = Read-Host "Launch browser to 'https://dev.azure.com/$($OrgName)/_usersSettings/tokens'? (Default: $($launchBrowserForPATs))"
+    if (($launchBrowserForPATs -like 'y') -or ($launchBrowserForPATs -like 'yes') -or [string]::IsNullOrEmpty($launchBrowserForPATs)) {
+        Start-Process "https://dev.azure.com/$($OrgName)/_usersSettings/tokens"
+    }
+
+    $goodPAT = $false
+    while (-not $goodPAT) {
+        $UserPAT = Read-Host -Prompt "Please enter your PAT for $($OrgName)"
+        if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT "$($UserPAT.trim())") {
+            return [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $UserPAT.trim()))
+            $goodPAT = $true
+        }
+        else {
+            Write-Error "Unable to validate PAT, please try again"
+        }
+    }
+}
+
+function Get-RegExForConfig($Org, $Project, $Feed, $PAT) {
+    $regexresult = "[`r`n]*\[npmAuth\.""https:\/\/pkgs.dev.azure.com\/$($Org)\/"
+    if (-not [string]::IsNullOrEmpty($Project)) {
+        $regexresult += "$($Project)\/"
+    }
+    $regexresult += "_packaging\/$($Feed)\/npm\/registry""\][\n\r\s]*_auth ?= ?""$($PAT)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]?"
+    return $regexresult
+}
+
+function Update-PackageAuthConfig {
+    [CmdletBinding()]
+    param(
+        [string[]]$ScopedRegistryURLs,
+        [PSCustomObject[]]$TomlFileObjects,
+        [switch]$AutoClean,
+        [switch]$VerifyOnly,
+        [switch]$ManualPAT,
+        [string]$AzAPIVersion,
+        [int]$PATLifetime,
+        [string]$DefaultScope,
+        [string]$ScopedURLRegEx,
+        [string]$UPMRegEx
+    )
+
+    $Results = @()
+    $UPMConfigs = @()
+
+    foreach ($scopedRegistryURL in $ScopedRegistryURLs) {
+        Write-Verbose "Resolving $scopedRegistryURL"
+        if (-not $url -like 'https://pkgs.dev.azure.com/*') {
+            Write-Warning "Scoped registry is not does not match a pkgs.dev.azure.com, automatic PAT generation is likely to fail."
+        }
+
+        $CurrentRegistry = [Regex]::Match($scopedRegistryURL, $ScopedURLRegEx)
+
+        $OrgURL = "$($CurrentRegistry.Groups["OrgURL"])"
+        $OrgName = "$($CurrentRegistry.Groups["Org"])"
+        $ProjectName = "$($CurrentRegistry.Groups["Project"])"
+        $FeedName = "$($CurrentRegistry.Groups["Feed"])"
+
+        $foundCount = 0
+
+        foreach ($tomlObject in $TomlFileObjects) {
+            $tomlFileContent = $tomlObject.tomlFileContent
+            $tomlFile = $tomlObject.tomlFilePath
+            if (-not [string]::IsNullOrWhiteSpace($tomlFileContent)) {
+                [string[]]$FullURLs = @()
+
+                foreach ($org in [Regex]::Matches($tomlFileContent, $UPMRegEx)) {
+                    $FullURL = $org.Groups["FullURL"]
+                    if ($FullURL -in $FullURLs) {
+                        Write-Error "Config file $tomlFile contains duplicate entry for $FullURL, will cause error on reading file."
+
+                        $RemoveBadPAT = 'y'
+                        if (-not $AutoClean) {
+                            $RemoveBadPAT = Read-Host "Remove all entries for $($org.Groups["Org"]) $($org.Groups["Project"]) $($org.Groups["Feed"])? (Default: $($RemoveBadPAT))"
+                        }
+                        if (($RemoveBadPAT -like 'y') -or ($RemoveBadPAT -like 'yes') -or [string]::IsNullOrEmpty($RemoveBadPAT)) {
+                            Write-Verbose "Removing all entries for $($org.Groups["Org"]) $($org.Groups["Project"]) $($org.Groups["Feed"])"
+                            $replaceFilter = (Get-RegExForConfig -Org $org.Groups["Org"] -Project $org.Groups["Project"] -Feed $org.Groups["Feed"] -PAT "$($org.Groups["Token"])")
+                            $tomlFileContent = $tomlFileContent -replace $replaceFilter, ''
+                            Set-Content -Path $tomlFile $tomlFileContent
+                        }
+                        continue
+                    }
+                    $FullURLs += $FullURL
+                }
+
+                foreach ($org in [Regex]::Matches($tomlFileContent, $UPMRegEx)) {
+                    if ("$($org.Groups["FullURL"])" -like $scopedRegistryURL) {
+                        try {
+                            $reversedPAT = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("$($org.Groups["Token"])")).trim(':')
+                        }
+                        catch {
+                            Write-Error "Auth appears malformed, unable to convert from base64"
+                            $RemoveBadPAT = 'y'
+                            if (-not $AutoClean) {
+                                $RemoveBadPAT = Read-Host "Unable to validate a cached PAT, it could be expired or otherwise invalid. Remove expired/invalid auth for $OrgName in feed $FeedName? (Default: $($RemoveBadPAT))"
+                            }
+                            if (($RemoveBadPAT -like 'y') -or ($RemoveBadPAT -like 'yes') -or [string]::IsNullOrEmpty($RemoveBadPAT)) {
+                                $replaceFilter = "$(Get-RegExForConfig -Org "$($OrgName)" -Project "$($ProjectName)" -Feed "$($FeedName)" -RawPAT "$($org.Groups["Token"])")"
+                                $tomlFileContent = $tomlFileContent -replace $replaceFilter, ''
+                                Set-Content -Path $tomlFile $tomlFileContent
+                            }
+                            continue
+                        }
+
+                        if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $reversedPAT) {
+                            Write-Verbose "Found: $tomlFile has valid auth for $scopedRegistryURL"
+                            $AuthState = "Present and valid"
+                            $foundCount++
+                        }
+                        else {
+                            $AuthState = "Invalid, failed validation"
+
+                            if ($VerifyOnly) {
+                                Write-Error "Invalid PAT found in Verify Mode"
+                                exit 1
+                            }
+                            $RemoveBadPAT = 'y'
+                            if (-not $AutoClean) {
+                                $RemoveBadPAT = Read-Host "Unable to validate a cached PAT, it could be expired or otherwise invalid. Remove expired/invalid auth for $OrgName in feed $FeedName? (Default: $($RemoveBadPAT))"
+                            }
+                            if (($RemoveBadPAT -like 'y') -or ($RemoveBadPAT -like 'yes') -or [string]::IsNullOrEmpty($RemoveBadPAT)) {
+                                $replaceFilter = "$(Get-RegExForConfig -Org "$($OrgName)" -Project "$($ProjectName)" -Feed "$($FeedName)" -PAT "$($org.Groups["Token"])")"
+                                $tomlFileContent = $tomlFileContent -replace $replaceFilter, ''
+                                Set-Content -Path $tomlFile $tomlFileContent
+                            }
+                        }
+                    }
+                }
+
+                if ($foundCount -eq 0) {
+                    $MatchedOrg = $false
+                    foreach ($org in [Regex]::Matches($tomlFileContent, $UPMRegEx)) {
+                        if (($org.Groups["OrgURL"]) -like $OrgURL) {
+                            $reversedPAT = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("$($org.Groups["Token"])")).trim(':')
+
+                            if (Confirm-PAT -Org "$($OrgName)" -Project "$($ProjectName)" -FeedID "$($FeedName)" -RawPAT $reversedPAT) {
+                                Write-Verbose "Existing auth in the same organization, copying existing auth..."
+                                Write-Verbose "Auth for '$($org.Groups["OrgURL"])$($org.Groups["ProjectURL"])$($org.Groups["FeedID"])' will be copied for $scopedRegistryURL"
+
+                                $tomlConfigContent = @(
+                                    "`r`n[npmAuth.""$scopedRegistryURL""]"
+                                    "_auth = ""$($org.Groups["Token"])"""
+                                    "alwaysAuth = true"
+                                ) -join "`r`n"
+                                Add-Content -Path $tomlFile -Value $tomlConfigContent
+                                $MatchedOrg = $true
+                                $AuthState = "Verified and copied existing auth from same org"
+                                $foundCount++
+                            }
+                            else {
+                                Write-Verbose "Existing auth in the same organization found, but it appears to be expired or otherwise invalid"
+                            }
+                        }
+                        if ($MatchedOrg) {
+                            break
+                        }
+                    }
+                    if (-not $MatchedOrg) {
+                        $AuthState = "Not found!"
+                        Write-Verbose "No suitable auth inside $tomlFile for $scopedRegistryURL"
+                    }
+                }
+            }
+        }
+
+        $ScopedPAT = ''
+        if ($foundCount -eq 0) {
+            if ($VerifyOnly) {
+                Write-Error "No PAT found in Verify Mode"
+                exit 1
+            }
+
+            if (![string]::IsNullOrEmpty($ScopedPAT)) {
+                $convertedScopedPAT = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $ScopedPAT.trim()))
+
+            }
+            else {
+                Write-Verbose "Missing authentication for $scopedRegistryURL"
+                Write-Verbose ""
+                if ($ManualPAT) {
+                    $newPAT = Read-PATFromUser($OrgName)
+                }
+                else {
+                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime -AzAPIVersion $AzAPIVersion)
+                }
+                if (-not [string]::IsNullOrEmpty($newPAT)) {
+                    $convertedScopedPAT = $newPAT
+                    $AuthState = "Applied from user"
+                }
+                else {
+                    $AuthState = "Failed to validate PAT from user"
+                }
+            }
+
+            if (-not $convertedScopedPAT) {
+                Write-Error "Auth not found for $scopedRegistryURL and no valid PAT to add"
+                $AuthState = "Missing"
+                continue
+            }
+
+            Write-Verbose "Auth not found for $scopedRegistryURL. Adding using supplied PAT..."
+
+            $UPMConfigs += [PSCustomObject]@{
+                ScopedURL = $scopedRegistryURL
+                Auth = $convertedScopedPAT
+            }
+        }
+        $Results += [PSCustomObject]@{
+            ScopedURL = $scopedRegistryURL
+            AuthState = $AuthState
+        }
+    }
+
+    return $UPMConfigs
+}
+
+function Export-UPMConfig {
+    [CmdletBinding()]
+    param(
+        [PSCustomObject[]]$UPMConfig,
+        [string[]]$TomlFilePaths
+    )
+
+    foreach ($config in $UPMConfig) {
+        if (![string]::IsNullOrEmpty($config.ScopedURL) -and ![string]::IsNullOrEmpty($config.Auth)) {
+            $scopedRegistryURL = $config.ScopedURL
+            $convertedScopedPAT = $config.Auth
+
+            $tomlConfigContent = @(
+                "`r`n[npmAuth.""$scopedRegistryURL""]"
+                "_auth = ""$convertedScopedPAT"""
+                "alwaysAuth = true"
+            ) -join "`r`n"
+
+            foreach ($filePath in $TomlFilePaths) {
+                Add-Content -Path $filePath -Value $tomlConfigContent
+            }
+        }
+    }
+}
+
+function Get-ScopedRegistry {
+    param(
+        [PSCustomObject[]]$ProjectManifests
+    )
+
+    $scopedRegistrySet = [System.Collections.Generic.HashSet[string]]::new()
+
+    foreach ($manifest in $ProjectManifests) {
+        foreach ($scopedRegistry in $manifest.scopedRegistries) {
+            $url = $scopedRegistry.url -replace '/$', ''
+            $scopedRegistrySet.Add($url) | Out-Null
+        }
+    }
+
+    return $scopedRegistrySet
+}
+
+<#
+.SYNOPSIS
+    Imports Unity project manifest files from the specified path(s).
+
+.DESCRIPTION
+    This function searches for Unity project manifest files (manifest.json) within a specified directory path and its subdirectories up to a specified depth.
+    It can also directly import a manifest file if a direct file path is provided. Returns an array of the imported manifest data.
+
+.PARAMETER ProjectManifestPath
+    The path to a specific Unity project manifest file (manifest.json) or the root directory path where the search for manifest files should begin.
+
+.PARAMETER SearchPath
+    The root directory path where the search for manifest files should begin. If not provided, the function will use the ProjectManifestPath.
+
+.PARAMETER SearchDepth
+    The depth to which the search should recurse within the directory. The default value is 3.
+
+.EXAMPLE
+    Import-UnityProjectManifest -ProjectManifestPath "C:\Projects\UnityProject\manifest.json"
+    This example imports the manifest file directly from the specified path.
+
+.EXAMPLE
+    Import-UnityProjectManifest -SearchPath "C:\Projects" -SearchDepth 2
+    This example searches for manifest.json files within the "C:\Projects" directory and its subdirectories up to a depth of 2 and imports them.
+
+.EXAMPLE
+    Import-UnityProjectManifest -ProjectManifestPath "C:\Projects\UnityProject"
+    This example searches for manifest.json files within the specified Unity project directory and imports them.
+#>
+function Import-UnityProjectManifest {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [String]$ProjectManifestPath,
+        [String]$SearchPath,
+        [int]$SearchDepth = 3
+    )
+
+    if (-not $PSBoundParameters.ContainsKey('SearchPath') -and $PSBoundParameters.ContainsKey('ProjectManifestPath')) {
+        Write-Error "A SearchPath or ProjectManifestPath must be provided."
+    }
+
+    $projectManifestPaths = @()
+
+    if ($PSBoundParameters.ContainsKey('SearchPath')) {
+        Write-Verbose "Search path ($SearchPath) provided, will attempt search within depth $SearchDepth"
+        $FoundPaths = @(Get-ChildItem -Path $ProjectManifestPath -Include manifest.json -File -Recurse -Depth $SearchDepth -ErrorAction SilentlyContinue)
+        if ($FoundPaths.Count -eq 0) {
+            Write-Verbose "No manifest.json files found in directory ($ProjectManifestPath) within depth $SearchDepth"
+        }
+        foreach ($file in $FoundPaths) {
+            $projectManifestPaths += $file
+            Write-Verbose "Found manifest.json file at ($file)"
+        }
+    }
+
+    if ($PSBoundParameters.ContainsKey('ProjectManifestPath')) {
+        Write-Verbose "Path provided is a file ($ProjectManifestPath)"
+        $projectManifestPaths += $ProjectManifestPath
+    }
+
+    if (([string]::IsNullOrEmpty($ProjectManifestPath)) -or (-not (Test-Path $ProjectManifestPath))) {
+        throw "Unable to find manifest.json file, please provide a path pointing directly to a Unity project's manifest.json or provide a path to a Unity project"
+    }
+
+    $manifests = @()
+    foreach ($manifestPath in $projectManifestPaths) {
+        try {
+            $manifest = Get-Content -Path $manifestPath | ConvertFrom-Json
+            $manifests += $manifest
+            Write-Verbose "Successfully imported manifest from ($manifestPath)"
+        }
+        catch {
+            Write-Verbose "Failed to import manifest from ($manifestPath): $_"
+        }
+    }
+
+    return $manifests
+}
+
+<#
+.Synopsis
+   Ensures that the user has the appropriate auth tokens to fetch Unity packages in their .toml file.
+
+   For more information on Unity Package Manager config, please visit https://docs.unity3d.com/Manual/upm-config.html
+.DESCRIPTION
+   Looks at the Unity Project Manifest and finds the scoped registries used for fetching NPM packages.
+
+   For each of the scoped registries found within the project manifest(s) or SOT.json file, the cmdlet will verify that
+   there is a valid auth token for each scoped registry URL.  If none were found, it will try to fetch a new auth token
+   and save it to the .toml file.
+
+   Additional arguments are available to automatically clean expired tokens, allow the user to manually propulate the token,
+   scan a deeper folder tree for manifests, or simply validate your existing PATs.
+.PARAMETER ProjectManifestPath
+   A path to a project manifest, or a path to a root directory under which Unity project manifests can be found.
+.PARAMETER AutoClean
+   Automatically remove PATs that can't be validated
+.PARAMETER NoValidation
+   Skip validation of PATs
+.PARAMETER ManualPAT
+   Do not use Azure APIs to automatically create the PAT, user will manually enter it
+.PARAMETER SearchDepth
+   How deep to search for manifest files
+.PARAMETER VerifyOnly
+   Runs in validation only mode, returns 0 if all registries are valid, otherwise returns 1
+.PARAMETER PATLifetime
+   How many days the created PAT is valid
+.EXAMPLE
+   Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot'
+.EXAMPLE
+   Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot/manifest.json'
+.EXAMPLE
+   Update-UnityPackageManagerConfig -AutoClean True
+.EXAMPLE
+   Update-UnityPackageManagerConfig -NoValidation True -ManualPAT True
+.EXAMPLE
+   Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot' -SearchDepth 7 -VerifyOnly True
+#>
+# Disable PSUseShouldProcessForStateChangingFunctions
+function Update-UnityPackageManagerConfig {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter()]
+        [String]$ProjectManifestPath,
+        [Switch]$AutoClean = $false,
+        [Switch]$ManualPAT = $false,
+        [String]$SearchPath,
+        [int]$SearchDepth = 3,
+        [Switch]$VerifyOnly,
+        [int]$PATLifetime = 7
+    )
+
+    $scopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
+    $upmRegEx = "\[npmAuth\.""(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)""\][\n\r\s]*_auth ?= ?""(?<Token>[a-zA-Z0-9=]*)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]*"
+    $azAPIVersion = '7.1-preview.1'
+    $defaultScope = 'vso.packaging'
+
+    $nonInteractive = [Environment]::GetCommandLineArgs() | Where-Object { $_ -like '-NonI*' }
+    if (-not [Environment]::UserInteractive -or $nonInteractive) {
+        $AutoClean = $true
+    }
+
+    if ($IsMacOS -or $IsLinux) {
+        $tomlFilePaths += [io.path]::combine($env:HOME, ".upmconfig.toml")
+    }
+    else {
+        $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
+    }
+
+    $projectManifests = Import-UnityProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
+    $scopedRegistryURLs = Get-ScopedRegistry -ProjectManifests $projectManifests
+    $tomlFileObjects = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
+
+    if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
+        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
+
+        if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
+            Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
+        }
+
+        Write-Verbose "Summary"
+        Format-Table -AutoSize -InputObject $upmConfigs
+    }
+
+    if ($VerifyOnly) {
+        Write-Verbose "Verify Mode complete"
+        exit 0
     }
 }
