@@ -2,6 +2,20 @@
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
+function Get-ModuleVersion {
+    param (
+        [string]$ModuleName
+    )
+    $modules = Get-Module -Name $ModuleName -ListAvailable
+    if ($modules) {
+        $highestVersion = $modules | Sort-Object Version -Descending | Select-Object -First 1
+        return [version]$highestVersion.Version
+    }
+    else {
+        return $null
+    }
+}
+
 $azAccountsVersion = Get-ModuleVersion -ModuleName "Az.Accounts"
 if ($azAccountsVersion) {
     if ($azAccountsVersion -lt [version]"1.8" -or $azAccountsVersion -gt [version]"3.9.9999") {
