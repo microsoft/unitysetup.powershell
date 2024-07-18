@@ -2,6 +2,30 @@
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
+function Get-ModuleVersion {
+    param (
+        [string]$ModuleName
+    )
+    $modules = Get-Module -Name $ModuleName -ListAvailable
+    if ($modules) {
+        $highestVersion = $modules | Sort-Object Version -Descending | Select-Object -First 1
+        return [version]$highestVersion.Version
+    }
+    else {
+        return $null
+    }
+}
+
+$azAccountsVersion = Get-ModuleVersion -ModuleName "Az.Accounts"
+if ($azAccountsVersion) {
+    if ($azAccountsVersion -lt [version]"1.8" -or $azAccountsVersion -gt [version]"3.9.9999") {
+        if ($azAccountsVersion -ge [version]"4.0") {
+            Write-Error "Az.Accounts version 4.0 includes a breaking change and is not compatible."
+            exit 1
+        }
+    }
+}
+
 [Flags()]
 enum UnitySetupComponent {
     Windows = (1 -shl 0)
@@ -2236,10 +2260,6 @@ Would you like to continue? (Default: $($createPAT))"
 }
 
 function Confirm-PAT($Org, $Project, $FeedID, $RawPAT) {
-    if ($NoValidation) {
-        Write-Verbose "Skipping PAT validation because of -NoValidation flag"
-        return $true
-    }
     $user = 'any'
     $pass = $RawPAT
     $pair = "$($user):$($pass)"
@@ -2461,6 +2481,17 @@ function Update-PackageAuthConfig {
                 exit 1
             }
 
+            if($env:TF_BUILD) {
+                if(Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $env:SYSTEM_ACCESSTOKEN) {
+                    if($Verbose){Write-Host "System access token found"}
+                    $ScopedPAT = $env:SYSTEM_ACCESSTOKEN
+                    $AuthState = "Applied from system PAT"
+                } else {
+                    Write-Error "System access token found, but it was invalid for this org"
+                    $AuthState = "PAT is invalid"
+                }
+            }
+
             if (![string]::IsNullOrEmpty($ScopedPAT)) {
                 $convertedScopedPAT = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $ScopedPAT.trim()))
 
@@ -2645,8 +2676,6 @@ function Import-UnityProjectManifest {
    A path to a project manifest, or a path to a root directory under which Unity project manifests can be found.
 .PARAMETER AutoClean
    Automatically remove PATs that can't be validated
-.PARAMETER NoValidation
-   Skip validation of PATs
 .PARAMETER ManualPAT
    Do not use Azure APIs to automatically create the PAT, user will manually enter it
 .PARAMETER SearchDepth
@@ -2661,8 +2690,6 @@ function Import-UnityProjectManifest {
    Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot/manifest.json'
 .EXAMPLE
    Update-UnityPackageManagerConfig -AutoClean True
-.EXAMPLE
-   Update-UnityPackageManagerConfig -NoValidation True -ManualPAT True
 .EXAMPLE
    Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot' -SearchDepth 7 -VerifyOnly True
 #>
