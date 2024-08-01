@@ -2198,7 +2198,7 @@ function New-PAT {
         [string]$Scopes,
         [int]$ExpireDays,
         [string]$AzAPIVersion,
-        [string]$AzureSubscription
+        [guid]$AzureSubscription
     )
 
     $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -2226,7 +2226,7 @@ Would you like to continue? (Default: $($createPAT))"
 
         if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
             Write-Verbose "Connecting to Azure, please login if prompted"
-            if (-not [string]::IsNullOrEmpty($AzureSubscription)) {
+            if ($AzureSubscription -ne [guid]::Empty) {
                 Connect-AzAccount -Subscription $AzureSubscription | Out-Null
             } else {
                 Connect-AzAccount | Out-Null
@@ -2353,7 +2353,7 @@ function Update-PackageAuthConfig {
         [string]$DefaultScope,
         [string]$ScopedURLRegEx,
         [string]$UPMRegEx,
-        [string]$AzureSubscription
+        [guid]$AzureSubscription
     )
 
     $Results = @()
@@ -2713,7 +2713,7 @@ function Update-UnityPackageManagerConfig {
         [int]$SearchDepth = 3,
         [Switch]$VerifyOnly,
         [int]$PATLifetime = 7,
-        [String]$AzureSubscription
+        [guid]$AzureSubscription
     )
 
     $scopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
@@ -2731,10 +2731,6 @@ function Update-UnityPackageManagerConfig {
     }
     else {
         $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
-    }
-
-    if ($AzureSubscription -and -not [guid]::TryParse($AzureSubscription, [ref] [guid]::Empty)) {
-        throw "AzureSubscription parameter must be a valid GUID."
     }
 
     $projectManifests = Import-UnityProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
