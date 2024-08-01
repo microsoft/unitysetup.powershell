@@ -2226,11 +2226,11 @@ Would you like to continue? (Default: $($createPAT))"
 
         if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
             Write-Verbose "Connecting to Azure, please login if prompted"
-            if ($AzureSubscription -ne [guid]::Empty) {
-                Connect-AzAccount -Subscription $AzureSubscription | Out-Null
-            } else {
-                Connect-AzAccount | Out-Null
+            $connectArgs = @{}
+            if ($AzureSubscription -ne [guid]::Empty) { 
+                $connectArgs.Subscription = $AzureSubscription 
             }
+            Connect-AzAccount @connectArgs  | Out-Null
         }
         $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
         $headers = @{ Authorization = "Bearer $($AZTokenRequest.Token)" }
