@@ -2197,7 +2197,8 @@ function New-PAT {
         [string]$OrgName,
         [string]$Scopes,
         [int]$ExpireDays,
-        [string]$AzAPIVersion
+        [string]$AzAPIVersion,
+        [string]$defaultSubscriptionId
     )
 
     $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -2225,7 +2226,11 @@ Would you like to continue? (Default: $($createPAT))"
 
         if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
             Write-Verbose "Connecting to Azure, please login if prompted"
-            Connect-AzAccount | Out-Null
+            if ($PSBoundParameters.ContainsKey('defaultSubscriptionId')) {
+                Connect-AzAccount -Subscription $defaultSubscriptionId | Out-Null
+            } else {
+                Connect-AzAccount | Out-Null
+            }
         }
         $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
         $headers = @{ Authorization = "Bearer $($AZTokenRequest.Token)" }
@@ -2347,7 +2352,8 @@ function Update-PackageAuthConfig {
         [int]$PATLifetime,
         [string]$DefaultScope,
         [string]$ScopedURLRegEx,
-        [string]$UPMRegEx
+        [string]$UPMRegEx,
+        [string]$defaultSubscriptionId
     )
 
     $Results = @()
@@ -2503,7 +2509,7 @@ function Update-PackageAuthConfig {
                     $newPAT = Read-PATFromUser($OrgName)
                 }
                 else {
-                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime -AzAPIVersion $AzAPIVersion)
+                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime -AzAPIVersion $AzAPIVersion -defaultSubscriptionId $defaultSubscriptionId)
                 }
                 if (-not [string]::IsNullOrEmpty($newPAT)) {
                     $convertedScopedPAT = $newPAT
@@ -2684,6 +2690,8 @@ function Import-UnityProjectManifest {
    Runs in validation only mode, returns 0 if all registries are valid, otherwise returns 1
 .PARAMETER PATLifetime
    How many days the created PAT is valid
+.PARAMETER defaultSubscriptionId
+   The default subscription ID to use when logging into Azure
 .EXAMPLE
    Update-UnityPackageManagerConfig -ProjectManifestPath '/User/myusername/MyUnityProjectRoot'
 .EXAMPLE
@@ -2704,7 +2712,8 @@ function Update-UnityPackageManagerConfig {
         [String]$SearchPath,
         [int]$SearchDepth = 3,
         [Switch]$VerifyOnly,
-        [int]$PATLifetime = 7
+        [int]$PATLifetime = 7,
+        [String]$defaultSubscriptionId
     )
 
     $scopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
@@ -2729,7 +2738,7 @@ function Update-UnityPackageManagerConfig {
     $tomlFileObjects = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
     if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
-        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx
+        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx -defaultSubscriptionId $defaultSubscriptionId
 
         if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
             Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
