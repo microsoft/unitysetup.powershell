@@ -2713,7 +2713,7 @@ function Update-UnityPackageManagerConfig {
         [int]$SearchDepth = 3,
         [Switch]$VerifyOnly,
         [int]$PATLifetime = 7,
-        [guid]$AzureSubscription
+        [guid]$AzureSubscription = [guid]::Empty
     )
 
     $scopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
