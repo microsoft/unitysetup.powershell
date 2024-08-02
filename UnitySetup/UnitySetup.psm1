@@ -2713,8 +2713,22 @@ function Update-UnityPackageManagerConfig {
         [int]$SearchDepth = 3,
         [Switch]$VerifyOnly,
         [int]$PATLifetime = 7,
-        [guid]$AzureSubscription = [guid]::Empty
+        [String]$AzureSubscription # Define as String
     )
+
+    $AzureSubscriptionGuid = $null
+
+    if (-not [string]::IsNullOrEmpty($AzureSubscription)) {
+        try {
+            $AzureSubscriptionGuid = [guid]::Parse($AzureSubscription)
+        } catch {
+            Write-Error "AzureSubscription parameter must be a valid GUID."
+            return
+        }
+    }
+    else {
+        $AzureSubscriptionGuid = [guid]::Empty
+    }
 
     $scopedURLRegEx = "(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)"
     $upmRegEx = "\[npmAuth\.""(?<FullURL>(?<OrgURL>https:\/\/pkgs.dev.azure.com\/(?<Org>[a-zA-Z0-9]*))\/?(?<Project>[a-zA-Z0-9]*)?\/_packaging\/(?<Feed>[a-zA-Z0-9\-_\.%\(\)!]*)?\/npm\/registry\/?)""\][\n\r\s]*_auth ?= ?""(?<Token>[a-zA-Z0-9=]*)""[\n\r\s]*(?:alwaysAuth[\n\r\s]*=[\n\r\s]*true)[\n\r\s]*"
@@ -2738,7 +2752,7 @@ function Update-UnityPackageManagerConfig {
     $tomlFileObjects = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
 
     if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
-        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx -AzureSubscription $AzureSubscription
+        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx -AzureSubscription $AzureSubscriptionGuid
 
         if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
             Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
