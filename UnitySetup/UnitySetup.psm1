@@ -2788,7 +2788,7 @@ function Update-UnityPackageManagerConfig {
         }
 
         Write-Verbose "Summary"
-        Format-Table -AutoSize -InputObject $upmConfigs
+        Write-Output $upmConfigs
     }
 
     if ($VerifyOnly) {
