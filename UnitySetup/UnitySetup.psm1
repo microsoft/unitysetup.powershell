@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+﻿# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 Import-Module powershell-yaml -MinimumVersion '0.3' -ErrorAction Stop
 
@@ -13,16 +13,6 @@ function Get-ModuleVersion {
     }
     else {
         return $null
-    }
-}
-
-$azAccountsVersion = Get-ModuleVersion -ModuleName "Az.Accounts"
-if ($azAccountsVersion) {
-    if ($azAccountsVersion -lt [version]"1.8" -or $azAccountsVersion -gt [version]"3.9.9999") {
-        if ($azAccountsVersion -ge [version]"4.0") {
-            Write-Error "Az.Accounts version 4.0 includes a breaking change and is not compatible."
-            exit 1
-        }
     }
 }
 
@@ -2201,6 +2191,15 @@ function New-PAT {
         [guid]$AzureSubscription
     )
 
+    $azAccountsVersion = Get-ModuleVersion -ModuleName "Az.Accounts"
+    if ($azAccountsVersion) {
+        if ($azAccountsVersion -lt [version]"1.8" -or $azAccountsVersion -gt [version]"3.9.9999") {
+            if ($azAccountsVersion -ge [version]"4.0") {
+                throw "Az.Accounts version 4.0 includes a breaking change and is not compatible."
+            }
+        }
+    }
+
     $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $createPAT = 'y'
 
@@ -2227,8 +2226,8 @@ Would you like to continue? (Default: $($createPAT))"
         if ([string]::IsNullOrEmpty($azaccount) -or (-not $azaccount.Id.Contains("@microsoft.com"))) {
             Write-Verbose "Connecting to Azure, please login if prompted"
             $connectArgs = @{}
-            if ($AzureSubscription -ne [guid]::Empty) { 
-                $connectArgs.Subscription = $AzureSubscription 
+            if ($PSBoundParameters.ContainsKey('AzureSubscription')) {
+                $connectArgs.Subscription = $AzureSubscription
             }
             Connect-AzAccount @connectArgs  | Out-Null
         }
@@ -2349,7 +2348,7 @@ function Update-PackageAuthConfig {
         [switch]$VerifyOnly,
         [switch]$ManualPAT,
         [string]$AzAPIVersion,
-        [int]$PATLifetime,
+        [uint]$PATLifetime,
         [string]$DefaultScope,
         [string]$ScopedURLRegEx,
         [string]$UPMRegEx,
@@ -2428,8 +2427,7 @@ function Update-PackageAuthConfig {
                             $AuthState = "Invalid, failed validation"
 
                             if ($VerifyOnly) {
-                                Write-Error "Invalid PAT found in Verify Mode"
-                                exit 1
+                                throw "Invalid PAT found in Verify Mode"
                             }
                             $RemoveBadPAT = 'y'
                             if (-not $AutoClean) {
@@ -2483,8 +2481,7 @@ function Update-PackageAuthConfig {
         $ScopedPAT = ''
         if ($foundCount -eq 0) {
             if ($VerifyOnly) {
-                Write-Error "No PAT found in Verify Mode"
-                exit 1
+                throw "No PAT found in Verify Mode"
             }
 
             if($env:TF_BUILD) {
@@ -2500,7 +2497,6 @@ function Update-PackageAuthConfig {
 
             if (![string]::IsNullOrEmpty($ScopedPAT)) {
                 $convertedScopedPAT = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":" + $ScopedPAT.trim()))
-
             }
             else {
                 Write-Verbose "Missing authentication for $scopedRegistryURL"
@@ -2616,23 +2612,29 @@ function Get-ScopedRegistry {
 function Import-UnityProjectManifest {
     [CmdletBinding()]
     param(
-        [Parameter()]
-        [String]$ProjectManifestPath,
-        [String]$SearchPath,
-        [int]$SearchDepth = 3
-    )
+        [ValidateScript({if(-not [string]::IsNullOrEmpty($_)) { Test-Path $_ -PathType Leaf }}, ErrorMessage = "`"{0}`" is not a valid file")]
+        [ValidateNotNullOrEmpty()]
+        [Parameter(Mandatory=$true, ParameterSetName = "ProjectManifest")]
+        [Parameter(Mandatory=$true, ParameterSetName = "SearchPathAndProjectManifest")]
+        [string]$ProjectManifestPath,
 
-    if (-not $PSBoundParameters.ContainsKey('SearchPath') -and $PSBoundParameters.ContainsKey('ProjectManifestPath')) {
-        Write-Error "A SearchPath or ProjectManifestPath must be provided."
-    }
+        [ValidateNotNullOrEmpty()]
+        [Parameter(Mandatory=$true, ParameterSetName = "SearchPath")]
+        [Parameter(Mandatory=$true, ParameterSetName = "SearchPathAndProjectManifest")]
+        [string]$SearchPath,
+
+        [Parameter(Mandatory=$false, ParameterSetName = "SearchPath")]
+        [Parameter(Mandatory=$false, ParameterSetName = "SearchPathAndProjectManifest")]
+        [uint]$SearchDepth = 3
+    )
 
     $projectManifestPaths = @()
 
     if ($PSBoundParameters.ContainsKey('SearchPath')) {
         Write-Verbose "Search path ($SearchPath) provided, will attempt search within depth $SearchDepth"
-        $FoundPaths = @(Get-ChildItem -Path $ProjectManifestPath -Include manifest.json -File -Recurse -Depth $SearchDepth -ErrorAction SilentlyContinue)
+        $FoundPaths = @(Get-ChildItem -Path $SearchPath -Include manifest.json -File -Recurse -Depth $SearchDepth -ErrorAction SilentlyContinue)
         if ($FoundPaths.Count -eq 0) {
-            Write-Verbose "No manifest.json files found in directory ($ProjectManifestPath) within depth $SearchDepth"
+            Write-Verbose "No manifest.json files found in directory ($SearchPath) within depth $SearchDepth"
         }
         foreach ($file in $FoundPaths) {
             $projectManifestPaths += $file
@@ -2643,10 +2645,6 @@ function Import-UnityProjectManifest {
     if ($PSBoundParameters.ContainsKey('ProjectManifestPath')) {
         Write-Verbose "Path provided is a file ($ProjectManifestPath)"
         $projectManifestPaths += $ProjectManifestPath
-    }
-
-    if (([string]::IsNullOrEmpty($ProjectManifestPath)) -or (-not (Test-Path $ProjectManifestPath))) {
-        throw "Unable to find manifest.json file, please provide a path pointing directly to a Unity project's manifest.json or provide a path to a Unity project"
     }
 
     $manifests = @()
@@ -2705,14 +2703,26 @@ function Import-UnityProjectManifest {
 function Update-UnityPackageManagerConfig {
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
-        [Parameter()]
-        [String]$ProjectManifestPath,
-        [Switch]$AutoClean = $false,
-        [Switch]$ManualPAT = $false,
-        [String]$SearchPath,
-        [int]$SearchDepth = 3,
-        [Switch]$VerifyOnly,
-        [int]$PATLifetime = 7,
+        [ValidateScript({if(-not [string]::IsNullOrEmpty($_)) { Test-Path $_ -PathType Leaf }}, ErrorMessage = "`"{0}`" is not a valid file")]
+        [ValidateNotNullOrEmpty()]
+        [Parameter(Mandatory=$true, ParameterSetName = "ProjectManifest")]
+        [Parameter(Mandatory=$true, ParameterSetName = "SearchPathAndProjectManifest")]
+        [string]$ProjectManifestPath,
+
+        [ValidateNotNullOrEmpty()]
+        [Parameter(Mandatory=$true, ParameterSetName = "SearchPath")]
+        [Parameter(Mandatory=$true, ParameterSetName = "SearchPathAndProjectManifest")]
+        [string]$SearchPath,
+
+        [Parameter(Mandatory=$false, ParameterSetName = "SearchPath")]
+        [Parameter(Mandatory=$false, ParameterSetName = "SearchPathAndProjectManifest")]
+        [uint]$SearchDepth = 3,
+
+        [switch]$AutoClean,
+        [switch]$ManualPAT,
+        [switch]$VerifyOnly,
+        [uint]$PATLifetime = 7,
+        [ValidateScript({$_ -ne [guid]::Empty}, ErrorMessage = "Cannot be empty guid.")]
         [guid]$AzureSubscription
     )
 
@@ -2726,6 +2736,7 @@ function Update-UnityPackageManagerConfig {
         $AutoClean = $true
     }
 
+    $tomlFilePaths = @()
     if ($IsMacOS -or $IsLinux) {
         $tomlFilePaths += [io.path]::combine($env:HOME, ".upmconfig.toml")
     }
@@ -2733,12 +2744,44 @@ function Update-UnityPackageManagerConfig {
         $tomlFilePaths += [io.path]::combine($env:USERPROFILE, ".upmconfig.toml")
     }
 
-    $projectManifests = Import-UnityProjectManifest -ProjectManifestPath $ProjectManifestPath -SearchPath $SearchPath -SearchDepth $SearchDepth
+    $importUnityProjectManifestParams = @{}
+
+    if($PSBoundParameters.ContainsKey('ProjectManifestPath')) {
+        $importUnityProjectManifestParams.ProjectManifestPath = $ProjectManifestPath
+    }
+
+    if($PSBoundParameters.ContainsKey('SearchPath')) {
+        $importUnityProjectManifestParams.SearchPath = $SearchPath
+    }
+
+    if($PSBoundParameters.ContainsKey('SearchDepth')) {
+        $importUnityProjectManifestParams.SearchDepth = $SearchDepth
+    }
+
+    $projectManifests = Import-UnityProjectManifest @importUnityProjectManifestParams
     $scopedRegistryURLs = Get-ScopedRegistry -ProjectManifests $projectManifests
-    $tomlFileObjects = Import-TOMLFile -tomlFilePaths $tomlFilePaths -Force
+    $tomlFileObjects = Import-TOMLFile -TomlFilePaths $tomlFilePaths -Force
 
     if ($PSCmdlet.ShouldProcess("Synchronizing UPM configuration")) {
-        $upmConfigs = Update-PackageAuthConfig -ScopedRegistryURLs $scopedRegistryURLs -TomlfileObjects $tomlFileObjects -AutoClean:$AutoClean.IsPresent -VerifyOnly:$VerifyOnly.IsPresent -ManualPAT:$ManualPAT.IsPresent -PATLifetime $PATLifetime -DefaultScope $defaultScope -AzAPIVersion $azAPIVersion -ScopedURLRegEx $scopedURLRegEx -UPMRegEx $upmRegEx -AzureSubscription $AzureSubscription
+        $updatePackageAuthParams = @{
+            'ScopedRegistryURLs' = $scopedRegistryURLs
+            'TomlfileObjects' = $tomlFileObjects
+            'PATLifetime' = $PATLifetime
+            'DefaultScope' = $defaultScope
+            'AzAPIVersion' = $azAPIVersion
+            'ScopedURLRegEx' = $scopedURLRegEx
+            'UPMRegEx' = $upmRegEx
+        }
+
+        if($AutoClean) { $updatePackageAuthParams.AutoClean = $true }
+        if($VerifyOnly) { $updatePackageAuthParams.VerifyOnly = $true }
+        if($ManualPAT) { $updatePackageAuthParams.ManualPAT = $true }
+
+        if($PSBoundParameters.ContainsKey('AzureSubscription')){
+            $updatePackageAuthParams.AzureSubscription = $AzureSubscription
+        }
+
+        $upmConfigs = Update-PackageAuthConfig @updatePackageAuthParams
 
         if ($PSCmdlet.ShouldProcess("Exporting UPM configuration")) {
             Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
@@ -2750,6 +2793,5 @@ function Update-UnityPackageManagerConfig {
 
     if ($VerifyOnly) {
         Write-Verbose "Verify Mode complete"
-        exit 0
     }
 }
