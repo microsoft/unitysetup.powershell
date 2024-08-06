@@ -2733,6 +2733,7 @@ function Update-UnityPackageManagerConfig {
         [switch]$AutoClean,
         [switch]$ManualPAT,
         [switch]$VerifyOnly,
+        [ValidateScript({$_ -gt 0}, ErrorMessage = "PATLifetime must be greater than zero")]
         [uint]$PATLifetime = 7,
         [ValidateScript({$_ -ne [guid]::Empty}, ErrorMessage = "Cannot be empty guid.")]
         [guid]$AzureSubscription
