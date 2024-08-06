@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="7" errors="0" failures="1" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2024-08-06" time="15:10:31">
+  <environment user-domain="REDMOND" user="mismit" machine-name="MISMIT-THINKPAD" platform="Microsoft Windows 11 Enterprise|C:\Windows|\Device\Harddisk0\Partition3" clr-version="8.0.7" cwd="C:\src\fork_unitysetup.powershell\Tests" nunit-version="2.5.8.0" os-version="10.0.22631" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Failure" success="False" time="27.1192" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="C:\src\fork_unitysetup.powershell\Tests\E2ETests\Update-UnityPackageManagerConfig.Tests.ps1" executed="True" result="Failure" success="False" time="27.1192" asserts="0" description="C:\src\fork_unitysetup.powershell\Tests\E2ETests\Update-UnityPackageManagerConfig.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Update-UnityPackageManagerConfig" executed="True" result="Failure" success="False" time="27.0069" asserts="0" description="Update-UnityPackageManagerConfig">
+            <results>
+              <test-suite type="TestFixture" name="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets" executed="True" result="Success" success="True" time="25.1998" asserts="0" description="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets">
+                <results>
+                  <test-case description="supports a root folder target" name="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets.supports a root folder target" time="4.6621" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="supports a single manifest target" name="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets.supports a single manifest target" time="2.5843" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="supports a search target with multiple manifests" name="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets.supports a search target with multiple manifests" time="15.7454" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="supports a single manifest-like target (any JSON file with valid scoped registries)" name="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets.supports a single manifest-like target (any JSON file with valid scoped registries)" time="2.1948" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="should throw if manifest path is a folder, not a file" name="Update-UnityPackageManagerConfig.E2E Validation of manifest/folder targets.should throw if manifest path is a folder, not a file" time="0.0094" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Update-UnityPackageManagerConfig.E2E Validation of AzureSubscriptionID options" executed="True" result="Failure" success="False" time="27.0045" asserts="0" description="Update-UnityPackageManagerConfig.E2E Validation of AzureSubscriptionID options">
+                <results>
+                  <test-case description="should throw on malformed AzureSubscription guid" name="Update-UnityPackageManagerConfig.E2E Validation of AzureSubscriptionID options.should throw on malformed AzureSubscription guid" time="0.0054" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="should accept a valid AzureSubscription guid" name="Update-UnityPackageManagerConfig.E2E Validation of AzureSubscriptionID options.should accept a valid AzureSubscription guid" time="1.7934" asserts="0" success="False" result="Failure" executed="True">
+                    <failure>
+                      <message>Expected an exception with message like '*Unrecognized Guid format*' to be thrown, but no exception was thrown.</message>
+                      <stack-trace>at { Update-UnityPackageManagerConfig -ProjectManifestPath $env:TEST_UNITY_MANIFESTPATH -AzureSubscription $env:TEST_AZURESUBSCRIPTION_ID } | Should -Throw "*Unrecognized Guid format*", C:\src\fork_unitysetup.powershell\Tests\E2ETests\Update-UnityPackageManagerConfig.Tests.ps1:34
+at &lt;ScriptBlock&gt;, C:\src\fork_unitysetup.powershell\Tests\E2ETests\Update-UnityPackageManagerConfig.Tests.ps1:34</stack-trace>
+                    </failure>
+                  </test-case>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
