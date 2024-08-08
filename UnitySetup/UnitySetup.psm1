@@ -2505,7 +2505,19 @@ function Update-PackageAuthConfig {
                     $newPAT = Read-PATFromUser($OrgName)
                 }
                 else {
-                    $newPAT = $(New-PAT -PATName "$($OrgName)_Package-Read (Automated)" -OrgName  "$($OrgName)" -Scopes "$($DefaultScope)" -ExpireDays $PATLifetime -AzAPIVersion $AzAPIVersion -AzureSubscription $AzureSubscription)
+                    $newPatArgs = @{
+                        'PATName' = "$($OrgName)_Package-Read (Automated)"
+                        'OrgName' = "$($OrgName)"
+                        'Scopes' = "$($DefaultScope)"
+                        'ExpireDays' = $PATLifetime
+                        'AzAPIVersion' = $AzAPIVersion
+                    }
+
+                    if($PSBoundParameters.ContainsKey('AzureSubscription')){
+                        $newPatArgs.AzureSubscription = $AzureSubscription
+                    }                    
+
+                    $newPAT = $(New-PAT @newPatArgs)
                 }
                 if (-not [string]::IsNullOrEmpty($newPAT)) {
                     $convertedScopedPAT = $newPAT
@@ -2721,6 +2733,7 @@ function Update-UnityPackageManagerConfig {
         [switch]$AutoClean,
         [switch]$ManualPAT,
         [switch]$VerifyOnly,
+        [ValidateScript({$_ -gt 0}, ErrorMessage = "PATLifetime must be greater than zero")]
         [uint]$PATLifetime = 7,
         [ValidateScript({$_ -ne [guid]::Empty}, ErrorMessage = "Cannot be empty guid.")]
         [guid]$AzureSubscription

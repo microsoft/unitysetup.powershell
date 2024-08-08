@@ -1,0 +1,26 @@
+{
+  "scopedRegistries": [
+    {
+      "name": "TestRegistry",
+      "url": "https://placeholder/url",
+      "scopes": [
+        "com.azure",
+        "com.microsoft",
+        "org.nuget"
+      ]
+    }
+  ],
+  "zooAnimals": {
+    "lion": "Panthera leo",
+    "elephant": "Loxodonta africana",
+    "zebra": "Equus quagga"
+  },
+  "favoritePrimeNumbers": [
+    2,
+    3,
+    5,
+    7,
+    11,
+    13
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "scopedRegistries": [
+    {
+      "name": "TestRegistry",
+      "url": "https://placeholder/url",
+      "scopes": [
+        "com.azure",
+        "com.microsoft",
+        "org.nuget"
+      ]
+    }
+  ],
+  "dependencies": {
+    "com.example.packageA": "2.3.4",
+    "org.sample.libB": "5.6.7",
+    "net.test.pluginC": "0.9.1"
+  },
+  "testables": [
+    "com.example.testA",
+    "org.sample.testB"
+  ]
+}
