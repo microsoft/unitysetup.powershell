@@ -38,7 +38,7 @@ enum UnitySetupComponent {
     Linux_IL2CPP = (1 -shl 16)
     Windows_Server = (1 -shl 17)
     VisionOS = (1 -shl 18)
-    All = (1 -shl 18) - 1
+    All = (1 -shl 19) - 1
 }
 
 [Flags()]
@@ -401,12 +401,15 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All,
 
         [parameter(Mandatory = $false)]
-        [string] $Hash = ""
+        [string] $Hash = "",
+
+        [parameter(Mandatory = $false)]
+        [OperatingSystem] $ExplicitOS
     )
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
-    $currentOS = Get-OperatingSystem
+    $currentOS = $ExplicitOS ?? (Get-OperatingSystem)
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
             $targetSupport = "TargetSupportInstaller"
@@ -533,7 +536,7 @@ function Find-UnitySetupInstaller {
                 Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
                 Where-Object {
                     $link = $_
-
+                    
                     foreach ( $installer in $installerTemplates.Keys ) {
                         foreach ( $template in $installerTemplates[$installer] ) {
                             if ( $link -like "*$template*" ) { return $true }
