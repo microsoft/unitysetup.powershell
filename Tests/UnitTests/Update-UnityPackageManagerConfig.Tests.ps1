@@ -1,21 +1,21 @@
-BeforeAll {
-    Import-Module "$PSScriptRoot\..\..\UnitySetup\UnitySetup.psd1" -Force
-
-    Mock -CommandName 'Import-UnityProjectManifest' -MockWith { @() } -ModuleName UnitySetup
-    Mock -CommandName 'Import-TOMLFile' -MockWith { @() } -ModuleName UnitySetup
-    Mock -CommandName 'Update-PackageAuthConfig' -MockWith { @() } -ModuleName UnitySetup
-    Mock -CommandName 'Export-UPMConfig' -MockWith { @() } -ModuleName UnitySetup
-    Mock -CommandName 'Invoke-WebRequest' -MockWith {
-        return [pscustomobject]@{
-            StatusCode = 200
-            Content    = '{"patToken": {"token": "mockedPATToken"}}'
-        }
-    } -ModuleName UnitySetup
-    Mock -CommandName 'Confirm-PAT' -MockWith { $true } -ModuleName UnitySetup
-}
-
 Describe 'Update-UnityPackageManagerConfig' {
 
+    BeforeEach {
+        Import-Module "$PSScriptRoot\..\..\UnitySetup\UnitySetup.psd1" -Force
+    
+        Mock -CommandName 'Import-UnityProjectManifest' -MockWith { @() } -ModuleName UnitySetup
+        Mock -CommandName 'Import-TOMLFile' -MockWith { @() } -ModuleName UnitySetup
+        Mock -CommandName 'Update-PackageAuthConfig' -MockWith { @() } -ModuleName UnitySetup
+        Mock -CommandName 'Export-UPMConfig' -MockWith { @() } -ModuleName UnitySetup
+        Mock -CommandName 'Invoke-WebRequest' -MockWith {
+            return [pscustomobject]@{
+                StatusCode = 200
+                Content    = '{"patToken": {"token": "mockedPATToken"}}'
+            }
+        } -ModuleName UnitySetup
+        Mock -CommandName 'Confirm-PAT' -MockWith { $true } -ModuleName UnitySetup
+    }
+    
     Context 'Input Validation' {
         It 'throws on empty parameters' {
             { Update-UnityPackageManagerConfig } | Should -Throw "*insufficient number of parameters were provided."

@@ -37,7 +37,8 @@ enum UnitySetupComponent {
     Lumin = (1 -shl 15)
     Linux_IL2CPP = (1 -shl 16)
     Windows_Server = (1 -shl 17)
-    All = (1 -shl 18) - 1
+    VisionOS = (1 -shl 18)
+    All = (1 -shl 19) - 1
 }
 
 [Flags()]
@@ -123,6 +124,7 @@ class UnitySetupInstance {
         $componentTests[[UnitySetupComponent]::Facebook] = , [io.path]::Combine("$playbackEnginePath", "Facebook");
         $componentTests[[UnitySetupComponent]::Vuforia]  = , [io.path]::Combine("$playbackEnginePath", "VuforiaSupport");
         $componentTests[[UnitySetupComponent]::WebGL]    = , [io.path]::Combine("$playbackEnginePath", "WebGLSupport");
+        $componentTests[[UnitySetupComponent]::VisionOS] = , [io.path]::Combine("$playbackEnginePath", "VisionOSPlayer");
 
         $componentTests.Keys | ForEach-Object {
             foreach ( $test in $componentTests[$_] ) {
@@ -343,6 +345,8 @@ function ConvertTo-UnitySetupComponent {
         [UnityVersion] $Version
     )
 
+    $currentOS = Get-OperatingSystem
+
     if ($Version) {
         if ($Version.Major -ge 2019) {
             if ($Component -band [UnitySetupComponent]::UWP) {
@@ -356,6 +360,15 @@ function ConvertTo-UnitySetupComponent {
 
                 $Component -= [UnitySetupComponent]::UWP;
             }
+        }
+
+        if ($Component -band [UnitySetupComponent]::VisionOS -and ( `
+            $currentOS -notin [OperatingSystem]::Windows, [OperatingSystem]::Mac `
+            -or $currentOS -eq [OperatingSystem]::Mac -and [UnityVersion]::Compare($Version, [UnityVersion]"2022.3.18f1") -lt 0 `
+            -or $currentOS -eq [OperatingSystem]::Windows -and [UnityVersion]::Compare($Version, [UnityVersion]"2022.3.21f1") -lt 0 `
+        )) {
+            Write-Verbose "VisionOS is only supported starting in Unity version 2022.3.18f1 on Mac or 2022.3.21f1 on Windows - removing $([UnitySetupComponent]::VisionOS)"
+            $Component -= [UnitySetupComponent]::VisionOS;
         }
     }
 
@@ -388,12 +401,15 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent] $Components = [UnitySetupComponent]::All,
 
         [parameter(Mandatory = $false)]
-        [string] $Hash = ""
+        [string] $Hash = "",
+
+        [parameter(Mandatory = $false)]
+        [OperatingSystem] $ExplicitOS
     )
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
-    $currentOS = Get-OperatingSystem
+    $currentOS = $ExplicitOS ?? (Get-OperatingSystem)
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
             $targetSupport = "TargetSupportInstaller"
@@ -436,6 +452,7 @@ function Find-UnitySetupInstaller {
         [UnitySetupComponent]::Lumin          = , "$targetSupport/UnitySetup-Lumin-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Linux_IL2CPP   = , "$targetSupport/UnitySetup-Linux-IL2CPP-Support-for-Editor-$Version.$installerExtension";
         [UnitySetupComponent]::Windows_Server = , "$targetSupport/UnitySetup-Windows-Server-Support-for-Editor-$Version.$installerExtension";
+        [UnitySetupComponent]::VisionOS       = , "$targetSupport/UnitySetup-VisionOS-Support-for-Editor-$Version.$installerExtension";
     }
 
     # In 2019.x there is only IL2CPP UWP so change the search for UWP_IL2CPP
@@ -519,7 +536,7 @@ function Find-UnitySetupInstaller {
                 Select-Object -ExpandProperty href -ErrorAction SilentlyContinue |
                 Where-Object {
                     $link = $_
-
+                    
                     foreach ( $installer in $installerTemplates.Keys ) {
                         foreach ( $template in $installerTemplates[$installer] ) {
                             if ( $link -like "*$template*" ) { return $true }
