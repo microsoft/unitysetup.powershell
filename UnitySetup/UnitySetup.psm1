@@ -409,7 +409,14 @@ function Find-UnitySetupInstaller {
 
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
-    $currentOS = $ExplicitOS ?? (Get-OperatingSystem)
+    if ($ExplicitOS) {
+        Write-Host ""
+        $currentOS = $ExplicitOS
+    }
+    else {
+        $currentOS = Get-OperatingSystem
+    }
+
     switch ($currentOS) {
         ([OperatingSystem]::Windows) {
             $targetSupport = "TargetSupportInstaller"
