@@ -410,7 +410,6 @@ function Find-UnitySetupInstaller {
     $Components = ConvertTo-UnitySetupComponent -Component $Components -Version $Version
 
     if ($ExplicitOS) {
-        Write-Host ""
         $currentOS = $ExplicitOS
     }
     else {
@@ -2510,7 +2509,7 @@ function Update-PackageAuthConfig {
 
             if($env:TF_BUILD) {
                 if(Confirm-PAT "$($OrgName)" "$($ProjectName)" "$($FeedName)" $env:SYSTEM_ACCESSTOKEN) {
-                    if($Verbose){Write-Host "System access token found"}
+                    Write-Verbose "System access token found"
                     $ScopedPAT = $env:SYSTEM_ACCESSTOKEN
                     $AuthState = "Applied from system PAT"
                 } else {
