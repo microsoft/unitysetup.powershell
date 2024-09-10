@@ -14,7 +14,7 @@
     RootModule        = 'UnitySetup'
 
     # Version number of this module.
-    ModuleVersion     = '5.7'
+    ModuleVersion     = '6.0'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()

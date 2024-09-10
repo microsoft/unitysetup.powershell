@@ -2,6 +2,18 @@
 
 This PowerShell module contains tools for managing and automating your Unity installs and projects.
 
+# Table of Contents
+
+1. [Unity Setup Powershell Module](#unity-setup-powershell-module)
+2. [Builds](#builds)
+3. [Installation](#installation)
+4. [Using](#using)
+5. [Feedback](#feedback)
+6. [Contributing](#contributing)
+7. [Testing](#testing)
+8. [Reporting Security Issues](#reporting-security-issues)
+
+
 ## Builds
 
 ### Master
@@ -235,6 +247,14 @@ This project welcomes contributions and suggestions.  Most contributions require
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions provided by the bot. You will only need to do this once across all repos using our CLA.
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+
+## Testing
+
+This project includes Pester test runners for both unit tests and end to end tests - which can test against real Unity projects via environment variables.
+
+To learn more about how to run and write tests, please refer to the [Test Runner Guide](./Tests/README.md).
+
 
 # Reporting Security Issues
 
