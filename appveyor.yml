@@ -2,9 +2,6 @@ version: '{build}'
 skip_tags: true
 pull_requests:
   do_not_increment_build_number: true
-environment:
-  NugetAPIKey:
-    secure: zvkaZiaBXVko+3ZzuSb7W6DTUJmHX98XgEhKs28SnGD+4TM3gzhPxVnNWSmBhXEx
 install:
 - ps: >-
     $ErrorActionPreference = 'Stop'
@@ -40,3 +37,4 @@ for:
   branches:
     only:
     - develop
+    - alpha
