@@ -37,4 +37,3 @@ for:
   branches:
     only:
     - develop
-    - alpha
