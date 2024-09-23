@@ -2824,7 +2824,7 @@ function Update-UnityPackageManagerConfig {
         }
 
         Write-Verbose "Summary"
-        Write-Output $upmConfigs
+        Write-Verbose $upmConfigs
     }
 
     if ($VerifyOnly) {
