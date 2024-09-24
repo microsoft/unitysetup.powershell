@@ -2823,13 +2823,19 @@ function Update-UnityPackageManagerConfig {
             Export-UPMConfig -UPMConfig $upmConfigs -tomlFilePaths $tomlFilePaths
         }
 
-        Write-Verbose "Summary"
-        $upmConfigs | ForEach-Object {
-            [PSCustomObject]@{
-                ScopedURL = $_.ScopedURL
-                Succeeded = -not [string]::IsNullOrEmpty($_.Auth)
-            }
-        } | Format-Table -AutoSize
+        if ($upmConfigs) {
+            Write-Verbose "Summary"
+            $upmConfigs = $upmConfigs | ForEach-Object {
+                [PSCustomObject]@{
+                    ScopedURL = $_.ScopedURL
+                    Succeeded = -not [string]::IsNullOrEmpty($_.Auth)
+                }
+            } | Format-Table -AutoSize
+        
+            Write-Verbose $upmConfigs
+        } else {
+            Write-Verbose "No changes were made"
+        }
     }
 
     if ($VerifyOnly) {
