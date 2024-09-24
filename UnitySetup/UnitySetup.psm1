@@ -2824,7 +2824,12 @@ function Update-UnityPackageManagerConfig {
         }
 
         Write-Verbose "Summary"
-        Write-Output $upmConfigs
+        $upmConfigs | ForEach-Object {
+            [PSCustomObject]@{
+                ScopedURL = $_.ScopedURL
+                Succeeded = -not [string]::IsNullOrEmpty($_.Auth)
+            }
+        } | Format-Table -AutoSize
     }
 
     if ($VerifyOnly) {
