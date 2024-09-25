@@ -2830,7 +2830,7 @@ function Update-UnityPackageManagerConfig {
                     ScopedURL = $_.ScopedURL
                     Succeeded = -not [string]::IsNullOrEmpty($_.Auth)
                 }
-            } | Format-Table -AutoSize
+            } | Format-Table -AutoSize | Out-String
         
             Write-Verbose $upmConfigs
         } else {
