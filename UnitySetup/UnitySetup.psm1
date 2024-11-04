@@ -1455,7 +1455,7 @@ function Select-UnitySetupInstance {
 
 <#
 .Synopsis
-   Get the Unity Projects under a specfied folder
+   Get the Unity Projects relative to a specfied folder
 .DESCRIPTION
    Recursively discovers Unity projects and their Unity version
 .PARAMETER BasePath
@@ -1464,6 +1464,8 @@ function Select-UnitySetupInstance {
    Get-UnityProjectInstance
 .EXAMPLE
    Get-UnityProjectInstance -BasePath .\MyUnityProjects -Recurse
+.EXAMPLE
+   Get-UnityProjectInstance -BasePath .\SubDirectoyOfAUnityProject -RecurseUp
 #>
 function Get-UnityProjectInstance {
     [CmdletBinding()]
@@ -1472,27 +1474,48 @@ function Get-UnityProjectInstance {
         [string] $BasePath = $PWD,
 
         [parameter(Mandatory = $false)]
-        [switch] $Recurse
+        [switch] $Recurse,
+
+        [parameter(Mandatory = $false, ParameterSetName = "RecurseUp")]
+        [switch] $RecurseUp
     )
 
     $args = @{
-        'Path'        = $BasePath;
         'Filter'      = 'ProjectSettings';
         'ErrorAction' = 'Ignore';
         'Directory'   = $true;
     }
 
-    if ( $Recurse ) {
-        $args['Recurse'] = $true;
-    }
+    switch ($PSCmdlet.ParameterSetName) {
+        'RecurseUp' {
+            $current = $BasePath
+            while (-not [string]::IsNullOrEmpty($current)) {
+                Get-ChildItem -Path $current @args |
+                    ForEach-Object {
+                        $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
+                        if ( Test-Path $path ) {
+                            [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+                        }
+                    }
 
-    Get-ChildItem @args |
-        ForEach-Object {
-            $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
-            if ( Test-Path $path ) {
-                [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+                $current = Split-Path $current -Parent
             }
         }
+        default {
+            $args['Path'] = $BasePath;
+            if ( $Recurse ) {
+                $args['Recurse'] = $true;
+            }
+
+            Get-ChildItem @args |
+                ForEach-Object {
+                    $path = [io.path]::Combine($_.FullName, "ProjectVersion.txt")
+                    if ( Test-Path $path ) {
+                        [UnityProjectInstance]::new((Join-Path $_.FullName "..\" | Convert-Path))
+                    }
+                }
+        }
+    }
 }
 
 <#
