@@ -1851,7 +1851,7 @@ function Start-UnityEditor {
         [parameter(Mandatory = $false)]
         [switch]$RunEditorTests,
         [parameter(Mandatory = $false)]
-        [ValidateSet('EditMode', 'PlayMode')]
+        [ValidateSet('EditMode', 'PlayMode', 'StandaloneWindows', 'StandaloneWindows64', 'StandaloneLinux64', 'StandaloneOSX', 'iOS', 'Android', 'PS4', 'XboxOne')]
         [string]$TestPlatform,
         [parameter(Mandatory = $false)]
         [string]$TestResults,
