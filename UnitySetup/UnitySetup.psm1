@@ -2247,10 +2247,9 @@ Would you like to continue? (Default: $($createPAT))"
             Connect-AzAccount @connectArgs  | Out-Null
         }
 
-        $AZToken = $null
         $AZTokenRequest = Get-AzAccessToken -AsSecureString -ResourceType Arm
         $AZToken = [System.Net.NetworkCredential]::new($null, $AZTokenRequest.Token).Password
-        
+
         $headers = @{ Authorization = "Bearer $($AZToken)" }
     }
     else {
