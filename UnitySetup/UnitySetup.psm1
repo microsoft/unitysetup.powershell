@@ -2248,14 +2248,8 @@ Would you like to continue? (Default: $($createPAT))"
         }
 
         $AZToken = $null
-        $azAccountsVersion = Get-ModuleVersion -ModuleName "Az.Accounts"
-        if ($azAccountsVersion -ge [version]"4.0") {
-            $AZTokenRequest = Get-AzAccessToken -AsSecureString -ResourceType Arm
-            $AZToken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($AZTokenRequest.Token))
-        } else {
-            $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
-            $AZToken = $AZTokenRequest.Token
-        }
+        $AZTokenRequest = Get-AzAccessToken -AsSecureString -ResourceType Arm
+        $AZToken = [System.Net.NetworkCredential]::new($null, $AZTokenRequest.Token).Password
         
         $headers = @{ Authorization = "Bearer $($AZToken)" }
     }
