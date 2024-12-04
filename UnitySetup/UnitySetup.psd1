@@ -55,7 +55,7 @@
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules   = @(
         @{ModuleName = "powershell-yaml"; ModuleVersion = "0.3"; Guid = "6a75a662-7f53-425a-9777-ee61284407da" },
-        @{ModuleName = "Az.Accounts"; ModuleVersion = "1.8.0"; Guid = "17a2feff-488b-47f9-8729-e2cec094624c" }
+        @{ModuleName = "Az.Accounts"; ModuleVersion = "2.17.0"; Guid = "17a2feff-488b-47f9-8729-e2cec094624c" }
     )
 
     # Assemblies that must be loaded prior to importing this module
