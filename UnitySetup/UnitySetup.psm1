@@ -2214,15 +2214,7 @@ function New-PAT {
         [guid]$AzureSubscription
     )
 
-    $azAccountsVersion = Get-ModuleVersion -ModuleName "Az.Accounts"
-    if ($azAccountsVersion) {
-        if ($azAccountsVersion -lt [version]"1.8" -or $azAccountsVersion -gt [version]"3.9.9999") {
-            if ($azAccountsVersion -ge [version]"4.0") {
-                throw "Az.Accounts version 4.0 includes a breaking change and is not compatible."
-            }
-        }
-    }
-
+    
     $expireDate = (Get-Date).AddDays($ExpireDays).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
     $createPAT = 'y'
 
@@ -2254,8 +2246,11 @@ Would you like to continue? (Default: $($createPAT))"
             }
             Connect-AzAccount @connectArgs  | Out-Null
         }
-        $AZTokenRequest = Get-AzAccessToken -ResourceType Arm
-        $headers = @{ Authorization = "Bearer $($AZTokenRequest.Token)" }
+
+        $AZTokenRequest = Get-AzAccessToken -AsSecureString -ResourceType Arm
+        $AZToken = [System.Net.NetworkCredential]::new($null, $AZTokenRequest.Token).Password
+
+        $headers = @{ Authorization = "Bearer $($AZToken)" }
     }
     else {
         $headers = @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
