@@ -2349,7 +2349,7 @@ function Read-PATFromUser($OrgName) {
 }
 
 function Get-RegExForConfig($Org, $Project, $Feed, $PAT) {
-    $regexresult = "[`r`n]*\[npmAuth\.""https:\/\/pkgs.dev.azure.com\/$($Org)\/"
+    $regexresult = "[\n\r\s]*\[npmAuth\.""https:\/\/pkgs.dev.azure.com\/$($Org)\/"
     if (-not [string]::IsNullOrEmpty($Project)) {
         $regexresult += "$($Project)\/"
     }
