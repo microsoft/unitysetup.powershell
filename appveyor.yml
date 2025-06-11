@@ -6,8 +6,6 @@ install:
 - ps: >-
     $ErrorActionPreference = 'Stop'
 
-    Install-PackageProvider -Name NuGet -Force
-
     Remove-Module 'PowerShellGet' -Force -ErrorAction SilentlyContinue -Verbose
 
     Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber -Verbose
