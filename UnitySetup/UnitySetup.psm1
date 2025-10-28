@@ -433,9 +433,9 @@ function Find-UnitySetupInstaller {
     $unitySetupRegEx = "^(.+)\/([a-z0-9]+)\/(.+)\/(.+)-(\d+)\.(\d+)\.(\d+)([fpba])(\d+).$installerExtension$"
 
     $knownBaseUrls = @(
-        "https://download.unity3d.com/download_unity",
-        "https://netstorage.unity3d.com/unity",
-        "https://beta.unity3d.com/download"
+        "https://download.unity.com/download_unity",
+        "https://netstorage.unity.com/unity",
+        "https://beta.unity.com/download"
     )
 
     $installerTemplates = @{
@@ -502,36 +502,36 @@ function Find-UnitySetupInstaller {
     # Every release type has a different pattern for finding installers
     $searchPages = @()
     switch ($Version.Release) {
-        'a' { $searchPages += "https://unity3d.com/alpha/$($Version.Major).$($Version.Minor)" }
+        'a' { $searchPages += "https://unity.com/alpha/$($Version.Major).$($Version.Minor)" }
         'b' {
-            $searchPages += "https://unity3d.com/unity/beta/unity$Version",
-            "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)",
-            "https://unity3d.com/unity/beta/$Version"
+            $searchPages += "https://unity.com/unity/beta/unity$Version",
+            "https://unity.com/unity/beta/$($Version.Major).$($Version.Minor)",
+            "https://unity.com/unity/beta/$Version"
         }
         'f' {
-            $searchPages += "https://unity3d.com/get-unity/download/archive",
-            "https://unity3d.com/unity/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)"
+            $searchPages += "https://unity.com/get-unity/download/archive",
+            "https://unity.com/releases/editor/whats-new/$($Version.Major).$($Version.Minor).$($Version.Revision)$($Version.Release)$($Version.Build)"
 
             # Just in case it's a release candidate search the beta as well.
             if ($Version.Revision -eq '0') {
-                $searchPages += "https://unity3d.com/unity/beta/unity$Version",
-                "https://unity3d.com/unity/beta/$($Version.Major).$($Version.Minor)",
-                "https://unity3d.com/unity/beta/$Version"
+                $searchPages += "https://unity.com/unity/beta/unity$Version",
+                "https://unity.com/unity/beta/$($Version.Major).$($Version.Minor)",
+                "https://unity.com/unity/beta/$Version"
             }
         }
         'p' {
-            $patchPage = "https://unity3d.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
+            $patchPage = "https://unity.com/unity/qa/patch-releases?version=$($Version.Major).$($Version.Minor)"
             $searchPages += $patchPage
 
             $webResult = Invoke-WebRequest $patchPage -UseBasicParsing
             $searchPages += $webResult.Links |
                 Where-Object { $_.href -match "\/unity\/qa\/patch-releases\?version=$($Version.Major)\.$($Version.Minor)&page=(\d+)" -and $Matches[1] -gt 1 } |
-                ForEach-Object { "https://unity3d.com$($_.href)" }
+                ForEach-Object { "https://unity.com$($_.href)" }
         }
     }
 
     if($Hash -ne ""){
-        $searchPages += "http://beta.unity3d.com/download/$Hash/download.html"
+        $searchPages += "http://beta.unity.com/download/$Hash/download.html"
     }
 
     foreach ($page in $searchPages) {
@@ -1540,7 +1540,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             }
         }
 
-        # Derived from https://docs.unity3d.com/Manual/SpecialFolders.html
+        # Derived from https://docs.unity.com/Manual/SpecialFolders.html
         $unityAssetExcludes = @('.*', '*~', 'cvs', '*.tmp')
 
         foreach ( $p in $Project) {
@@ -2696,7 +2696,7 @@ function Import-UnityProjectManifest {
 .Synopsis
    Ensures that the user has the appropriate auth tokens to fetch Unity packages in their .toml file.
 
-   For more information on Unity Package Manager config, please visit https://docs.unity3d.com/Manual/upm-config.html
+   For more information on Unity Package Manager config, please visit https://docs.unity.com/Manual/upm-config.html
 .DESCRIPTION
    Looks at the Unity Project Manifest and finds the scoped registries used for fetching NPM packages.
 
