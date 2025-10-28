@@ -1540,7 +1540,7 @@ function Test-UnityProjectInstanceMetaFileIntegrity {
             }
         }
 
-        # Derived from https://docs.unity.com/Manual/SpecialFolders.html
+        # Derived from https://docs.unity3d.com/Manual/SpecialFolders.html
         $unityAssetExcludes = @('.*', '*~', 'cvs', '*.tmp')
 
         foreach ( $p in $Project) {
@@ -2696,7 +2696,7 @@ function Import-UnityProjectManifest {
 .Synopsis
    Ensures that the user has the appropriate auth tokens to fetch Unity packages in their .toml file.
 
-   For more information on Unity Package Manager config, please visit https://docs.unity.com/Manual/upm-config.html
+   For more information on Unity Package Manager config, please visit https://docs.unity3d.com/Manual/upm-config.html
 .DESCRIPTION
    Looks at the Unity Project Manifest and finds the scoped registries used for fetching NPM packages.
 
